@@ -14,6 +14,7 @@ import (
 
 // PaloAlto is a container for our session state.
 type PaloAlto struct {
+	Host      string
 	Key       string
 	Transport *http.Transport
 }
@@ -29,6 +30,8 @@ type APIRequest struct {
 	Method string
 	URL    string
 	Body   string
+	Action string
+	XPath  string
 }
 
 // RequestError contains information about any error we get from a request.
@@ -52,7 +55,8 @@ func NewSession(host, user, passwd string) *PaloAlto {
 		fmt.Println(err)
 	}
 
-	xml.Unmarshal(resp.Body, &key)
+	data, _ := ioutil.ReadAll(resp.Body)
+	xml.Unmarshal(data, &key)
 
 	return &PaloAlto{
 		Host: host,
