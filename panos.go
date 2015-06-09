@@ -34,8 +34,8 @@ type APIRequest struct {
 	XPath  string
 }
 
-// RequestError contains information about any error we get from a request.
-type RequestError struct {
+// requestError contains information about any error we get from a request.
+type requestError struct {
 	XMLName xml.Name `xml:"response"`
 	Message string   `xml:"msg>line,omitempty"`
 }
@@ -93,7 +93,7 @@ func (p *PaloAlto) APICall(options *APIRequest) ([]byte, error) {
 // checkError handles any errors we get from our API requests. It returns either the
 // message of the error, if any, or nil.
 func (p *PaloAlto) checkError(resp []byte) error {
-	var reqError RequestError
+	var reqError requestError
 
 	err := xml.Unmarshal(resp, &reqError)
 	if err != nil {
