@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/scottdware/go-requestor"
+	"github.com/scottdware/go-rested"
 )
 
 // PaloAlto is a container for our session state.
@@ -30,7 +30,7 @@ type requestError struct {
 func NewSession(host, user, passwd string) *PaloAlto {
 	var key authKey
 
-	resp := requestor.Send(fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd), nil)
+	resp := rested.Send(fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd), nil)
 	if resp.Error != nil {
 		fmt.Println(resp.Error)
 	}
