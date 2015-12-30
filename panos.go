@@ -12,6 +12,7 @@ import (
 type PaloAlto struct {
 	Host string
 	Key  string
+	URI  string
 }
 
 // authKey holds our API key.
@@ -43,6 +44,7 @@ func NewSession(host, user, passwd string) *PaloAlto {
 	return &PaloAlto{
 		Host: host,
 		Key:  key.Key,
+		URI:  fmt.Sprintf("https://%s/api/?", host),
 	}
 }
 
