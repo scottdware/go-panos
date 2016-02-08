@@ -35,12 +35,20 @@ type Group struct {
 // Addresses returns information about all of the address objects.
 func (p *PaloAlto) Addresses() *AddressObjects {
 	var addrs AddressObjects
+	// xpath := "/config/devices/entry/vsys/entry/address"
+	xpath := "/config/devices/entry//address"
+
+	if p.DeviceType == "panorama" {
+		// xpath = "/config/devices/entry/device-group/entry/address"
+		xpath = "/config/devices/entry//address"
+	}
+
 	addrOpts := &rested.Request{
 		Method: "get",
 		Query: map[string]string{
 			"type":   "config",
 			"action": "get",
-			"xpath":  "/config/devices/entry/device-group/entry/address",
+			"xpath":  xpath,
 			"key":    p.Key,
 		},
 	}
@@ -56,12 +64,20 @@ func (p *PaloAlto) Addresses() *AddressObjects {
 // AddressGroups returns information about all of the address groups.
 func (p *PaloAlto) AddressGroups() *AddressGroups {
 	var groups AddressGroups
+	// xpath := "/config/devices/entry/vsys/entry/address-group"
+	xpath := "/config/devices/entry//address-group"
+
+	if p.DeviceType == "panorama" {
+		// xpath = "/config/devices/entry/device-group/entry/address-group"
+		xpath = "/config/devices/entry//address-group"
+	}
+
 	aGroupOpts := &rested.Request{
 		Method: "get",
 		Query: map[string]string{
 			"type":   "config",
 			"action": "get",
-			"xpath":  "/config/devices/entry/device-group/entry/address-group",
+			"xpath":  xpath,
 			"key":    p.Key,
 		},
 	}
