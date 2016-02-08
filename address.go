@@ -35,7 +35,7 @@ type Group struct {
 // Addresses returns information about all of the address objects.
 func (p *PaloAlto) Addresses() *AddressObjects {
 	var addrs AddressObjects
-	addrOpts := &rested.Options{
+	addrOpts := &rested.Request{
 		Method: "get",
 		Query: map[string]string{
 			"type":   "config",
@@ -56,7 +56,7 @@ func (p *PaloAlto) Addresses() *AddressObjects {
 // AddressGroups returns information about all of the address groups.
 func (p *PaloAlto) AddressGroups() *AddressGroups {
 	var groups AddressGroups
-	aGroupOpts := &rested.Options{
+	aGroupOpts := &rested.Request{
 		Method: "get",
 		Query: map[string]string{
 			"type":   "config",
