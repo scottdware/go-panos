@@ -5,7 +5,10 @@
 A Go package that interacts with Palo Alto firewalls and Panorama using the REST API.
 
 ### Examples & Documentation
-Visit the [GoDoc][godoc-go-panos] page for package documentation and examples.
+Visit the [GoDoc][godoc-go-panos] page for package documentation.
+
+Check out the [Wiki][wiki] for examples
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
+[wiki]: https://github.com/scottdware/go-panos/wiki
