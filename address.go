@@ -52,10 +52,13 @@ type xmlAddressGroup struct {
 // Addresses returns information about all of the address objects.
 func (p *PaloAlto) Addresses() *AddressObjects {
 	var addrs AddressObjects
+	xpath := "/config/devices/entry//address"
+	// xpath := "/config/devices/entry/vsys/entry/address"
 	r := rested.NewRequest()
 
-	// xpath := "/config/devices/entry/vsys/entry/address"
-	xpath := "/config/devices/entry//address"
+	if p.DeviceType == "panos" && p.Panorama == true {
+		xpath = "/config/panorama//address"
+	}
 
 	if p.DeviceType == "panorama" {
 		// xpath = "/config/devices/entry/device-group/entry/address"
@@ -81,10 +84,13 @@ func (p *PaloAlto) Addresses() *AddressObjects {
 func (p *PaloAlto) AddressGroups() *AddressGroups {
 	var parsedGroups xmlAddressGroups
 	var groups AddressGroups
+	xpath := "/config/devices/entry//address-group"
+	// xpath := "/config/devices/entry/vsys/entry/address-group"
 	r := rested.NewRequest()
 
-	// xpath := "/config/devices/entry/vsys/entry/address-group"
-	xpath := "/config/devices/entry//address-group"
+	if p.DeviceType == "panos" && p.Panorama == true {
+		xpath = "/config/panorama//address-group"
+	}
 
 	if p.DeviceType == "panorama" {
 		// xpath = "/config/devices/entry/device-group/entry/address-group"
