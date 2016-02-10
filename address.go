@@ -138,3 +138,51 @@ func (p *PaloAlto) AddressGroups() (*AddressGroups, error) {
 
 	return &groups, nil
 }
+
+// CreateAddress will add a new address object to they system. addrtype should be one of: ip, range, or fqdn.
+func (p *PaloAlto) CreateAddress(name, addrtype, address, description string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	switch addrtype {
+	case "ip":
+		xmlBody = fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
+	case "range":
+		xmlBody = fmt.Sprintf("<ip-range>%s</ip-range>", address)
+	case "fqdn":
+		xmlBody = fmt.Sprintf("<fqdn>%s</fqdn>", address)
+	}
+
+	if description != "" {
+		xmlBody += fmt.Sprintf("<description>%s</description>", description)
+	}
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s (%s)", reqError.Code, errorCodes[reqError.Code], reqError.Message)
+	}
+
+	return nil
+}
