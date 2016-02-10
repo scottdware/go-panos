@@ -20,6 +20,31 @@ type PaloAlto struct {
 	DeviceType      string
 }
 
+// Tags contains information about all tags on the system.
+type Tags struct {
+	Tags []Tag
+}
+
+// Tag contains information about each individual tag.
+type Tag struct {
+	Name     string
+	Color    string
+	Comments string
+}
+
+// xmlTags is used for parsing all tags on the system.
+type xmlTags struct {
+	XMLName xml.Name `xml:"response"`
+	Tags    []xmlTag `xml:"result>tag>entry"`
+}
+
+// xmlTag is used for parsing each individual tag.
+type xmlTag struct {
+	Name     string `xml:"name,attr"`
+	Color    string `xml:"color,omitempty"`
+	Comments string `xml:"comments,omitempty"`
+}
+
 // authKey holds our API key.
 type authKey struct {
 	XMLName xml.Name `xml:"response"`
@@ -41,9 +66,29 @@ type requestError struct {
 	Message string   `xml:"msg>line,omitempty"`
 }
 
-var headers = map[string]string{
-	"Content-Type": "application/xml",
-}
+var (
+	headers = map[string]string{
+		"Content-Type": "application/xml",
+	}
+	tagColors = map[string]string{
+		"color1":  "Red",
+		"color2":  "Green",
+		"color3":  "Blue",
+		"color4":  "Yellow",
+		"color5":  "Copper",
+		"color6":  "Orange",
+		"color7":  "Purple",
+		"color8":  "Gray",
+		"color9":  "Light Green",
+		"color10": "Cyan",
+		"color11": "Light Gray",
+		"color12": "Blue Gray",
+		"color13": "Lime",
+		"color14": "Black",
+		"color15": "Gold",
+		"color16": "Brown",
+	}
+)
 
 // NewSession sets up our connection to the Palo Alto firewall system.
 func NewSession(host, user, passwd string) *PaloAlto {
@@ -88,6 +133,43 @@ func NewSession(host, user, passwd string) *PaloAlto {
 		SoftwareVersion: info.SoftwareVersion,
 		DeviceType:      deviceType,
 	}
+}
+
+func (p *PaloAlto) Tags() *Tags {
+	var parsedTags xmlTags
+	var tags Tags
+	r := rested.NewRequest()
+
+	// xpath := "/config/devices/entry/vsys/entry/address"
+	xpath := "/config/devices/entry//tag"
+
+	if p.DeviceType == "panorama" {
+		// xpath = "/config/devices/entry/device-group/entry/address"
+		xpath = "/config/devices/entry//tag"
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "get",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+	tData := r.Send("get", p.URI, nil, headers, query)
+
+	if err := xml.Unmarshal(tData.Body, &parsedTags); err != nil {
+		fmt.Println(err)
+	}
+
+	for _, t := range parsedTags.Tags {
+		tname := t.Name
+		tcolor := tagColors[t.Color]
+		tcomments := t.Comments
+
+		tags.Tags = append(tags.Tags, Tag{Name: tname, Color: tcolor, Comments: tcomments})
+	}
+
+	return &tags
+
 }
 
 // checkError handles any errors we get from our API requests. It returns either the
