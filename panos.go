@@ -247,3 +247,31 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 	return &tags, nil
 
 }
+
+// Commit issues a commit on the device.
+func (p *PaloAlto) Commit() error {
+	var reqError requestError
+	cmd := "<commit></commit>"
+	r := rested.NewRequest()
+
+	query := map[string]string{
+		"type": "commit",
+		"cmd":  cmd,
+		"key":  p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
