@@ -19,6 +19,7 @@ type AddressObjects struct {
 type Address struct {
 	Name        string `xml:"name,attr"`
 	IPAddress   string `xml:"ip-netmask,omitempty"`
+	IPRange     string `xml:"ip-range,omitempty"`
 	FQDN        string `xml:"fqdn,omitempty"`
 	Description string `xml:"description,omitempty"`
 }
