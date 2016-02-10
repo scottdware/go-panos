@@ -10,6 +10,8 @@ import (
 // AddressObjects contains a slice of all address objects.
 type AddressObjects struct {
 	XMLName   xml.Name  `xml:"response"`
+	Status    string    `xml:"status,attr"`
+	Code      string    `xml:"code,attr"`
 	Addresses []Address `xml:"result>address>entry"`
 }
 
@@ -38,6 +40,8 @@ type AddressGroup struct {
 // xmlAddressGroups is used for parsing of all address groups.
 type xmlAddressGroups struct {
 	XMLName xml.Name          `xml:"response"`
+	Status  string            `xml:"status,attr"`
+	Code    string            `xml:"code,attr"`
 	Groups  []xmlAddressGroup `xml:"result>address-group>entry"`
 }
 
@@ -50,7 +54,7 @@ type xmlAddressGroup struct {
 }
 
 // Addresses returns information about all of the address objects.
-func (p *PaloAlto) Addresses() *AddressObjects {
+func (p *PaloAlto) Addresses() (*AddressObjects, error) {
 	var addrs AddressObjects
 	xpath := "/config/devices/entry//address"
 	// xpath := "/config/devices/entry/vsys/entry/address"
@@ -74,14 +78,18 @@ func (p *PaloAlto) Addresses() *AddressObjects {
 	addrData := r.Send("get", p.URI, nil, headers, query)
 
 	if err := xml.Unmarshal(addrData.Body, &addrs); err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
-	return &addrs
+	if addrs.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", addrs.Code, errorCodes[addrs.Code])
+	}
+
+	return &addrs, nil
 }
 
 // AddressGroups returns information about all of the address groups.
-func (p *PaloAlto) AddressGroups() *AddressGroups {
+func (p *PaloAlto) AddressGroups() (*AddressGroups, error) {
 	var parsedGroups xmlAddressGroups
 	var groups AddressGroups
 	xpath := "/config/devices/entry//address-group"
@@ -106,7 +114,11 @@ func (p *PaloAlto) AddressGroups() *AddressGroups {
 	groupData := r.Send("get", p.URI, nil, headers, query)
 
 	if err := xml.Unmarshal(groupData.Body, &parsedGroups); err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+
+	if parsedGroups.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", parsedGroups.Code, errorCodes[parsedGroups.Code])
 	}
 
 	for _, g := range parsedGroups.Groups {
@@ -123,5 +135,5 @@ func (p *PaloAlto) AddressGroups() *AddressGroups {
 		groups.Groups = append(groups.Groups, AddressGroup{Name: gname, Type: gtype, Members: gmembers, DynamicFilter: gfilter, Description: gdesc})
 	}
 
-	return &groups
+	return &groups, nil
 }

@@ -3,7 +3,6 @@ package panos
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"github.com/scottdware/go-rested"
 	"strings"
@@ -37,6 +36,8 @@ type Tag struct {
 // xmlTags is used for parsing all tags on the system.
 type xmlTags struct {
 	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
 	Tags    []xmlTag `xml:"result>tag>entry"`
 }
 
@@ -50,12 +51,16 @@ type xmlTag struct {
 // authKey holds our API key.
 type authKey struct {
 	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
 	Key     string   `xml:"result>key"`
 }
 
 // systemInfo holds basic system information.
 type systemInfo struct {
 	XMLName         xml.Name `xml:"response"`
+	Status          string   `xml:"status,attr"`
+	Code            string   `xml:"code,attr"`
 	Platform        string   `xml:"result>system>platform-family"`
 	Model           string   `xml:"result>system>model"`
 	Serial          string   `xml:"result>system>serial"`
@@ -65,13 +70,17 @@ type systemInfo struct {
 // panoramaStatus gets the connection status to Panorama.
 type panoramaStatus struct {
 	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
 	Data    string   `xml:"result"`
 }
 
 // requestError contains information about any error we get from a request.
 type requestError struct {
 	XMLName xml.Name `xml:"response"`
-	Message string   `xml:"msg>line,omitempty"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Message string   `xml:"result>msg,omitempty"`
 }
 
 var (
@@ -96,10 +105,36 @@ var (
 		"color15": "Gold",
 		"color16": "Brown",
 	}
+	errorCodes = map[string]string{
+		"400": "Bad request",
+		"403": "Forbidden",
+		"1":   "Unknown command",
+		"2":   "Internal error",
+		"3":   "Internal error",
+		"4":   "Internal error",
+		"5":   "Internal error",
+		"6":   "Bad Xpath",
+		"7":   "Object not present",
+		"8":   "Object not unique",
+		"9":   "Internal error",
+		"10":  "Reference count not zero",
+		"11":  "Internal error",
+		"12":  "Invalid object",
+		"13":  "Operation failed",
+		"14":  "Operation not possible",
+		"15":  "Operation denied",
+		"16":  "Unauthorized",
+		"17":  "Invalid command",
+		"18":  "Malformed command",
+		"19":  "Success",
+		"20":  "Success",
+		"21":  "Internal error",
+		"22":  "Session timed out",
+	}
 )
 
 // NewSession sets up our connection to the Palo Alto firewall system.
-func NewSession(host, user, passwd string) *PaloAlto {
+func NewSession(host, user, passwd string) (*PaloAlto, error) {
 	var key authKey
 	var info systemInfo
 	var pan panoramaStatus
@@ -109,34 +144,42 @@ func NewSession(host, user, passwd string) *PaloAlto {
 
 	resp := r.Send("get", fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd), nil, nil, nil)
 	if resp.Error != nil {
-		fmt.Println(resp.Error)
+		return nil, resp.Error
 	}
 
 	err := xml.Unmarshal(resp.Body, &key)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+
+	if key.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s (keygen)", key.Code, errorCodes[key.Code])
 	}
 
 	uri := fmt.Sprintf("https://%s/api/?", host)
 	getInfo := r.Send("get", fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key.Key), nil, nil, nil)
 
 	if getInfo.Error != nil {
-		fmt.Println(getInfo.Error)
+		return nil, getInfo.Error
 	}
 
 	err = xml.Unmarshal(getInfo.Body, &info)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+
+	if info.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s (show system info)", info.Code, errorCodes[info.Code])
 	}
 
 	panStatus := r.Send("get", fmt.Sprintf("%s&key=%s&type=op&cmd=<show><panorama-status></panorama-status></show>", uri, key.Key), nil, nil, nil)
 	if panStatus.Error != nil {
-		fmt.Println(panStatus.Error)
+		return nil, panStatus.Error
 	}
 
 	err = xml.Unmarshal(panStatus.Body, &pan)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	if info.Platform == "m" {
@@ -157,11 +200,11 @@ func NewSession(host, user, passwd string) *PaloAlto {
 		SoftwareVersion: info.SoftwareVersion,
 		DeviceType:      deviceType,
 		Panorama:        status,
-	}
+	}, nil
 }
 
 // Tags returns information about all tags on the system.
-func (p *PaloAlto) Tags() *Tags {
+func (p *PaloAlto) Tags() (*Tags, error) {
 	var parsedTags xmlTags
 	var tags Tags
 	xpath := "/config/devices/entry//tag"
@@ -186,7 +229,11 @@ func (p *PaloAlto) Tags() *Tags {
 	tData := r.Send("get", p.URI, nil, headers, query)
 
 	if err := xml.Unmarshal(tData.Body, &parsedTags); err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+
+	if parsedTags.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", parsedTags.Code, errorCodes[parsedTags.Code])
 	}
 
 	for _, t := range parsedTags.Tags {
@@ -197,23 +244,6 @@ func (p *PaloAlto) Tags() *Tags {
 		tags.Tags = append(tags.Tags, Tag{Name: tname, Color: tcolor, Comments: tcomments})
 	}
 
-	return &tags
+	return &tags, nil
 
-}
-
-// checkError handles any errors we get from our API requests. It returns either the
-// message of the error, if any, or nil.
-func (p *PaloAlto) checkError(resp []byte) error {
-	var reqError requestError
-
-	err := xml.Unmarshal(resp, &reqError)
-	if err != nil {
-		return err
-	}
-
-	if reqError.Message != "" {
-		return errors.New(reqError.Message)
-	}
-
-	return nil
 }
