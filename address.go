@@ -22,12 +22,12 @@ type Address struct {
 
 // AddressGroups contains a slice of all address groups.
 type AddressGroups struct {
-	XMLName xml.Name `xml:"response"`
-	Groups  []Group  `xml:"result>address-group>entry"`
+	XMLName xml.Name       `xml:"response"`
+	Groups  []AddressGroup `xml:"result>address-group>entry"`
 }
 
-// Group contains information about each individual address group.
-type Group struct {
+// AddressGroup contains information about each individual address group.
+type AddressGroup struct {
 	Name         string   `xml:"name,attr"`
 	StaticMember []string `xml:"static>member,omitempty"`
 }
@@ -35,6 +35,8 @@ type Group struct {
 // Addresses returns information about all of the address objects.
 func (p *PaloAlto) Addresses() *AddressObjects {
 	var addrs AddressObjects
+	r := rested.NewRequest()
+
 	// xpath := "/config/devices/entry/vsys/entry/address"
 	xpath := "/config/devices/entry//address"
 
@@ -43,16 +45,13 @@ func (p *PaloAlto) Addresses() *AddressObjects {
 		xpath = "/config/devices/entry//address"
 	}
 
-	addrOpts := &rested.Request{
-		Method: "get",
-		Query: map[string]string{
-			"type":   "config",
-			"action": "get",
-			"xpath":  xpath,
-			"key":    p.Key,
-		},
+	query := map[string]string{
+		"type":   "config",
+		"action": "get",
+		"xpath":  xpath,
+		"key":    p.Key,
 	}
-	addrData := rested.Send(p.URI, addrOpts)
+	addrData := r.Send("get", p.URI, nil, headers, query)
 
 	if err := xml.Unmarshal(addrData.Body, &addrs); err != nil {
 		fmt.Println(err)
@@ -64,6 +63,8 @@ func (p *PaloAlto) Addresses() *AddressObjects {
 // AddressGroups returns information about all of the address groups.
 func (p *PaloAlto) AddressGroups() *AddressGroups {
 	var groups AddressGroups
+	r := rested.NewRequest()
+
 	// xpath := "/config/devices/entry/vsys/entry/address-group"
 	xpath := "/config/devices/entry//address-group"
 
@@ -72,16 +73,13 @@ func (p *PaloAlto) AddressGroups() *AddressGroups {
 		xpath = "/config/devices/entry//address-group"
 	}
 
-	aGroupOpts := &rested.Request{
-		Method: "get",
-		Query: map[string]string{
-			"type":   "config",
-			"action": "get",
-			"xpath":  xpath,
-			"key":    p.Key,
-		},
+	query := map[string]string{
+		"type":   "config",
+		"action": "get",
+		"xpath":  xpath,
+		"key":    p.Key,
 	}
-	groupData := rested.Send(p.URI, aGroupOpts)
+	groupData := r.Send("get", p.URI, nil, headers, query)
 
 	if err := xml.Unmarshal(groupData.Body, &groups); err != nil {
 		fmt.Println(err)
