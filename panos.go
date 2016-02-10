@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/scottdware/go-rested"
+	"strings"
 )
 
 // PaloAlto is a container for our session state.
@@ -18,6 +19,7 @@ type PaloAlto struct {
 	Serial          string
 	SoftwareVersion string
 	DeviceType      string
+	Panorama        bool
 }
 
 // Tags contains information about all tags on the system.
@@ -60,6 +62,12 @@ type systemInfo struct {
 	SoftwareVersion string   `xml:"result>system>sw-version"`
 }
 
+// panoramaStatus gets the connection status to Panorama.
+type panoramaStatus struct {
+	XMLName xml.Name `xml:"response"`
+	Data    string   `xml:"result"`
+}
+
 // requestError contains information about any error we get from a request.
 type requestError struct {
 	XMLName xml.Name `xml:"response"`
@@ -94,6 +102,8 @@ var (
 func NewSession(host, user, passwd string) *PaloAlto {
 	var key authKey
 	var info systemInfo
+	var pan panoramaStatus
+	status := false
 	deviceType := "panos"
 	r := rested.NewRequest()
 
@@ -119,8 +129,22 @@ func NewSession(host, user, passwd string) *PaloAlto {
 		fmt.Println(err)
 	}
 
+	panStatus := r.Send("get", fmt.Sprintf("%s&key=%s&type=op&cmd=<show><panorama-status></panorama-status></show>", uri, key.Key), nil, nil, nil)
+	if panStatus.Error != nil {
+		fmt.Println(panStatus.Error)
+	}
+
+	err = xml.Unmarshal(panStatus.Body, &pan)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	if info.Platform == "m" {
 		deviceType = "panorama"
+	}
+
+	if strings.Contains(pan.Data, ": yes") {
+		status = true
 	}
 
 	return &PaloAlto{
@@ -132,19 +156,24 @@ func NewSession(host, user, passwd string) *PaloAlto {
 		Serial:          info.Serial,
 		SoftwareVersion: info.SoftwareVersion,
 		DeviceType:      deviceType,
+		Panorama:        status,
 	}
 }
 
+// Tags returns information about all tags on the system.
 func (p *PaloAlto) Tags() *Tags {
 	var parsedTags xmlTags
 	var tags Tags
+	xpath := "/config/devices/entry//tag"
+	// xpath := "/config/devices/entry/vsys/entry/tag"
 	r := rested.NewRequest()
 
-	// xpath := "/config/devices/entry/vsys/entry/address"
-	xpath := "/config/devices/entry//tag"
+	if p.DeviceType == "panos" && p.Panorama == true {
+		xpath = "/config/panorama//tag"
+	}
 
 	if p.DeviceType == "panorama" {
-		// xpath = "/config/devices/entry/device-group/entry/address"
+		// xpath = "/config/devices/entry/device-group/entry/tag"
 		xpath = "/config/devices/entry//tag"
 	}
 
