@@ -41,13 +41,18 @@ type requestError struct {
 	Message string   `xml:"msg>line,omitempty"`
 }
 
+var headers = map[string]string{
+	"Content-Type": "application/xml",
+}
+
 // NewSession sets up our connection to the Palo Alto firewall system.
 func NewSession(host, user, passwd string) *PaloAlto {
 	var key authKey
 	var info systemInfo
 	deviceType := "panos"
+	r := rested.NewRequest()
 
-	resp := rested.Send(fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd), nil)
+	resp := r.Send("get", fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd), nil, nil, nil)
 	if resp.Error != nil {
 		fmt.Println(resp.Error)
 	}
@@ -58,7 +63,7 @@ func NewSession(host, user, passwd string) *PaloAlto {
 	}
 
 	uri := fmt.Sprintf("https://%s/api/?", host)
-	getInfo := rested.Send(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key.Key), nil)
+	getInfo := r.Send("get", fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key.Key), nil, nil, nil)
 
 	if getInfo.Error != nil {
 		fmt.Println(getInfo.Error)
