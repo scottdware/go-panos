@@ -36,10 +36,13 @@ type ServiceGroup struct {
 // Services returns information about all of the address objects.
 func (p *PaloAlto) Services() *ServiceObjects {
 	var svcs ServiceObjects
+	xpath := "/config/devices/entry//service"
+	// xpath := "/config/devices/entry/vsys/entry/address"
 	r := rested.NewRequest()
 
-	// xpath := "/config/devices/entry/vsys/entry/address"
-	xpath := "/config/devices/entry//service"
+	if p.DeviceType == "panos" && p.Panorama == true {
+		xpath = "/config/panorama//service"
+	}
 
 	if p.DeviceType == "panorama" {
 		// xpath = "/config/devices/entry/device-group/entry/address"
@@ -64,10 +67,13 @@ func (p *PaloAlto) Services() *ServiceObjects {
 // ServiceGroups returns information about all of the service groups.
 func (p *PaloAlto) ServiceGroups() *ServiceGroups {
 	var groups ServiceGroups
+	xpath := "/config/devices/entry//service-group"
+	// xpath := "/config/devices/entry/vsys/entry/address-group"
 	r := rested.NewRequest()
 
-	// xpath := "/config/devices/entry/vsys/entry/address-group"
-	xpath := "/config/devices/entry//service-group"
+	if p.DeviceType == "panos" && p.Panorama == true {
+		xpath = "/config/panorama//service-group"
+	}
 
 	if p.DeviceType == "panorama" {
 		// xpath = "/config/devices/entry/device-group/entry/address-group"
