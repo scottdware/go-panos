@@ -15,8 +15,8 @@ type ServiceObjects struct {
 // Service contains information about each individual service object.
 type Service struct {
 	Name        string `xml:"name,attr"`
-	TCPPort     string `xml:"protocol>tcp>port"`
-	UDPPort     string `xml:"protocol>udp>port"`
+	TCPPort     string `xml:"protocol>tcp>port,omitempty"`
+	UDPPort     string `xml:"protocol>udp>port,omitempty"`
 	Description string `xml:"description,omitempty"`
 }
 
@@ -29,8 +29,8 @@ type ServiceGroups struct {
 // ServiceGroup contains information about each individual service group.
 type ServiceGroup struct {
 	Name        string   `xml:"name,attr"`
-	Description string   `xml:"description"`
 	Members     []string `xml:"members>member,omitempty"`
+	Description string   `xml:"description,omitempty"`
 }
 
 // Services returns information about all of the address objects.
