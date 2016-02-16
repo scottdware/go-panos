@@ -181,7 +181,7 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string) er
 	}
 
 	if reqError.Status != "success" {
-		return fmt.Errorf("error code %s: %s (%s)", reqError.Code, errorCodes[reqError.Code], reqError.Message)
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
 	}
 
 	return nil
