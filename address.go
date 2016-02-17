@@ -2,6 +2,7 @@ package panos
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"github.com/scottdware/go-rested"
 	"strings"
@@ -54,7 +55,8 @@ type xmlAddressGroup struct {
 	Description   string   `xml:"description,omitempty"`
 }
 
-// Addresses returns information about all of the address objects.
+// Addresses returns information about all of the address objects. When run against a Panorama device,
+// addresses from all device-groups are returned.
 func (p *PaloAlto) Addresses() (*AddressObjects, error) {
 	var addrs AddressObjects
 	xpath := "/config/devices/entry//address"
@@ -89,7 +91,8 @@ func (p *PaloAlto) Addresses() (*AddressObjects, error) {
 	return &addrs, nil
 }
 
-// AddressGroups returns information about all of the address groups.
+// AddressGroups returns information about all of the address groups. When run against a Panorama device,
+// address groups from all device-groups are returned.
 func (p *PaloAlto) AddressGroups() (*AddressGroups, error) {
 	var parsedGroups xmlAddressGroups
 	var groups AddressGroups
@@ -139,7 +142,7 @@ func (p *PaloAlto) AddressGroups() (*AddressGroups, error) {
 	return &groups, nil
 }
 
-// CreateAddress will add a new address object to they system. addrtype should be one of: ip, range, or fqdn.
+// CreateAddress will add a new address object to the device. addrtype should be one of: ip, range, or fqdn.
 func (p *PaloAlto) CreateAddress(name, addrtype, address, description string) error {
 	var xmlBody string
 	var xpath string
@@ -163,6 +166,10 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string) er
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
 	}
 
+	if p.DeviceType == "panorama" {
+		return errors.New("please use CreatePanoramaAddress() when connected to a Panorama device.")
+	}
+
 	query := map[string]string{
 		"type":    "config",
 		"action":  "set",
@@ -172,6 +179,132 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string) er
 	}
 
 	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreatePanoramaAddress will add a new address object in Panorama for the given device-group. addrtype should be one of: ip, range, or fqdn.
+func (p *PaloAlto) CreatePanoramaAddress(devicegroup, name, addrtype, address, description string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	switch addrtype {
+	case "ip":
+		xmlBody = fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
+	case "range":
+		xmlBody = fmt.Sprintf("<ip-range>%s</ip-range>", address)
+	case "fqdn":
+		xmlBody = fmt.Sprintf("<fqdn>%s</fqdn>", address)
+	}
+
+	if description != "" {
+		xmlBody += fmt.Sprintf("<description>%s</description>", description)
+	}
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		return errors.New("please use CreateAddress() when connected to a non-Panorama device.")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup, name)
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteAddress will remove an address object from the device.
+func (p *PaloAlto) DeleteAddress(name string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panorama" {
+		return errors.New("please use DeletePanoramaAddress() when connected to a Panorama device.")
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeletePanoramaAddress will remove an address object from the given device-group on Panorama.
+func (p *PaloAlto) DeletePanoramaAddress(devicegroup, name string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		return errors.New("please use DeleteAddress() when connected to a non-Panorama device.")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup, name)
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
 	if resp.Error != nil {
 		return resp.Error
 	}
