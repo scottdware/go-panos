@@ -21,6 +21,25 @@ type PaloAlto struct {
 	Panorama        bool
 }
 
+// DeviceGroups lists all of the device-group's in Panorama.
+type DeviceGroups struct {
+	XMLName      xml.Name      `xml:"response"`
+	Status       string        `xml:"status,attr"`
+	Code         string        `xml:"code,attr"`
+	DeviceGroups []DeviceGroup `xml:"result>device-group>entry"`
+}
+
+// DeviceGroup contains information about each individual device-group.
+type DeviceGroup struct {
+	Name    string   `xml:"name,attr"`
+	Devices []Serial `xml:"devices>entry"`
+}
+
+// Serial contains the serial number of each device in the device-group.
+type Serial struct {
+	Serial string `xml:"name,attr"`
+}
+
 // Tags contains information about all tags on the system.
 type Tags struct {
 	Tags []Tag
@@ -201,6 +220,37 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 		DeviceType:      deviceType,
 		Panorama:        status,
 	}, nil
+}
+
+// DeviceGroups returns information about all of the device-groups in Panorama.
+func (p *PaloAlto) DeviceGroups() (*DeviceGroups, error) {
+	var devices DeviceGroups
+	var xpath string
+	// xpath := "/config/devices/entry/vsys/entry/address"
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panorama" {
+		// xpath = "/config/devices/entry/device-group/entry/address"
+		xpath = "/config/devices/entry//device-group"
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "get",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+	devData := r.Send("get", p.URI, nil, headers, query)
+
+	if err := xml.Unmarshal(devData.Body, &devices); err != nil {
+		return nil, err
+	}
+
+	if devices.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", devices.Code, errorCodes[devices.Code])
+	}
+
+	return &devices, nil
 }
 
 // Tags returns information about all tags on the system.
