@@ -1,4 +1,4 @@
-// Package panos interacts with Palo Alto firewalls using the REST API.
+// Package panos interacts with Palo Alto and Panorama devices using the XML API.
 package panos
 
 import (
