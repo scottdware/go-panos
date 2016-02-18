@@ -8,10 +8,10 @@ Be sure to visit the [GoDoc][godoc-go-panos] page for official package documenta
 
 ### Examples
 
-* Listing objects (address, service, device-groups, tags, etc.)[listing-objects]
-* Creating objects[creating-objects]
-* Deleting objects[deleting-objects]
-* Commiting configurations[commiting-configurations]
+* [Listing objects (address, service, device-groups, tags, etc.)][listing-objects]
+* [Creating objects][creating-objects]
+* [Deleting objects][deleting-objects]
+* [Commiting configurations][commiting-configurations]
 
 #### Listing Objects
 
