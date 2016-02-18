@@ -167,7 +167,7 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string) er
 	}
 
 	if p.DeviceType == "panorama" {
-		return errors.New("please use CreatePanoramaAddress() when connected to a Panorama device.")
+		return errors.New("please use CreatePanoramaAddress() when connected to a Panorama device")
 	}
 
 	query := map[string]string{
@@ -215,7 +215,7 @@ func (p *PaloAlto) CreatePanoramaAddress(devicegroup, name, addrtype, address, d
 	}
 
 	if p.DeviceType == "panos" && p.Panorama == false {
-		return errors.New("please use CreateAddress() when connected to a non-Panorama device.")
+		return errors.New("please use CreateAddress() when connected to a non-Panorama device")
 	}
 
 	if p.DeviceType == "panorama" {
@@ -257,7 +257,7 @@ func (p *PaloAlto) DeleteAddress(name string) error {
 	}
 
 	if p.DeviceType == "panorama" {
-		return errors.New("please use DeletePanoramaAddress() when connected to a Panorama device.")
+		return errors.New("please use DeletePanoramaAddress() when connected to a Panorama device")
 	}
 
 	query := map[string]string{

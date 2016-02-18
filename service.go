@@ -134,7 +134,7 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string) error
 	}
 
 	if p.DeviceType == "panorama" {
-		return errors.New("please use CreatePanoramaService() when connected to a Panorama device.")
+		return errors.New("please use CreatePanoramaService() when connected to a Panorama device")
 	}
 
 	query := map[string]string{
