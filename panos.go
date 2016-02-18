@@ -298,17 +298,61 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 
 }
 
-// Commit issues a commit on the device. When issuing a commit against a Panorama device, the configuration
-// will only be committed to Panorama, and not specific device groups.
+// Commit issues a commit on the device. When issuing a commit against a Panorama device,
+// the configuration will only be committed to Panorama, and not an individual device-group.
 func (p *PaloAlto) Commit() error {
 	var reqError requestError
-	cmd := "<commit></commit>"
 	r := rested.NewRequest()
 
 	query := map[string]string{
 		"type": "commit",
-		"cmd":  cmd,
+		"cmd":  "<commit></commit>",
 		"key":  p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CommitAll issues a commit to a Panorama device, with the given 'devicegroup.' You can (optionally) specify
+// individual devices within that device group by adding each serial number as an additional parameter.
+func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
+	var reqError requestError
+	var cmd string
+
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panorama" && len(devices) <= 0 {
+		cmd = fmt.Sprintf("<commit-all><shared-policy><device-group><name>%s</name></device-group></shared-policy></commit-all>", devicegroup)
+	}
+
+	if p.DeviceType == "panorama" && len(devices) > 0 {
+		cmd = fmt.Sprintf("<commit-all><shared-policy><device-group><name>%s</name><devices>", devicegroup)
+
+		for _, d := range devices {
+			cmd += fmt.Sprintf("<entry name=\"%s\"/>", d)
+		}
+
+		cmd += "</devices></device-group></shared-policy></commit-all>"
+	}
+
+	query := map[string]string{
+		"type":   "commit",
+		"action": "all",
+		"cmd":    cmd,
+		"key":    p.Key,
 	}
 
 	resp := r.Send("get", p.URI, nil, nil, query)
