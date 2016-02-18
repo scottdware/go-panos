@@ -6,6 +6,8 @@ A Go package that interacts with Palo Alto and Panorama devices using the XML AP
 
 Be sure to visit the [GoDoc][godoc-go-panos] page for official package documentation.
 
+> Note: The below examples are a work-in-progress :)
+
 ### Examples
 
 * [Connecting to a device][connecting-to-a-device]
