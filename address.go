@@ -290,7 +290,7 @@ func (p *PaloAlto) DeletePanoramaAddress(devicegroup, name string) error {
 	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" && p.Panorama == false {
-		return errors.New("please use DeleteAddress() when connected to a non-Panorama device.")
+		return errors.New("please use DeleteAddress() when connected to a non-Panorama device")
 	}
 
 	if p.DeviceType == "panorama" {
