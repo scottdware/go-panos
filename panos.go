@@ -298,7 +298,8 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 
 }
 
-// Commit issues a commit on the device.
+// Commit issues a commit on the device. When issuing a commit against a Panorama device, the configuration
+// will only be committed to Panorama, and not specific device groups.
 func (p *PaloAlto) Commit() error {
 	var reqError requestError
 	cmd := "<commit></commit>"
