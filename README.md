@@ -98,6 +98,22 @@ for _, sg := range svcGroups.Groups {
 }
 ```
 
+* List all device-groups on a Panorama device:
+
+> Note: Devices (serial numbers) are in a string slice (`[]string`), so to iterate over them you can just do another loop.
+
+```Go
+devGroups, _ := pa.DeviceGroups()
+
+for _, d := range devGroups.Groups {
+    fmt.Println(d.Name)
+    for _, serial := range d.Devices {
+        fmt.Println(serial)
+    }
+}
+
+```
+
 * List all tags:
 
 ```Go
@@ -114,15 +130,70 @@ for _, t := range tags.Tags{
 
 * Create address objects:
 
+The `CreateAddress()` function takes 4 parameters: `name`, `address type`, `address` and an (optional) `description`. When
+creating an address object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
+
+
 > Note: The second parameter is the address type. It can be one of `ip`, `range` or `fqdn`.
 
 ```Go
 pa.CreateAddress("fqdn-object", "fqdn", "sdubs.org", "My personal website")
 pa.CreateAddress("Apple-subnet", "ip", "17.0.0.0/8", "")
+pa.CreateAddress("IP-range", "range", "192.168.1.1-192.168.1.20", "IP address range")
 ```
+
+When creating an address or service on a Panorama device, specify the desired device-group as the 
+last parameter, like so:
+
+```Go
+pa.CreateAddress("panorama-IP-object", "ip", "10.1.1.5", "", "Lab-Devices")
+```
+
+* Create service objects:
+
+The `CreateService()` function takes 4 parameters: `name`, `protocol`, `port` and an (optional) `description`. When
+creating a service object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
+
+> Note: The third parameter is the port number(s). Port can be a single port #, range (1-65535), or comma separated (80, 8080, 443).
+
+```Go
+pa.CreateService("proxy-ports", "tcp", "8080,80,443", "")
+pa.CreateService("misc-udp", "udp", "10001-10050", "Random UDP ports")
+```
+
+Just like creating address objects on Panorama, the same applies to service objects:
+
+```Go
+pa.CreateAddress("panorama-ports", "tcp", "8000-9000", "Misc TCP ports", "Lab-Devices")
+```
+
 #### Deleting Objects
 
+Deleting objects is just as easy as creating them. Just specify the object name, and if deleting objects from Panorama,
+specify the device-group as the last/2nd parameter.
+
+```Go
+pa.DeleteAddress("fqdn-object")
+pa.DeleteService("proxy-ports")
+pa.DeleteAddress("some-panorama-IP", "Lab-Device-Group")
+```
+
 #### Commiting Configurations
+
+There are two commit functions: `Commit()` and `CommitAll()`. Commit issues a normal commit on the device. When issuing a commit against a Panorama device,
+the configuration will only be committed to Panorama, and not an individual device-group.
+
+Using `CommitAll()` will only work on a Panorama device, and you have to specify the device-group you want to commit the configuration to, and you can
+also selectively commit to certain devices within that device group.
+
+```Go
+pa.Commit()
+pa.CommitAll("Lab-Device-Group")
+
+// Commit to only 2 devices in a device group - you MUST use their serial numbers
+
+pa.CommitAll("Lab-Device-Group", "1093822222", "1084782033")
+```
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
