@@ -30,6 +30,7 @@ if err != nil {
 Once you are connected, some basic information about the firewall/session is established and returned in the `PaloAlto` struct. The fields are as follows:
 
 |Field|Description|
+|-----|-----------|
 |Host|Hostname/IP of the device.|
 |Key|Encrypted key for API access.|
 |URI|The base URI that all API calls will use.|
