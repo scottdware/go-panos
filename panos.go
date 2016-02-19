@@ -3,6 +3,7 @@ package panos
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"github.com/scottdware/go-rested"
 	"strings"
@@ -106,24 +107,26 @@ var (
 	headers = map[string]string{
 		"Content-Type": "application/xml",
 	}
+
 	tagColors = map[string]string{
-		"color1":  "Red",
-		"color2":  "Green",
-		"color3":  "Blue",
-		"color4":  "Yellow",
-		"color5":  "Copper",
-		"color6":  "Orange",
-		"color7":  "Purple",
-		"color8":  "Gray",
-		"color9":  "Light Green",
-		"color10": "Cyan",
-		"color11": "Light Gray",
-		"color12": "Blue Gray",
-		"color13": "Lime",
-		"color14": "Black",
-		"color15": "Gold",
-		"color16": "Brown",
+		"Red":         "color1",
+		"Green":       "color2",
+		"Blue":        "color3",
+		"Yellow":      "color4",
+		"Copper":      "color5",
+		"Orange":      "color6",
+		"Purple":      "color7",
+		"Gray":        "color8",
+		"Light Green": "color9",
+		"Cyan":        "color10",
+		"Light Gray":  "color11",
+		"Blue Gray":   "color12",
+		"Lime":        "color13",
+		"Black":       "color14",
+		"Gold":        "color15",
+		"Brown":       "color16",
 	}
+
 	errorCodes = map[string]string{
 		"400": "Bad request - Returned when a required parameter is missing, an illegal parameter value is used",
 		"403": "Forbidden - Returned for authentication or authorization errors including invalid key, insufficient admin access rights",
@@ -257,6 +260,7 @@ func (p *PaloAlto) DeviceGroups() (*DeviceGroups, error) {
 func (p *PaloAlto) Tags() (*Tags, error) {
 	var parsedTags xmlTags
 	var tags Tags
+	var tcolor string
 	xpath := "/config/devices/entry//tag"
 	// xpath := "/config/devices/entry/vsys/entry/tag"
 	r := rested.NewRequest()
@@ -288,7 +292,12 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 
 	for _, t := range parsedTags.Tags {
 		tname := t.Name
-		tcolor := tagColors[t.Color]
+		for k, v := range tagColors {
+			if t.Color == v {
+				tcolor = k
+			}
+		}
+		// tcolor := tagColors[t.Color]
 		tcomments := t.Comments
 
 		tags.Tags = append(tags.Tags, Tag{Name: tname, Color: tcolor, Comments: tcomments})
@@ -296,6 +305,99 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 
 	return &tags, nil
 
+}
+
+// CreateTag will add a new tag to the device. You can use the following colors: Red, Green, Blue, Yellow, Copper,
+// Orange, Purple, Gray, Light Green, Cyan, Light Gray, Blue Gray, Lime, Black, Gold, Brown. If creating a tag on a
+// Panorama device, then specify the given device-group name as the last parameter.
+func (p *PaloAlto) CreateTag(name, color, comments string, devicegroup ...string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	xmlBody = fmt.Sprintf("<color>%s</color>", tagColors[color])
+
+	if comments != "" {
+		xmlBody += fmt.Sprintf("<comments>%s</comments>", comments)
+	}
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteTag will remove a tag from the device. If deleting a tag on a
+// Panorama device, then specify the given device-group name as the last parameter.
+func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
 }
 
 // Commit issues a commit on the device. When issuing a commit against a Panorama device,
