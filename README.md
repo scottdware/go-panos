@@ -30,15 +30,15 @@ if err != nil {
 Once you are connected, some basic information about the firewall/session is established and returned in the `PaloAlto` struct. The fields are as follows:
 
 |Field|Description|
-|-----|-----------|
 |Host|Hostname/IP of the device.|
-|----|--------------------------|
 |Key|Encrypted key for API access.|
-|---|-----------------------------|
 |URI|The base URI that all API calls will use.|
-|---|-----------------------------------------|
 |Platform|Hardware platform of the device.|
-|--------|--------------------------------|
+|Model|Model number of the device.|
+|Serial|Serial number of the device.|
+|SoftwareVersion|Software version currently active on the device.|
+|DeviceType|Type of device, i.e. "panorama" or "panos".|
+|Panorama|A boolean (true/false) field that determines if the device is/isn't Panorama.| 
 
 You can view it like so:
 
