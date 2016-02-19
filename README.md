@@ -306,6 +306,7 @@ pa.DeleteService("proxy-ports")
 pa.DeleteAddress("some-panorama-IP", "Lab-Device-Group")
 pa.DeleteAddressGroup("Addr-Group-Name")
 pa.DeleteAddressGroup("Panorama-address-group", "Lab-Device-Group")
+pa.DeleteServiceGroup("web-browsing-ports")
 pa.DeleteTag("server-tag")
 pa.DeleteTag("server-tag", "Lab-Device-Group")
 ```
