@@ -55,6 +55,8 @@ fmt.Printf("Panorama Connection: %t\n", pa.Panorama)
 
 #### Listing Objects
 
+##### Address Objects and Groups
+
 To list all address objects, use the `Addresses()` function. The fields returned are as follows: 
 
 > Note: Some of these fields will be empty based on the type of address returned.
@@ -102,6 +104,8 @@ for _, ag := range addrGroups.Groups {
 }
 ```
 
+##### Service Objects and Groups
+
 To list all service objects, use the `Services()` function. The fields returned are as follows:
 
 > Note: Some fields might be empty based on they type of service returned.
@@ -145,6 +149,8 @@ for _, sg := range svcGroups.Groups {
 }
 ```
 
+##### Device Groups
+
 To list all device-groups on a Panorama device, use the `DeviceGroups()` function. The fields returned are as follows:
 
 |Field|Description|
@@ -166,6 +172,8 @@ for _, d := range devGroups.Groups {
 
 ```
 
+##### Tags
+
 To list all tags, use the `Tags()` function. The fields returned are as follows:
 
 |Field|Description|
@@ -186,6 +194,8 @@ for _, t := range tags.Tags{
 
 #### Creating Objects
 
+##### Addresses
+
 The `CreateAddress()` function takes 4 parameters: `name`, `address type`, `address` and an (optional) `description`. When
 creating an address object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
 
@@ -204,6 +214,8 @@ last parameter, like so:
 ```Go
 pa.CreateAddress("panorama-IP-object", "ip", "10.1.1.5", "", "Lab-Devices")
 ```
+
+##### Services
 
 The `CreateService()` function takes 4 parameters: `name`, `protocol`, `port` and an (optional) `description`. When
 creating a service object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
