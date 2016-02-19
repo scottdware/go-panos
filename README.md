@@ -27,7 +27,20 @@ if err != nil {
 }
 ```
 
-Once you are connected, some basic information about the firewall/session is established. You can view it like so:
+Once you are connected, some basic information about the firewall/session is established and returned in the `PaloAlto` struct. The fields are as follows:
+
+|Field|Description|
+|-----|-----------|
+|Host|Hostname/IP of the device.|
+|----|--------------------------|
+|Key|Encrypted key for API access.|
+|---|-----------------------------|
+|URI|The base URI that all API calls will use.|
+|---|-----------------------------------------|
+|Platform|Hardware platform of the device.|
+|--------|--------------------------------|
+
+You can view it like so:
 
 ```Go
 fmt.Printf("Host: %s\n", pa.Host)
@@ -180,18 +193,19 @@ pa.DeleteAddress("some-panorama-IP", "Lab-Device-Group")
 
 #### Commiting Configurations
 
-There are two commit functions: `Commit()` and `CommitAll()`. Commit issues a normal commit on the device. When issuing a commit against a Panorama device,
+There are two commit functions: `Commit()` and `CommitAll()`. Commit issues a normal commit on the device. When issuing `Commit()` against a Panorama device,
 the configuration will only be committed to Panorama, and not an individual device-group.
 
-Using `CommitAll()` will only work on a Panorama device, and you have to specify the device-group you want to commit the configuration to, and you can
-also selectively commit to certain devices within that device group.
+Using `CommitAll()` will only work on a Panorama device, and you have to specify the device-group you want to commit the configuration to. You can
+also selectively commit to certain devices within that device group by adding their serial numbers as additional parameters.
 
 ```Go
 pa.Commit()
+
+// CommitAll will commit the configuration to the given device-group, and all of it's devices.
 pa.CommitAll("Lab-Device-Group")
 
 // Commit to only 2 devices in a device group - you MUST use their serial numbers
-
 pa.CommitAll("Lab-Device-Group", "1093822222", "1084782033")
 ```
 
