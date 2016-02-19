@@ -23,10 +23,10 @@ type PaloAlto struct {
 
 // DeviceGroups lists all of the device-group's in Panorama.
 type DeviceGroups struct {
-	XMLName      xml.Name      `xml:"response"`
-	Status       string        `xml:"status,attr"`
-	Code         string        `xml:"code,attr"`
-	DeviceGroups []DeviceGroup `xml:"result>device-group>entry"`
+	XMLName xml.Name      `xml:"response"`
+	Status  string        `xml:"status,attr"`
+	Code    string        `xml:"code,attr"`
+	Groups  []DeviceGroup `xml:"result>device-group>entry"`
 }
 
 // DeviceGroup contains information about each individual device-group.
