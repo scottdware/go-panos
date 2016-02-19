@@ -162,6 +162,58 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 	return nil
 }
 
+// CreateServiceGroup will create a new service group on the device. If creating a service group on
+// a Panorama device, then specify the given device-group name as the last parameter.
+func (p *PaloAlto) CreateServiceGroup(name string, members []string, devicegroup ...string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	xmlBody = "<members>"
+
+	for _, m := range members {
+		xmlBody += fmt.Sprintf("<member>%s</member>", m)
+	}
+
+	xmlBody += "</members>"
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // DeleteService will remove a service object from the device. If deleting a service object on a
 // Panorama device, then specify the given device-group name as the last parameter.
 func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
@@ -175,6 +227,48 @@ func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
 
 	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteServiceGroup will remove a service group from the device. If deleting a service group on a
+// Panorama device, then specify the given device-group name as the last parameter.
+func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], name)
 	}
 
 	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
