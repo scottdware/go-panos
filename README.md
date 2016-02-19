@@ -27,7 +27,7 @@ if err != nil {
 }
 ```
 
-Once you are connected, some basic information about the firewall/session is established and returned in the `PaloAlto` struct. The fields are as follows:
+Once you are connected, some basic information about the firewall/session is established. The fields returned are as follows:
 
 |Field|Description|
 |-----|-----------|
@@ -38,10 +38,8 @@ Once you are connected, some basic information about the firewall/session is est
 |Model|Model number of the device.|
 |Serial|Serial number of the device.|
 |SoftwareVersion|Software version currently active on the device.|
-|DeviceType|Type of device, i.e. "panorama" or "panos".|
+|DeviceType|Type of device, i.e. "panorama" or "panos."|
 |Panorama|A boolean (true/false) field that determines if the device is/isn't Panorama.| 
-
-You can view it like so:
 
 ```Go
 fmt.Printf("Host: %s\n", pa.Host)
@@ -57,7 +55,17 @@ fmt.Printf("Panorama Connection: %t\n", pa.Panorama)
 
 #### Listing Objects
 
-* List all address objects:
+To list all address objects, use the `Addresses()` function. The fields returned are as follows: 
+
+> Note: Some of these fields will be empty based on the type of address returned.
+
+|Field|Description|
+|-----|-----------|
+|Name|Name of the object.|
+|IPAddress|IP/network of the object.|
+|IPRange|IP range of the object.|
+|FQDN|Fully qualified domain name of the object.|
+|Description|Description of the object, if available.|
 
 ```Go
 addrs, _ := pa.Addresses()
@@ -71,7 +79,15 @@ for _, a := range addrs.Addresses {
 }
 ```
 
-* List all address groups:
+To list all address group objects, use the `AddressGroups()` function. The fields returned are as follows:
+
+|Field|Description|
+|-----|-----------|
+|Name|Name of the group.|
+|Type|Type of address group, i.e. "Static" or "Dynamic."|
+|DynamicFilter|The filter for the dynamic address group.|
+|Members|Address objects that belong to the group.|
+|Description|Description of the group, if available.|
 
 > Note: Members are in a string slice (`[]string`), so to iterate over them you can just do another loop.
 
@@ -86,7 +102,16 @@ for _, ag := range addrGroups.Groups {
 }
 ```
 
-* List all service objects:
+To list all service objects, use the `Services()` function. The fields returned are as follows:
+
+> Note: Some fields might be empty based on they type of service returned.
+
+|Field|Description|
+|-----|-----------|
+|Name|Name of the object.|
+|TCPPort|TCP port(s) of the object.|
+|UDPPort|UDP port(s) of the object.|
+|Description|Description of the object, if available.|
 
 ```Go
 svcs, _ := pa.Services()
@@ -99,7 +124,15 @@ for _, s := range svcs.Services {
 }
 ```
 
-* List all service groups:
+To list all service groups, use the `ServiceGroups()` function. The fields returned are as follows:
+
+|Field|Description|
+|-----|-----------|
+|Name|Name of the object.|
+|Members|Service objects that belong to the group.|
+|Description|Description of the object, if available.|
+
+> Note: Members are in a string slice (`[]string`), so to iterate over them you can just do another loop.
 
 ```Go
 svcGroups, _ := pa.ServiceGroups()
@@ -112,7 +145,12 @@ for _, sg := range svcGroups.Groups {
 }
 ```
 
-* List all device-groups on a Panorama device:
+To list all device-groups on a Panorama device, use the `DeviceGroups()` function. The fields returned are as follows:
+
+|Field|Description|
+|-----|-----------|
+|Name|Name of the object.|
+|Devices|Individual devices that belong to the device-group.|
 
 > Note: Devices (serial numbers) are in a string slice (`[]string`), so to iterate over them you can just do another loop.
 
@@ -128,7 +166,13 @@ for _, d := range devGroups.Groups {
 
 ```
 
-* List all tags:
+To list all tags, use the `Tags()` function. The fields returned are as follows:
+
+|Field|Description|
+|-----|-----------|
+|Name|Name of the tag.|
+|Color|Color of the tag, i.e. "Blue" or "Cyan."|
+|Comments|Description of the tag, if available.|
 
 ```Go
 tags, _ := pa.Tags()
@@ -141,8 +185,6 @@ for _, t := range tags.Tags{
 ```
 
 #### Creating Objects
-
-* Create address objects:
 
 The `CreateAddress()` function takes 4 parameters: `name`, `address type`, `address` and an (optional) `description`. When
 creating an address object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
@@ -162,8 +204,6 @@ last parameter, like so:
 ```Go
 pa.CreateAddress("panorama-IP-object", "ip", "10.1.1.5", "", "Lab-Devices")
 ```
-
-* Create service objects:
 
 The `CreateService()` function takes 4 parameters: `name`, `protocol`, `port` and an (optional) `description`. When
 creating a service object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
