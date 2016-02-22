@@ -650,7 +650,7 @@ func (p *PaloAlto) RemoveTag(object, tag string, devicegroup ...string) error {
 	for _, a := range adObj.Addresses {
 		if object == a.Name {
 			if p.DeviceType == "panos" && p.Panorama == false {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag/memeber[text()='%s']", object, tag)
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				query["xpath"] = xpath
 
