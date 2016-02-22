@@ -155,7 +155,7 @@ var (
 	}
 )
 
-// NewSession sets up our connection to the Palo Alto firewall system.
+// NewSession sets up our connection to the Palo Alto firewall or Panorama device.
 func NewSession(host, user, passwd string) (*PaloAlto, error) {
 	var key authKey
 	var info systemInfo
