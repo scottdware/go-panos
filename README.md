@@ -15,7 +15,7 @@ Be sure to visit the [GoDoc][godoc-go-panos] page for official package documenta
 * [Creating objects][creating-objects]
 * [Deleting objects][deleting-objects]
 * [Applying/removing tags from objects][tagging-objects]
-* [Adding/removing objects from groups][modifying-groups]
+* [Modifying groups (address, service, etc.)][modifying-groups]
 * [Commiting configurations][commiting-configurations]
 
 #### Connecting to a Device
