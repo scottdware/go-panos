@@ -14,6 +14,7 @@ Be sure to visit the [GoDoc][godoc-go-panos] page for official package documenta
 * [Listing objects (address, service, device-groups, tags, etc.)][listing-objects]
 * [Creating objects][creating-objects]
 * [Deleting objects][deleting-objects]
+* [Applying/removing tags from objects][tagging-objects]
 * [Commiting configurations][commiting-configurations]
 
 #### Connecting to a Device
@@ -311,6 +312,36 @@ pa.DeleteTag("server-tag")
 pa.DeleteTag("server-tag", "Lab-Device-Group")
 ```
 
+#### Tagging Objects
+
+You can apply tags to address and service objects by using the `TagObject()` function. It takes two parameters: `object` and `tag`. 
+When tagging an object on a Panorama device, you must specify the `device-group` to create the object in as the last/3rd parameter.
+
+`tag` can have multiple values, and they must be separated by a comma, i.e. `"server-tag, lab, warehouse"`. If you have multiple objects with
+the same name, then all of them that match will have the tag(s) applied.
+
+```Go
+pa.TagObject("fqdn-object", "web")
+
+// Use multiple tags on an object
+pa.TagObject("proxy-ports", "internet, web, proxy")
+
+// Tag a Panorama object
+pa.TagObject("server-farm", "servers, virtual", "Production-Device-Group")
+```
+
+##### Removing Tags
+
+To remove a tag from an object, use the `RemoveTag()` function. This function takes two parameters: `object` and `tag`. You can only remove a
+single tag at a time. When removing a tag from an object on a Panorama device, you must specify the `device-group` to create the object in as the last/3rd parameter.
+
+```Go
+pa.RemoveTag("fqdn-object", "web")
+
+// Remove tag from a Panorama object
+pa.RemoveTag("server-farm", "servers", "Production-Device-Group")
+```
+
 #### Commiting Configurations
 
 There are two commit functions: `Commit()` and `CommitAll()`. Commit issues a normal commit on the device. When issuing `Commit()` against a Panorama device,
@@ -336,3 +367,4 @@ pa.CommitAll("Lab-Device-Group", "1093822222", "1084782033")
 [creating-objects]: https://github.com/scottdware/go-panos#creating-objects
 [deleting-objects]: https://github.com/scottdware/go-panos#deleting-objects
 [commiting-configurations]: https://github.com/scottdware/go-panos#commiting-configurations
+[tagging-objects]: https://github.com/scottdware/go-panos#tagging-objects
