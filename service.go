@@ -168,18 +168,21 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 
 // CreateServiceGroup will create a new service group on the device. If creating a service group on
 // a Panorama device, then specify the given device-group name as the last parameter.
-func (p *PaloAlto) CreateServiceGroup(name string, members []string, devicegroup ...string) error {
+func (p *PaloAlto) CreateServiceGroup(name, members string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
 	r := rested.NewRequest()
+	m := strings.Split(members, ",")
+
+	if members == "" {
+		return errors.New("you cannot create a service group without any members")
+	}
 
 	xmlBody = "<members>"
-
 	for _, m := range members {
 		xmlBody += fmt.Sprintf("<member>%s</member>", m)
 	}
-
 	xmlBody += "</members>"
 
 	if p.DeviceType == "panos" && p.Panorama == false {

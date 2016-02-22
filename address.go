@@ -201,18 +201,21 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, de
 
 // CreateStaticGroup will create a new static address group on the device. If creating an address group on
 // a Panorama device, then specify the given device-group name as the last parameter.
-func (p *PaloAlto) CreateStaticGroup(name string, members []string, description string, devicegroup ...string) error {
+func (p *PaloAlto) CreateStaticGroup(name, members, description string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
 	r := rested.NewRequest()
+	m := strings.Split(members, ",")
 
-	xmlBody = "<static>"
-
-	for _, m := range members {
-		xmlBody += fmt.Sprintf("<member>%s</member>", m)
+	if members == "" {
+		return errors.New("you cannot create a static address group without any members")
 	}
 
+	xmlBody = "<static>"
+	for _, member := range m {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(member))
+	}
 	xmlBody += "</static>"
 
 	if description != "" {
@@ -263,6 +266,10 @@ func (p *PaloAlto) CreateDynamicGroup(name, criteria, description string, device
 	var xpath string
 	var reqError requestError
 	r := rested.NewRequest()
+
+	if criteria == "" {
+		return errors.New("you cannot create a dynamic address group without any filter")
+	}
 
 	if description != "" {
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
