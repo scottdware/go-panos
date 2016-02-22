@@ -922,3 +922,80 @@ func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 
 	return nil
 }
+
+// ModifyGroup will add or remove objects from the specified group type (i.e., "address" or "service"). Action must be either
+// "add" or "remove". When modifying a group on a Panorama device, you must specify the device-group as the last parameter.
+func (p *PaloAlto) ModifyGroup(objecttype, action, object, group string, devicegroup ...string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	query := map[string]string{
+		"type": "config",
+		"key":  p.Key,
+	}
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		if action == "add" {
+			xmlBody = fmt.Sprintf("<member>%s</member>", object)
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/static", group)
+			if objecttype == "service" {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/members", group)
+			}
+			query["action"] = "set"
+			query["element"] = xmlBody
+			query["xpath"] = xpath
+		}
+
+		if action == "remove" {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/static/member[text()='%s']", group, object)
+			if objecttype == "service" {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/members/member[text()='%s']", group, object)
+			}
+			query["action"] = "delete"
+			query["xpath"] = xpath
+		}
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		if action == "add" {
+			xmlBody = fmt.Sprintf("<member>%s</member>", object)
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/static", devicegroup[0], group)
+			if objecttype == "service" {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/members", devicegroup[0], group)
+			}
+			query["action"] = "set"
+			query["element"] = xmlBody
+			query["xpath"] = xpath
+		}
+
+		if action == "remove" {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/static/member[text()='%s']", devicegroup[0], group, object)
+			if objecttype == "service" {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/members/member[text()='%s']", devicegroup[0], group, object)
+			}
+			query["action"] = "delete"
+			query["xpath"] = xpath
+		}
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
