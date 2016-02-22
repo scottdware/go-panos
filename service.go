@@ -130,6 +130,10 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", name)
+	}
+
 	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], name)
 	}
