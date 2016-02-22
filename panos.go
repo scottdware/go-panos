@@ -404,7 +404,7 @@ func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 // by separating them with a comma, i.e. "servers, vm". If you have address/service objects with the same
 // name, then the tag(s) will be applied to all that match. When tagging an object on a Panorama device, specify
 // the given device-group name as the last parameter.
-func (p *PaloAlto) ApplyTag(object, tag string, devicegroup ...string) error {
+func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 	r := rested.NewRequest()
@@ -632,7 +632,7 @@ func (p *PaloAlto) ApplyTag(object, tag string, devicegroup ...string) error {
 
 // RemoveTag will remove a single tag from an address/service object. If deleting a tag from an object on a
 // Panorama device, then specify the given device-group name as the last parameter.
-func (p *PaloAlto) RemoveTag(object, tag string, devicegroup ...string) error {
+func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 	r := rested.NewRequest()
