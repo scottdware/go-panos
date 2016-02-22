@@ -15,6 +15,7 @@ Be sure to visit the [GoDoc][godoc-go-panos] page for official package documenta
 * [Creating objects][creating-objects]
 * [Deleting objects][deleting-objects]
 * [Applying/removing tags from objects][tagging-objects]
+* [Adding/removing objects from groups][modifying-groups]
 * [Commiting configurations][commiting-configurations]
 
 #### Connecting to a Device
@@ -342,6 +343,24 @@ pa.RemoveTag("fqdn-object", "web")
 pa.RemoveTag("server-farm", "servers", "Production-Device-Group")
 ```
 
+#### Modifying Groups
+
+To modify an address or service group, which includes adding/removing members...you can use the `ModifyGroup()` function, which takes 4 parameters: `objecttype`, 
+`action`, `object` and `group`. When modifying a group object on a Panorama device, you must specify the `device-group` to create the object in as the last/5th parameter.
+
+* `objecttype` is one of: "address" or "service"
+* `action` is one of: "add" or "remove"
+
+`object` and `group` are the names of the objects, respectively.
+
+```Go
+pa.ModifyGroup("address", "add", "ip-range", "Corporate-Subnets")
+pa.ModifyGroup("service", "remove", "proxy-ports", "Web-Browsing")
+
+// Modify a group on a Panorama device
+pa.ModifyGroup("address", "add", "my-laptop", "Security-Folks", "Panorama-Device-Group")
+```
+
 #### Commiting Configurations
 
 There are two commit functions: `Commit()` and `CommitAll()`. Commit issues a normal commit on the device. When issuing `Commit()` against a Panorama device,
@@ -368,3 +387,4 @@ pa.CommitAll("Lab-Device-Group", "1093822222", "1084782033")
 [deleting-objects]: https://github.com/scottdware/go-panos#deleting-objects
 [commiting-configurations]: https://github.com/scottdware/go-panos#commiting-configurations
 [tagging-objects]: https://github.com/scottdware/go-panos#tagging-objects
+[modifying-groups]: https://github.com/scottdware/go-panos#modifying-groups
