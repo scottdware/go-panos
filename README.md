@@ -16,6 +16,7 @@ Be sure to visit the [GoDoc][godoc-go-panos] page for official package documenta
 * [Deleting objects][deleting-objects]
 * [Applying/removing tags from objects][tagging-objects]
 * [Modifying groups (address, service, etc.)][modifying-groups]
+* [Renaming objects][renaming-objects]
 * [Commiting configurations][commiting-configurations]
 
 #### Connecting to a Device
@@ -199,7 +200,7 @@ for _, t := range tags.Tags{
 ##### Addresses
 
 The `CreateAddress()` function takes 4 parameters: `name`, `address type`, `address` and an (optional) `description`. When
-creating an address object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
+creating an address object on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
 
 > Note: The second parameter is the address type. It can be one of `ip`, `range` or `fqdn`.
@@ -220,7 +221,7 @@ pa.CreateAddress("panorama-IP-object", "ip", "10.1.1.5", "", "Lab-Devices")
 ##### Address Groups
 
 The `CreateStaticGroup()` function creates a static address group, and takes the following parameters: `name`, `members`, `description`. When
-creating an address group on Panorama, you must specify the `device-group` to create the object in as the last/4th parameter.
+creating an address group on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
 > Note: `members` is a string slice (`[]string`) of available addresss objects on the device.
 
@@ -233,7 +234,7 @@ pa.CreateStaticGroup("Custom-address-objects", []string{"my-ip1", "server-subnet
 ```
 
 The `CreateDynamicGroup()` function creates a dynamic address group, and takes the following parameters: `name`, `criteria`, `description`. When
-creating an address group on Panorama, you must specify the `device-group` to create the object in as the last/4th parameter.
+creating an address group on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
 The `criteria` parameter must be written similar to how it is once you have selected your match criteria (tags) through the GUI:
 
@@ -251,7 +252,7 @@ pa.CreateDynamicGroup("Dynamic-Servers", "'server-tag' and 'other tag'", "", "So
 ##### Services
 
 The `CreateService()` function takes 4 parameters: `name`, `protocol`, `port` and an (optional) `description`. When
-creating a service object on Panorama, you must specify the `device-group` to create the object in as the last/5th parameter.
+creating a service object on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
 > Note: The third parameter is the port number(s). Port can be a single port #, range (1-65535), or comma separated (80, 8080, 443).
 
@@ -269,7 +270,7 @@ pa.CreateAddress("panorama-ports", "tcp", "8000-9000", "Misc TCP ports", "Lab-De
 ##### Service Groups
 
 The `CreateServiceGroup()` function creates a service group, and takes the following parameters: `name`, `members`, `description`. When
-creating a service group on Panorama, you must specify the `device-group` to create the object in as the last/4th parameter.
+creating a service group on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
 > Note: `members` is a string slice (`[]string`) of available service objects on the device.
 
@@ -284,7 +285,7 @@ pa.CreateServiceGroup("Custom-ports", []string{"tcp-5000", "web-browsing", "snmp
 ##### Tags
 
 The `CreateTag()` function creates a tag on the device, and takes the following parameters: `name`, `color`, `comments`. When
-creating a tag on Panorama, you must specify the `device-group` to create the object in as the last/4th parameter.
+creating a tag on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
 `color` can be any one of the following: Red, Green, Blue, Yellow, Copper, Orange, Purple, Gray, Light Green, Cyan, Light Gray, 
 Blue Gray, Lime, Black, Gold, Brown.
@@ -300,7 +301,7 @@ pa.CreateTag("vm-servers", "Red", "VMware servers", "Lab-Device-Group")
 #### Deleting Objects
 
 Deleting objects is just as easy as creating them. Just specify the object name, and if deleting objects from Panorama,
-specify the device-group as the last/2nd parameter.
+specify the device-group as the last parameter.
 
 ```Go
 pa.DeleteAddress("fqdn-object")
@@ -316,7 +317,7 @@ pa.DeleteTag("server-tag", "Lab-Device-Group")
 #### Tagging Objects
 
 You can apply tags to address and service objects by using the `ApplyTag()` function. It takes two parameters: `object` and `tag`. 
-When tagging an object on a Panorama device, you must specify the `device-group` to create the object in as the last/3rd parameter.
+When tagging an object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
 
 `tag` can have multiple values, and they must be separated by a comma, i.e. `"server-tag, lab, warehouse"`. If you have multiple objects with
 the same name, then all of them that match will have the tag(s) applied.
@@ -334,7 +335,7 @@ pa.ApplyTag("server-farm", "servers, virtual", "Production-Device-Group")
 ##### Removing Tags
 
 To remove a tag from an object, use the `RemoveTag()` function. This function takes two parameters: `object` and `tag`. You can only remove a
-single tag at a time. When removing a tag from an object on a Panorama device, you must specify the `device-group` to create the object in as the last/3rd parameter.
+single tag at a time. When removing a tag from an object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
 
 ```Go
 pa.RemoveTag("fqdn-object", "web")
@@ -346,7 +347,7 @@ pa.RemoveTag("server-farm", "servers", "Production-Device-Group")
 #### Modifying Groups
 
 To modify an address or service group, which includes adding/removing members...you can use the `ModifyGroup()` function, which takes 4 parameters: `objecttype`, 
-`action`, `object` and `group`. When modifying a group object on a Panorama device, you must specify the `device-group` to create the object in as the last/5th parameter.
+`action`, `object` and `group`. When modifying a group object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
 
 * `objecttype` is one of: "address" or "service"
 * `action` is one of: "add" or "remove"
@@ -359,6 +360,19 @@ pa.ModifyGroup("service", "remove", "proxy-ports", "Web-Browsing")
 
 // Modify a group on a Panorama device
 pa.ModifyGroup("address", "add", "my-laptop", "Security-Folks", "Panorama-Device-Group")
+```
+
+#### Renaming Objects
+
+To rename any address, service, or tag object...use the `RenameObject()` function. You only have to specify the following parameters: `oldname` and `newname`.
+When renaming an object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
+
+```Go
+pa.RenameObject("my-ip", "my-new-ip")
+pa.RenameObject("server-tag", "web-server-tag")
+
+// To rename an object on a Panorama device, specify the device-group as the last parameter
+pa.RenameObject("proxy-ports", "legacy-proxy-ports", "Panorama-Device-Group")
 ```
 
 #### Commiting Configurations
@@ -388,3 +402,4 @@ pa.CommitAll("Lab-Device-Group", "1093822222", "1084782033")
 [commiting-configurations]: https://github.com/scottdware/go-panos#commiting-configurations
 [tagging-objects]: https://github.com/scottdware/go-panos#tagging-objects
 [modifying-groups]: https://github.com/scottdware/go-panos#modifying-groups
+[renaming-objects]: https://github.com/scottdware/go-panos#renaming-objects
