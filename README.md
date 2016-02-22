@@ -223,14 +223,14 @@ pa.CreateAddress("panorama-IP-object", "ip", "10.1.1.5", "", "Lab-Devices")
 The `CreateStaticGroup()` function creates a static address group, and takes the following parameters: `name`, `members`, `description`. When
 creating an address group on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
-> Note: `members` is a string slice (`[]string`) of available addresss objects on the device.
+If you are specifying multiple address objects, they must be separated by a comma for the `members` parameter: `"server1, server2, pc1"`
 
 ```Go
-pa.CreateStaticGroup("Custom-address-objects", []string{"my-ip1", "server-subnet", "fqdn-host"}, "")
+pa.CreateStaticGroup("Custom-address-objects", "my-ip1, server-subnet, fqdn-host", "")
 
 // When creating an address group on a Panorama device, specify the desired device-group as the 
 // last parameter, like so:
-pa.CreateStaticGroup("Custom-address-objects", []string{"my-ip1", "server-subnet", "fqdn-host"}, "", "Lab-Device-Group")
+pa.CreateStaticGroup("Custom-address-objects", "my-ip1, server-subnet, fqdn-host", "", "Lab-Device-Group")
 ```
 
 The `CreateDynamicGroup()` function creates a dynamic address group, and takes the following parameters: `name`, `criteria`, `description`. When
@@ -272,14 +272,14 @@ pa.CreateAddress("panorama-ports", "tcp", "8000-9000", "Misc TCP ports", "Lab-De
 The `CreateServiceGroup()` function creates a service group, and takes the following parameters: `name`, `members`, `description`. When
 creating a service group on Panorama, you must specify the `device-group` to create the object in as the last parameter.
 
-> Note: `members` is a string slice (`[]string`) of available service objects on the device.
+If you are specifying multiple service objects, they must be separated by a comma for the `members` parameter: `"tcp-port, udp-port"`
 
 ```Go
-pa.CreateServiceGroup("Custom-ports", []string{"tcp-5000", "web-browsing", "snmp"}, "")
+pa.CreateServiceGroup("Custom-ports", "tcp-5000, web-browsing, snmp", "")
 
 // When creating a service group on a Panorama device, specify the desired device-group as the 
 // last parameter, like so:
-pa.CreateServiceGroup("Custom-ports", []string{"tcp-5000", "web-browsing", "snmp"}, "", "Lab-Device-Group")
+pa.CreateServiceGroup("Custom-ports", "tcp-5000, web-browsing, snmp", "", "Lab-Device-Group")
 ```
 
 ##### Tags
