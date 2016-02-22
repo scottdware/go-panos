@@ -11,7 +11,7 @@ Be sure to visit the [GoDoc][godoc-go-panos] page for official package documenta
 ### Examples
 
 * [Connecting to a device][connecting-to-a-device]
-* [Listing objects (address, service, device-groups, tags, etc.)][listing-objects]
+* [Listing objects (address, service, device-groups, tags, templates, etc.)][listing-objects]
 * [Creating objects][creating-objects]
 * [Deleting objects][deleting-objects]
 * [Applying/removing tags from objects][tagging-objects]
