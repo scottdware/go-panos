@@ -316,20 +316,20 @@ pa.DeleteTag("server-tag", "Lab-Device-Group")
 
 #### Tagging Objects
 
-You can apply tags to address and service objects by using the `ApplyTag()` function. It takes two parameters: `object` and `tag`. 
+You can apply tags to address and service objects by using the `ApplyTag()` function. It takes two parameters: `tag` and `object`. 
 When tagging an object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
 
 `tag` can have multiple values, and they must be separated by a comma, i.e. `"server-tag, lab, warehouse"`. If you have multiple objects with
 the same name, then all of them that match will have the tag(s) applied.
 
 ```Go
-pa.ApplyTag("fqdn-object", "web")
+pa.ApplyTag("web", "fqdn-object")
 
 // Use multiple tags on an object
-pa.ApplyTag("proxy-ports", "internet, web, proxy")
+pa.ApplyTag("internet, web, proxy", "proxy-ports")
 
 // Tag a Panorama object
-pa.ApplyTag("server-farm", "servers, virtual", "Production-Device-Group")
+pa.ApplyTag("servers, virtual", "server-farm", "Production-Device-Group")
 ```
 
 ##### Removing Tags
@@ -338,10 +338,10 @@ To remove a tag from an object, use the `RemoveTag()` function. This function ta
 single tag at a time. When removing a tag from an object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
 
 ```Go
-pa.RemoveTag("fqdn-object", "web")
+pa.RemoveTag("web", "fqdn-object")
 
 // Remove tag from a Panorama object
-pa.RemoveTag("server-farm", "servers", "Production-Device-Group")
+pa.RemoveTag("servers", "server-farm", "Production-Device-Group")
 ```
 
 #### Modifying Groups
