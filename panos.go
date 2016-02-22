@@ -400,6 +400,456 @@ func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 	return nil
 }
 
+// TagObject will apply the given tag to the specified address or service object(s). You can specify multiple tags
+// by separating them with a comma, i.e. "servers, vm". If you have address/service objects with the same
+// name, then the tag(s) will be applied to all that match. When tagging an object on a Panorama device, specify
+// the given device-group name as the last parameter.
+func (p *PaloAlto) TagObject(object, tag string, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+	tags := strings.Split(tag, ",")
+	adObj, _ := p.Addresses()
+	agObj, _ := p.AddressGroups()
+	sObj, _ := p.Services()
+	sgObj, _ := p.ServiceGroups()
+
+	xmlBody := "<tag>"
+	for _, t := range tags {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(t))
+	}
+	xmlBody += "</tag>"
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "edit",
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	for _, a := range adObj.Addresses {
+		if object == a.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag", object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag", devicegroup[0], object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	for _, ag := range agObj.Groups {
+		if object == ag.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/tag", object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag", devicegroup[0], object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	for _, s := range sObj.Services {
+		if object == s.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']/tag", object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag", devicegroup[0], object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	for _, sg := range sgObj.Groups {
+		if object == sg.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/tag", object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag", devicegroup[0], object)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	return nil
+}
+
+// RemoveTag will remove a single tag from an address/service object. If deleting a tag from an object on a
+// Panorama device, then specify the given device-group name as the last parameter.
+func (p *PaloAlto) RemoveTag(object, tag string, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+	adObj, _ := p.Addresses()
+	agObj, _ := p.AddressGroups()
+	sObj, _ := p.Services()
+	sgObj, _ := p.ServiceGroups()
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"key":    p.Key,
+	}
+
+	for _, a := range adObj.Addresses {
+		if object == a.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag/memeber[text()='%s']", object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	for _, ag := range agObj.Groups {
+		if object == ag.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	for _, s := range sObj.Services {
+		if object == s.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']/tag/member[text()='%s']", object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	for _, sg := range sgObj.Groups {
+		if object == sg.Name {
+			if p.DeviceType == "panos" && p.Panorama == false {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
+
+				query["xpath"] = xpath
+
+				resp := r.Send("post", p.URI, nil, nil, query)
+				if resp.Error != nil {
+					return resp.Error
+				}
+
+				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				return nil
+			}
+
+			if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+				return errors.New("you must specify a device-group when connected to a Panorama device")
+			}
+		}
+	}
+
+	return nil
+}
+
 // Commit issues a commit on the device. When issuing a commit against a Panorama device,
 // the configuration will only be committed to Panorama, and not an individual device-group.
 func (p *PaloAlto) Commit() error {
