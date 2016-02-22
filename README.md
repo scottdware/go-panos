@@ -154,6 +154,8 @@ for _, sg := range svcGroups.Groups {
 
 ##### Device Groups
 
+> Note: Panorama ONLY
+
 To list all device-groups on a Panorama device, use the `DeviceGroups()` function. The fields returned are as follows:
 
 |Field|Description|
@@ -169,6 +171,31 @@ devGroups, _ := pa.DeviceGroups()
 for _, d := range devGroups.Groups {
     fmt.Println(d.Name)
     for _, serial := range d.Devices {
+        fmt.Println(serial)
+    }
+}
+
+```
+
+##### Templates
+
+> Note: Panorama ONLY
+
+To list all templates on a Panorama device, use the `Templates()` function. The fields returned are as follows:
+
+|Field|Description|
+|-----|-----------|
+|Name|Name of the object.|
+|Devices|Individual devices that the template is applied to.|
+
+> Note: Devices (serial numbers) are in a string slice (`[]string`), so to iterate over them you can just do another loop.
+
+```Go
+temps, _ := pa.Templates()
+
+for _, t := range temps.Templates {
+    fmt.Println(t.Name)
+    for _, serial := range t.Devices {
         fmt.Println(serial)
     }
 }
