@@ -199,7 +199,8 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, de
 	return nil
 }
 
-// CreateStaticGroup will create a new static address group on the device. If creating an address group on
+// CreateStaticGroup will create a new static address group on the device. You can specify multiple members
+// by separating them with a comma, i.e. "web-server1, web-server2". If creating an address group on
 // a Panorama device, then specify the given device-group name as the last parameter.
 func (p *PaloAlto) CreateStaticGroup(name, members, description string, devicegroup ...string) error {
 	var xmlBody string
