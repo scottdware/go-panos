@@ -181,8 +181,8 @@ func (p *PaloAlto) CreateServiceGroup(name, members string, devicegroup ...strin
 	}
 
 	xmlBody = "<members>"
-	for _, m := range members {
-		xmlBody += fmt.Sprintf("<member>%s</member>", m)
+	for _, member := range m {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(member))
 	}
 	xmlBody += "</members>"
 
