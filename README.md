@@ -58,6 +58,25 @@ fmt.Printf("Panorama Connection: %t\n", pa.Panorama)
 
 #### Listing Objects
 
+##### Devices (Panorama)
+
+> Note: Panorama ONLY
+
+To list all devices managed by a Panorama device, use the `Devices()` function. It will return a list of 
+device serial numbers that you can iterate over.
+
+|Field|Description|
+|-----|-----------|
+|Serial|Serial number of the device.|
+
+```Go
+devices, _ := pa.Devices()
+
+for _, d := range devices.Devices {
+    fmt.Println(d.Serial)
+}
+```
+
 ##### Address Objects and Groups
 
 To list all address objects, use the `Addresses()` function. The fields returned are as follows: 
