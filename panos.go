@@ -447,7 +447,7 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 			"type":    "config",
 			"action":  "set",
 			"xpath":   deviceXpath,
-			"element": deviceXmlBody,
+			"element": deviceXMLBody,
 			"key":     p.Key,
 		}
 
