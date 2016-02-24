@@ -439,7 +439,7 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 
 	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 		deviceXpath := "/config/mgt-config/devices"
-		deviceXmlBody := fmt.Sprintf("<entry name=\"%s\"/>", serial)
+		deviceXMLBody := fmt.Sprintf("<entry name=\"%s\"/>", serial)
 		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']", devicegroup[0])
 		xmlBody := fmt.Sprintf("<devices><entry name=\"%s\"/></devices>", serial)
 
