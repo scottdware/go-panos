@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/scottdware/go-rested"
 	"strings"
+	"time"
 )
 
 // PaloAlto is a container for our session state.
@@ -20,6 +21,14 @@ type PaloAlto struct {
 	SoftwareVersion string
 	DeviceType      string
 	Panorama        bool
+}
+
+// Devices lists all of the devices in Panorama.
+type Devices struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Devices []Serial `xml:"result>devices>entry"`
 }
 
 // DeviceGroups lists all of the device-group's in Panorama.
@@ -239,6 +248,36 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 	}, nil
 }
 
+// Devices returns information about all of the devices that are managed by Panorama.
+func (p *PaloAlto) Devices() (*Devices, error) {
+	var devices Devices
+	xpath := "/config/mgt-config/devices"
+	// xpath := "/config/devices/entry/vsys/entry/address"
+	r := rested.NewRequest()
+
+	if p.DeviceType != "panorama" {
+		return nil, errors.New("devices can only be listed from a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "get",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+	devData := r.Send("get", p.URI, nil, headers, query)
+
+	if err := xml.Unmarshal(devData.Body, &devices); err != nil {
+		return nil, err
+	}
+
+	if devices.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", devices.Code, errorCodes[devices.Code])
+	}
+
+	return &devices, nil
+}
+
 // DeviceGroups returns information about all of the device-groups in Panorama, and what devices are
 // linked to them.
 func (p *PaloAlto) DeviceGroups() (*DeviceGroups, error) {
@@ -268,6 +307,230 @@ func (p *PaloAlto) DeviceGroups() (*DeviceGroups, error) {
 	}
 
 	return &devices, nil
+}
+
+// CreateDeviceGroup will create a new device-group on a Panorama device. You can add devices as well by
+// specifying the serial numbers in a string slice ([]string). Use 'nil' if you do not wish to add any.
+func (p *PaloAlto) CreateDeviceGroup(name, description string, devices []string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
+		return errors.New("you must be connected to a Panorama device when creating a device-group")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/device-group"
+		xmlBody = fmt.Sprintf("<entry name=\"%s\">", name)
+	}
+
+	if devices != nil {
+		xmlBody += "<devices>"
+		for _, s := range devices {
+			xmlBody += fmt.Sprintf("<entry name=\"%s\"/>", strings.TrimSpace(s))
+		}
+		xmlBody += "</devices>"
+	}
+
+	if description != "" {
+		xmlBody += fmt.Sprintf("<description>%s</description>", description)
+	}
+
+	xmlBody += "</entry>"
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteDeviceGroup will delete the given device-group from Panorama.
+func (p *PaloAlto) DeleteDeviceGroup(name string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
+		return errors.New("you must be connected to a Panorama device when deleting a device-group")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']", name)
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// AddDevice will add a new device to a Panorama. If you specify the optional 'devicegroup' parameter,
+// it will also add the device to the given device-group.
+func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
+		return errors.New("you must be connected to Panorama when adding devices")
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+		xpath := "/config/mgt-config/devices"
+		xmlBody := fmt.Sprintf("<entry name=\"%s\"/>", serial)
+
+		query := map[string]string{
+			"type":    "config",
+			"action":  "set",
+			"xpath":   xpath,
+			"element": xmlBody,
+			"key":     p.Key,
+		}
+
+		resp := r.Send("post", p.URI, nil, nil, query)
+		if resp.Error != nil {
+			return resp.Error
+		}
+
+		if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+			return err
+		}
+
+		if reqError.Status != "success" {
+			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		}
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		deviceXpath := "/config/mgt-config/devices"
+		deviceXmlBody := fmt.Sprintf("<entry name=\"%s\"/>", serial)
+		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']", devicegroup[0])
+		xmlBody := fmt.Sprintf("<devices><entry name=\"%s\"/></devices>", serial)
+
+		deviceQuery := map[string]string{
+			"type":    "config",
+			"action":  "set",
+			"xpath":   deviceXpath,
+			"element": deviceXmlBody,
+			"key":     p.Key,
+		}
+
+		addResp := r.Send("post", p.URI, nil, nil, deviceQuery)
+		if addResp.Error != nil {
+			return addResp.Error
+		}
+
+		if err := xml.Unmarshal(addResp.Body, &reqError); err != nil {
+			return err
+		}
+
+		if reqError.Status != "success" {
+			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		}
+
+		time.Sleep(200 * time.Millisecond)
+
+		query := map[string]string{
+			"type":    "config",
+			"action":  "set",
+			"xpath":   xpath,
+			"element": xmlBody,
+			"key":     p.Key,
+		}
+
+		resp := r.Send("post", p.URI, nil, nil, query)
+		if resp.Error != nil {
+			return resp.Error
+		}
+
+		if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+			return err
+		}
+
+		if reqError.Status != "success" {
+			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		}
+	}
+
+	return nil
+}
+
+// RemoveDevice will remove a device from Panorama. If you specify the optional 'devicegroup' parameter,
+// it will only remove the device from the given device-group.
+func (p *PaloAlto) RemoveDevice(serial string, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
+		return errors.New("you must be connected to Panorama when removing devices")
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
+		xpath = fmt.Sprintf("/config/mgt-config/devices/entry[@name='%s']", serial)
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/devices/entry[@name='%s']", devicegroup[0], serial)
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
 }
 
 // Templates returns information about all of the templates in Panorama, and what devices they are
