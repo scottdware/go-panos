@@ -224,6 +224,25 @@ for _, t := range tags.Tags{
 
 #### Creating Objects
 
+##### Adding Devices (Panorama)
+
+> Note: Panorama ONLY
+
+To add a device to be managed by Panorama, you can use the `AddDevice()` function. This takes the following parameters:
+
+* `serial` - Serial number of the device
+* `devicegroup` (optional) - If specified, the device will be added to Panorama, as well as the given device-group.
+
+> Note: If you specify a device-group, and the device does not already exist within Panorama...then it will be added to Panorama as well.
+
+```Go
+// Add a device to Panorama
+pa.AddDevice("1084782033")
+
+// Add a device to a device-group
+pa.AddDevice("1084782033", "Lab-Device-Group")
+```
+
 ##### Addresses
 
 The `CreateAddress()` function takes 4 parameters: `name`, `address type`, `address` and an (optional) `description`. When
@@ -325,20 +344,62 @@ pa.CreateTag("vm-servers", "Red", "VMware servers")
 pa.CreateTag("vm-servers", "Red", "VMware servers", "Lab-Device-Group")
 ```
 
+##### Device Groups
+
+> Note: Panorama ONLY
+
+To create a new device-group on a Panorama device, you can use the `CreateDeviceGroup()` function. This takes two parameters: `name` and `description`.
+If you don't want a description, then you can just use empty double-quotes `""`. An optional third parameter is a `[]string` list of device serial
+numbers that you want to add to the device group. To get a list of devices, you can always use the `Devices()` function.
+
+If you do not want to add any devices to the device-group initially, then you can use `nil` as the last parameter value.
+
+```Go
+pa.CreateDeviceGroup("Remote-Office-Firewalls", "All remote office locations", nil)
+
+// Add devices to the new group from the start. Create a []string list:
+devices := []string{
+    "1093822222",
+    "1084782033",
+    "1084783947",
+    "1654783433",
+}
+
+pa.CreateDeviceGroup("Campus Firewalls", "", devices)
+```
+
 #### Deleting Objects
 
 Deleting objects is just as easy as creating them. Just specify the object name, and if deleting objects from Panorama,
 specify the device-group as the last parameter.
 
 ```Go
+// Delete address objects
 pa.DeleteAddress("fqdn-object")
-pa.DeleteService("proxy-ports")
 pa.DeleteAddress("some-panorama-IP", "Lab-Device-Group")
+
+// Delete a service object
+pa.DeleteService("proxy-ports")
+
+// Delete address group objects
 pa.DeleteAddressGroup("Addr-Group-Name")
 pa.DeleteAddressGroup("Panorama-address-group", "Lab-Device-Group")
+
+// Delete a service group
 pa.DeleteServiceGroup("web-browsing-ports")
+
+// Delete tags from the device
 pa.DeleteTag("server-tag")
 pa.DeleteTag("server-tag", "Lab-Device-Group")
+
+// Delete a device-group from Panorama
+pa.DeleteDeviceGroup("Lab-Devices")
+
+// Remove a device from a specific device-group
+pa.RemoveDevice("1084782033", "Some-Device-Group")
+
+// Remove a device from Panorama
+pa.RemoveDevice("1084782033")
 ```
 
 #### Tagging Objects
