@@ -18,6 +18,58 @@ type Wildfire struct {
 	URL    string
 }
 
+// WildfireMalwareReport contains information about the submitted file and it's behavior.
+type WildfireMalwareReport struct {
+	XMLName  xml.Name         `xml:"wildfire"`
+	Malware  string           `xml:"file_info>malware"`
+	FileType string           `xml:"file_info>filetype"`
+	FileSize int              `xml:"file_info>size"`
+	MD5      string           `xml:"file_info>md5"`
+	SHA1     string           `xml:"file_info>sha1"`
+	SHA256   string           `xml:"file_info>sha256"`
+	Reports  []WildfireReport `xml:"task_info>report"`
+}
+
+// WildfireReport contains information about the analyzed file in a VM environment.
+type WildfireReport struct {
+	Malware           string                `xml:"malware"`
+	VMSoftware        string                `xml:"software"`
+	BehavioralSummary []string              `xml:"summary>entry"`
+	DNSQueries        []WildfireDNSQuery    `xml:"network>dns"`
+	TCPPorts          []WildfireTCPPort     `xml:"network>TCP"`
+	UDPPorts          []WildfireUDPPort     `xml:"network>UDP"`
+	HTTPRequests      []WildfireHTTPRequest `xml:"network>url"`
+}
+
+// WildfireDNSQuery contains information about each DNS query the malware made.
+type WildfireDNSQuery struct {
+	Type     string `xml:"type,attr"`
+	Response string `xml:"response,attr"`
+	Query    string `xml:"query,attr"`
+}
+
+// WildfireTCPPort contains information about the TCP connections the malware made.
+type WildfireTCPPort struct {
+	Port      string `xml:"port,attr"`
+	IPAddress string `xml:"ip,attr"`
+	Country   string `xml:"country,attr"`
+}
+
+// WildfireUDPPort contains information about the UDP connections the malware made.
+type WildfireUDPPort struct {
+	Port      string `xml:"port,attr"`
+	IPAddress string `xml:"ip,attr"`
+	Country   string `xml:"country,attr"`
+}
+
+// WildfireHTTPRequest contains information about each HTTP request the malware made.
+type WildfireHTTPRequest struct {
+	UserAgent string `xml:"user_agent,attr"`
+	URI       string `xml:"uri,attr"`
+	Method    string `xml:"method,attr"`
+	Host      string `xml:"host,attr"`
+}
+
 // wildfireError contains any error message we recieve.
 type wildfireError struct {
 	XMLName xml.Name `xml:"error"`
@@ -105,8 +157,10 @@ func (w *Wildfire) SubmitURL(url string) error {
 	return nil
 }
 
-// GetReport retrieves the report on the given file hash (MD5, SHA-1 or SHA-256), and returns the output in XML format.
-func (w *Wildfire) GetReport(hash string) (string, error) {
+// GetReport retrieves the XML report on the given file hash (MD5, SHA-1 or SHA-256), and returns summarized information about the analyzed file.
+// Only the behavioral summary, DNS queries, TCP/UDP port connections, and HTTP request information is returned.
+func (w *Wildfire) GetReport(hash string) (*WildfireMalwareReport, error) {
+	var report WildfireMalwareReport
 	r := rested.NewRequest()
 	uri := fmt.Sprintf("%sget/report", w.URL)
 	form := map[string]string{
@@ -117,8 +171,12 @@ func (w *Wildfire) GetReport(hash string) (string, error) {
 
 	resp := r.Send("post", uri, form, nil, nil)
 	if resp.Error != nil {
-		return "", resp.Error
+		return nil, resp.Error
 	}
 
-	return string(resp.Body), nil
+	if err := xml.Unmarshal(resp.Body, &report); err != nil {
+		return nil, err
+	}
+
+	return &report, nil
 }
