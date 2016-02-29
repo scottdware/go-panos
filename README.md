@@ -18,6 +18,7 @@ Be sure to visit the [GoDoc][godoc-go-panos] page for official package documenta
 * [Modifying groups (address, service, etc.)][modifying-groups]
 * [Renaming objects][renaming-objects]
 * [Commiting configurations][commiting-configurations]
+* [Wildfire submissions][wildfire]
 
 #### Connecting to a Device
 
@@ -500,6 +501,29 @@ pa.CommitAll("Lab-Device-Group")
 pa.CommitAll("Lab-Device-Group", "1093822222", "1084782033")
 ```
 
+#### Wildfire
+
+You can perform a few Wildfire tasks, such as submitting files and URL's for analyzing...as well as get a report on a previously submitted file or URL.
+
+```Go
+// Create a session to the Wildfile cloud using your API key
+panw := panos.NewWildfireSession("apikey")
+
+// Submit a file to Wildfire
+panw.SubmitFile("path/to/file.exe")
+
+// Submit a URL to Wildfire
+panw.SubmitURL("https://some.malicious.url/file")
+
+// Get a report for the given file hash. The report will be returned in XML format.
+output, err := panw.GetReport("sha256_file_hash")
+if err != nil {
+    fmt.Println(err)
+}
+
+fmt.Println(output)
+```
+
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
 [connecting-to-a-device]: https://github.com/scottdware/go-panos#connecting-to-a-device
@@ -510,3 +534,4 @@ pa.CommitAll("Lab-Device-Group", "1093822222", "1084782033")
 [tagging-objects]: https://github.com/scottdware/go-panos#tagging-objects
 [modifying-groups]: https://github.com/scottdware/go-panos#modifying-groups
 [renaming-objects]: https://github.com/scottdware/go-panos#renaming-objects
+[wildfire]: https://github.com/scottdware/go-panos#wildfire
