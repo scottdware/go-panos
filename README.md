@@ -31,19 +31,7 @@ if err != nil {
 }
 ```
 
-Once you are connected, some basic information about the firewall/session is established. The fields returned are as follows:
-
-|Field|Description|
-|-----|-----------|
-|Host|Hostname/IP of the device.|
-|Key|Encrypted key for API access.|
-|URI|The base URI that all API calls will use.|
-|Platform|Hardware platform of the device.|
-|Model|Model number of the device.|
-|Serial|Serial number of the device.|
-|SoftwareVersion|Software version currently active on the device.|
-|DeviceType|Type of device, i.e. "panorama" or "panos."|
-|Panorama|A boolean (true/false) field that determines if the device is/isn't Panorama.| 
+Once you are connected, some basic information about the firewall/session is established and you can view it like so:
 
 ```Go
 fmt.Printf("Host: %s\n", pa.Host)
@@ -59,16 +47,13 @@ fmt.Printf("Panorama Connection: %t\n", pa.Panorama)
 
 #### Listing Objects
 
+> Note: For complete documentation on what fields can be iterated over when listing objects/devices, please see the [official][godoc-go-panos] documentation!
+
 ##### Devices (Panorama)
 
 > Note: Panorama ONLY
 
-To list all devices managed by a Panorama device, use the `Devices()` function. It will return a list of 
-device serial numbers that you can iterate over.
-
-|Field|Description|
-|-----|-----------|
-|Serial|Serial number of the device.|
+To list all devices managed by a Panorama device, use the `Devices()` function:
 
 ```Go
 devices, _ := pa.Devices()
@@ -80,17 +65,9 @@ for _, d := range devices.Devices {
 
 ##### Address Objects and Groups
 
-To list all address objects, use the `Addresses()` function. The fields returned are as follows: 
+To list all address objects, use the `Addresses()` function: 
 
 > Note: Some of these fields will be empty based on the type of address returned.
-
-|Field|Description|
-|-----|-----------|
-|Name|Name of the object.|
-|IPAddress|IP/network of the object.|
-|IPRange|IP range of the object.|
-|FQDN|Fully qualified domain name of the object.|
-|Description|Description of the object, if available.|
 
 ```Go
 addrs, _ := pa.Addresses()
@@ -104,15 +81,7 @@ for _, a := range addrs.Addresses {
 }
 ```
 
-To list all address group objects, use the `AddressGroups()` function. The fields returned are as follows:
-
-|Field|Description|
-|-----|-----------|
-|Name|Name of the group.|
-|Type|Type of address group, i.e. "Static" or "Dynamic."|
-|DynamicFilter|The filter for the dynamic address group.|
-|Members|Address objects that belong to the group.|
-|Description|Description of the group, if available.|
+To list all address group objects, use the `AddressGroups()` function:
 
 > Note: Members are in a string slice (`[]string`), so to iterate over them you can just do another loop.
 
@@ -129,16 +98,9 @@ for _, ag := range addrGroups.Groups {
 
 ##### Service Objects and Groups
 
-To list all service objects, use the `Services()` function. The fields returned are as follows:
+To list all service objects, use the `Services()` function:
 
 > Note: Some fields might be empty based on they type of service returned.
-
-|Field|Description|
-|-----|-----------|
-|Name|Name of the object.|
-|TCPPort|TCP port(s) of the object.|
-|UDPPort|UDP port(s) of the object.|
-|Description|Description of the object, if available.|
 
 ```Go
 svcs, _ := pa.Services()
@@ -151,13 +113,7 @@ for _, s := range svcs.Services {
 }
 ```
 
-To list all service groups, use the `ServiceGroups()` function. The fields returned are as follows:
-
-|Field|Description|
-|-----|-----------|
-|Name|Name of the object.|
-|Members|Service objects that belong to the group.|
-|Description|Description of the object, if available.|
+To list all service groups, use the `ServiceGroups()` function:
 
 > Note: Members are in a string slice (`[]string`), so to iterate over them you can just do another loop.
 
@@ -176,12 +132,7 @@ for _, sg := range svcGroups.Groups {
 
 > Note: Panorama ONLY
 
-To list all device-groups on a Panorama device, use the `DeviceGroups()` function. The fields returned are as follows:
-
-|Field|Description|
-|-----|-----------|
-|Name|Name of the object.|
-|Devices|Individual devices that belong to the device-group.|
+To list all device-groups on a Panorama device, use the `DeviceGroups()` function:
 
 > Note: Devices (serial numbers) are in a string slice (`[]string`), so to iterate over them you can just do another loop.
 
@@ -201,12 +152,7 @@ for _, d := range devGroups.Groups {
 
 > Note: Panorama ONLY
 
-To list all templates on a Panorama device, use the `Templates()` function. The fields returned are as follows:
-
-|Field|Description|
-|-----|-----------|
-|Name|Name of the object.|
-|Devices|Individual devices that the template is applied to.|
+To list all templates on a Panorama device, use the `Templates()` function:
 
 > Note: Devices (serial numbers) are in a string slice (`[]string`), so to iterate over them you can just do another loop.
 
@@ -224,13 +170,7 @@ for _, t := range temps.Templates {
 
 ##### Tags
 
-To list all tags, use the `Tags()` function. The fields returned are as follows:
-
-|Field|Description|
-|-----|-----------|
-|Name|Name of the tag.|
-|Color|Color of the tag, i.e. "Blue" or "Cyan."|
-|Comments|Description of the tag, if available.|
+To list all tags, use the `Tags()` function:
 
 ```Go
 tags, _ := pa.Tags()
@@ -516,54 +456,9 @@ panw.SubmitFile("path/to/file.exe")
 panw.SubmitURL("https://some.malicious.url/file")
 ```
 
-When retrieving a report on a submitted file, the XML output is returned in a struct named `WildfireMalwareReport` with the following fields:
+When retrieving a report on a submitted file, the XML output is returned in a struct named `WildfireMalwareReport`.
 
-|Field|Description|
-|-----|-----------|
-|Malware|A simple "yes" or "no" if malware has been detected.|
-|FileType|The type of file analyzed.|
-|FileSize|The size of the file (in bytes).|
-|MD5|The MD5 hash of the file.|
-|SHA1|The SHA1 hash of the file.|
-|SHA256|The SHA256 hash of the file.|
-|Reports|A list (slice) of each individual report (i.e. detonation inside a VM) you can iterate over.|
-
-The `Reports` list has the following iterable fields:
-
-|Field|Description|
-|-----|-----------|
-|Malware|A simple "yes" or "no" if malware has been detected.|
-|VMSoftware|The software used within the VM to detonate/test the malware.|
-|BehavioralSummary|A list (slice) of the summary of events that took place.|
-|DNSQueries|A list (slice) of every DNS query the malware made.|
-|TCPPorts|A list (slice) of every TCP port connection the malware made.|
-|UDPPorts|A list (slice) of every UDP port connection the malware made.|
-|HTTPRequests|A list (slice) of every HTTP request the malware made.|
-
-The `DNSQueries` list has the following iterable fields:
-
-|Field|Description|
-|-----|-----------|
-|Type|The record type that was queried (i.e. "NS" or "A").|
-|Response|The response that the malware received.|
-|Query|The domain that was queried.|
-
-The `TCPPorts` and `UDPPorts` list has the following iterable fields:
-
-|Field|Description|
-|-----|-----------|
-|Port|The TCP/UDP port number.|
-|IPAddress|The IP address of the connection.|
-|Country|The country where the connection was made to.|
-
-The `HTTPRequests` list has the following iterable fields:
-
-|Field|Description|
-|-----|-----------|
-|UserAgent|The user-agent that made the HTTP request.|
-|URI|The URI/URL of the request.|
-|Method|The HTTP method of the request (i.e. "POST" or "GET").|
-|Host|The hostname that the request was made to.|
+> Note: For complete documentation on what fields can be iterated over when listing objects/devices, please see the [official][godoc-go-panos] documentation!
 
 ```Go
 // Get a report for the given file hash. The report will be returned in XML format.
