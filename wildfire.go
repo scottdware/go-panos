@@ -106,12 +106,12 @@ func (w *Wildfire) SubmitURL(url string) error {
 }
 
 // GetReport retrieves the report on the given file hash (MD5, SHA-1 or SHA-256), and returns the output in XML format.
-func (w *Wildfire) GetReport(hash, format string) (string, error) {
+func (w *Wildfire) GetReport(hash string) (string, error) {
 	r := rested.NewRequest()
 	uri := fmt.Sprintf("%sget/report", w.URL)
 	form := map[string]string{
 		"hash":   hash,
-		"format": format,
+		"format": "xml",
 		"apikey": w.APIKey,
 	}
 
