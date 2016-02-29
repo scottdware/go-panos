@@ -514,14 +514,97 @@ panw.SubmitFile("path/to/file.exe")
 
 // Submit a URL to Wildfire
 panw.SubmitURL("https://some.malicious.url/file")
+```
 
+When retrieving a report on a submitted file, the XML output is returned in a struct named `WildfireMalwareReport` with the following fields:
+
+|Field|Description|
+|-----|-----------|
+|Malware|A simple "yes" or "no" if malware has been detected.|
+|FileType|The type of file analyzed.|
+|FileSize|The size of the file (in bytes).|
+|MD5|The MD5 hash of the file.|
+|SHA1|The SHA1 hash of the file.|
+|SHA256|The SHA256 hash of the file.|
+|Reports|A list (slice) of each individual report (i.e. detonation inside a VM) you can iterate over.|
+
+The `Reports` list has the following iterable fields:
+
+|Field|Description|
+|-----|-----------|
+|Malware|A simple "yes" or "no" if malware has been detected.|
+|VMSoftware|The software used within the VM to detonate/test the malware.|
+|BehavioralSummary|A list (slice) of the summary of events that took place.|
+|DNSQueries|A list (slice) of every DNS query the malware made.|
+|TCPPorts|A list (slice) of every TCP port connection the malware made.|
+|UDPPorts|A list (slice) of every UDP port connection the malware made.|
+|HTTPRequests|A list (slice) of every HTTP request the malware made.|
+
+The `DNSQueries` list has the following iterable fields:
+
+|Field|Description|
+|-----|-----------|
+|Type|The record type that was queried (i.e. "NS" or "A").|
+|Response|The response that the malware received.|
+|Query|The domain that was queried.|
+
+The `TCPPorts` and `UDPPorts` list has the following iterable fields:
+
+|Field|Description|
+|-----|-----------|
+|Port|The TCP/UDP port number.|
+|IPAddress|The IP address of the connection.|
+|Country|The country where the connection was made to.|
+
+The `HTTPRequests` list has the following iterable fields:
+
+|Field|Description|
+|-----|-----------|
+|UserAgent|The user-agent that made the HTTP request.|
+|URI|The URI/URL of the request.|
+|Method|The HTTP method of the request (i.e. "POST" or "GET").|
+|Host|The hostname that the request was made to.|
+
+```Go
 // Get a report for the given file hash. The report will be returned in XML format.
 output, err := panw.GetReport("sha256_file_hash")
 if err != nil {
     fmt.Println(err)
 }
 
-fmt.Println(output)
+for _, report := range output.Reports {
+    fmt.Printf("VM detonation software: %s\n\n", report.VMSoftware)
+    fmt.Printf("Malware detected: %s\n", report.Malware)
+    for _, bs := range report.BehavioralSummary {
+        fmt.Println(bs)
+    }
+
+    fmt.Println()
+
+    for _, dns := range report.DNSQueries {
+        fmt.Printf("Domain Name: %s, Query Type: %s, DNS Response: %s\n", dns.Query, dns.Type, dns.Response)
+    }
+
+    fmt.Println()
+
+    for _, tcp := range report.TCPPorts {
+        fmt.Printf("Port: %s, IP Address: %s, Country: %s\n", tcp.Port, tcp.IPAddress, tcp.Country)
+    }
+
+    for _, udp := range report.UDPPorts {
+        fmt.Printf("Port: %s, IP Address: %s, Country: %s\n", udp.Port, udp.IPAddress, udp.Country)
+    }
+
+    fmt.Println()
+
+    for _, req := range report.HTTPRequests {
+        fmt.Printf("User-Agent: %s\n", req.UserAgent)
+        fmt.Printf("URL: %s%s\n", req.Host, req.URI)
+        fmt.Printf("Method: %s\n", req.Method)
+    }
+
+    fmt.Println()
+}
 ```
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
