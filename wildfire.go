@@ -149,7 +149,7 @@ func (w *Wildfire) SubmitURL(url string) error {
 		"apikey": w.APIKey,
 	}
 
-	resp := r.Send("post", uri, form, nil, nil)
+	resp := r.SendForm("post", uri, form, nil, nil)
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -169,7 +169,7 @@ func (w *Wildfire) GetReport(hash string) (*WildfireMalwareReport, error) {
 		"apikey": w.APIKey,
 	}
 
-	resp := r.Send("post", uri, form, nil, nil)
+	resp := r.SendForm("post", uri, form, nil, nil)
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
