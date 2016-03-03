@@ -491,6 +491,41 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 	return nil
 }
 
+// SetPanoramaServer will configure a device to be managed by the given Panorama server's IP address.
+func (p *PaloAlto) SetPanoramaServer(ip string) error {
+	var reqError requestError
+	r := rested.NewRequest()
+	xpath := "/config/devices/entry[@name='localhost.localdomain']/deviceconfig/system"
+	xmlBody := fmt.Sprintf("<panorama-server>%s</panorama-server>", ip)
+
+	if p.DeviceType == "panorama" && p.Panorama == true {
+		return errors.New("you must be connected to a non-Panorama device in order to configure a Panorama server")
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"key":     p.Key,
+		"element": xmlBody,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // RemoveDevice will remove a device from Panorama. If you specify the optional 'devicegroup' parameter,
 // it will only remove the device from the given device-group.
 func (p *PaloAlto) RemoveDevice(serial string, devicegroup ...string) error {
