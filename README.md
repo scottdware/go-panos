@@ -203,6 +203,14 @@ pa.AddDevice("1084782033")
 pa.AddDevice("1084782033", "Lab-Device-Group")
 ```
 
+##### Specify a Panorama Server on a Device
+
+You can specify a Panorama server on a device by using the `SetPanoramaServer()` function:
+
+```Go
+pa.SetPanoramaServer("10.1.1.1")
+```
+
 ##### Addresses
 
 The `CreateAddress()` function takes 4 parameters: `name`, `address type`, `address` and an (optional) `description`. When
