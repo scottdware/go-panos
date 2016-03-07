@@ -130,7 +130,7 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", name)
 	}
 
@@ -186,7 +186,7 @@ func (p *PaloAlto) CreateServiceGroup(name, members string, devicegroup ...strin
 	}
 	xmlBody += "</members>"
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
 	}
 
@@ -229,7 +229,7 @@ func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
 	var reqError requestError
 	r := rested.NewRequest()
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", name)
 	}
 
@@ -271,7 +271,7 @@ func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error 
 	var reqError requestError
 	r := rested.NewRequest()
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
 	}
 

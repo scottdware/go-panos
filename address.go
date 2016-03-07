@@ -163,7 +163,7 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, de
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
 	}
 
@@ -223,7 +223,7 @@ func (p *PaloAlto) CreateStaticGroup(name, members, description string, devicegr
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
@@ -276,7 +276,7 @@ func (p *PaloAlto) CreateDynamicGroup(name, criteria, description string, device
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
@@ -319,7 +319,7 @@ func (p *PaloAlto) DeleteAddress(name string, devicegroup ...string) error {
 	var reqError requestError
 	r := rested.NewRequest()
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
 	}
 
@@ -361,7 +361,7 @@ func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error 
 	var reqError requestError
 	r := rested.NewRequest()
 
-	if p.DeviceType == "panos" && p.Panorama == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
