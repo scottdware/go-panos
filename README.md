@@ -296,6 +296,25 @@ pa.CreateServiceGroup("Custom-ports", "tcp-5000, web-browsing, snmp", "")
 pa.CreateServiceGroup("Custom-ports", "tcp-5000, web-browsing, snmp", "", "Lab-Device-Group")
 ```
 
+##### Custom URL Categories
+
+You can create custom URL categories by using the `CreateURLCategory()` function, using the following parameters: `name` and `urls`. When
+creating a custom URL category on Panorama, you must specify the `device-group` to create the object in as the last parameter.
+
+If you are specifying multiple URL's, they must be separated by a comma for the `urls` parameter: `"www.*.com, sdubs.org"`
+
+```Go
+pa.CreateURLCategory("custom-URLs", "*.badsite.com, www.*.org, company.com")
+
+// When creating a custom URL category on a Panorama device, specify the desired device-group as the 
+// last parameter, like so:
+pa.CreateURLCategory("custom-URLs", "*.badsite.com, www.*.org, company.com", "Lab-Device-Group")
+
+// Add/remove URL's
+pa.EditURLCategory("add", "*.sdubs.org", "custom-URLs")
+pa.EditURLCategory("remove", "*.badsite.com", "custom-URLs")
+```
+
 ##### Tags
 
 The `CreateTag()` function creates a tag on the device, and takes the following parameters: `name`, `color`, `comments`. When
@@ -363,6 +382,9 @@ pa.DeleteTag("server-tag", "Lab-Device-Group")
 // Delete a device-group from Panorama
 pa.DeleteDeviceGroup("Lab-Devices")
 
+// Delete a custom URL category
+pa.DeleteURLCategory("custom-URLs")
+
 // Remove a device from a specific device-group
 pa.RemoveDevice("1084782033", "Some-Device-Group")
 
@@ -400,10 +422,10 @@ pa.RemoveTag("web", "fqdn-object")
 pa.RemoveTag("servers", "server-farm", "Production-Device-Group")
 ```
 
-#### Modifying Groups
+#### Editing Groups
 
-To modify an address or service group, which includes adding/removing members...you can use the `ModifyGroup()` function, which takes 4 parameters: `objecttype`, 
-`action`, `object` and `group`. When modifying a group object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
+To edit an address or service group, which includes adding/removing members...you can use the `EditGroup()` function, which takes 4 parameters: `objecttype`, 
+`action`, `object` and `group`. When editing a group object on a Panorama device, you must specify the `device-group` to create the object in as the last parameter.
 
 * `objecttype` is one of: "address" or "service"
 * `action` is one of: "add" or "remove"
@@ -411,11 +433,11 @@ To modify an address or service group, which includes adding/removing members...
 `object` and `group` are the names of the objects, respectively.
 
 ```Go
-pa.ModifyGroup("address", "add", "ip-range", "Corporate-Subnets")
-pa.ModifyGroup("service", "remove", "proxy-ports", "Web-Browsing")
+pa.EditGroup("address", "add", "ip-range", "Corporate-Subnets")
+pa.EditGroup("service", "remove", "proxy-ports", "Web-Browsing")
 
-// Modify a group on a Panorama device
-pa.ModifyGroup("address", "add", "my-laptop", "Security-Folks", "Panorama-Device-Group")
+// Edit a group on a Panorama device
+pa.EditGroup("address", "add", "my-laptop", "Security-Folks", "Panorama-Device-Group")
 ```
 
 #### Renaming Objects
