@@ -5,11 +5,12 @@ import (
 	"crypto/tls"
 	"encoding/xml"
 	"fmt"
-	"github.com/scottdware/go-rested"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+
+	"github.com/scottdware/go-rested"
 )
 
 // Wildfire contains information about our session.

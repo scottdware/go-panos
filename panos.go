@@ -5,9 +5,10 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/scottdware/go-rested"
 	"strings"
 	"time"
+
+	"github.com/scottdware/go-rested"
 )
 
 // PaloAlto is a container for our session state.

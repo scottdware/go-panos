@@ -4,8 +4,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/scottdware/go-rested"
 	"strings"
+
+	"github.com/scottdware/go-rested"
 )
 
 // ServiceObjects contains a slice of all service objects.

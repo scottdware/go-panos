@@ -4,8 +4,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/scottdware/go-rested"
 	"strings"
+
+	"github.com/scottdware/go-rested"
 )
 
 // CreateURLCategory creates a custom URL category to be used in a policy. When specifying multiple URL's, separate them
