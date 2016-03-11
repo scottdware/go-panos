@@ -10,6 +10,7 @@ This API allows you to do the following:
 * Create, rename, and delete objects
 * Create, apply, and remove tags from objects
 * Edit/modify address and service groups
+* Create templates and template stacks and assign devices, templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
 * Wildfire - submit files and URL's for analysis, retrieve reports (XML format)
 
