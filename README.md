@@ -2,23 +2,18 @@
 [![GoDoc](https://godoc.org/github.com/scottdware/go-panos?status.svg)](https://godoc.org/github.com/scottdware/go-panos) [![Travis-CI](https://travis-ci.org/scottdware/go-panos.svg?branch=master)](https://travis-ci.org/scottdware/go-panos)
 [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/scottdware/go-panos/master/LICENSE)
 
-A Go package that interacts with Palo Alto and Panorama devices using the XML API.
+A Go package that interacts with Palo Alto and Panorama devices using the XML API. For official package documentation, visit the [GoDoc][godoc-go-panos] page.
 
-Be sure to visit the [GoDoc][godoc-go-panos] page for official package documentation.
+This API allows you to do the following:
 
-> Note: The below examples are a work-in-progress :)
+* List objects (address, service, device-groups, tags, templates, etc.) and managed devices (Panorama)
+* Create, rename, and delete objects
+* Create, apply, and remove tags from objects
+* Edit/modify address and service groups
+* Commit configurations and commit to device-groups (Panorama)
+* Wildfire - submit files and URL's for analysis, retrieve reports (XML format)
 
-### Examples
-
-* [Connecting to a device][connecting-to-a-device]
-* [Listing objects (address, service, device-groups, tags, templates, etc.)][listing-objects]
-* [Creating objects][creating-objects]
-* [Deleting objects][deleting-objects]
-* [Applying/removing tags from objects][tagging-objects]
-* [Modifying groups (address, service, etc.)][modifying-groups]
-* [Renaming objects][renaming-objects]
-* [Commiting configurations][commiting-configurations]
-* [Wildfire submissions][wildfire]
+<!--### Examples
 
 #### Connecting to a Device
 
@@ -530,16 +525,7 @@ for _, report := range output.Reports {
 
     fmt.Println()
 }
-```
+```-->
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
-[connecting-to-a-device]: https://github.com/scottdware/go-panos#connecting-to-a-device
-[listing-objects]: https://github.com/scottdware/go-panos#listing-objects
-[creating-objects]: https://github.com/scottdware/go-panos#creating-objects
-[deleting-objects]: https://github.com/scottdware/go-panos#deleting-objects
-[commiting-configurations]: https://github.com/scottdware/go-panos#commiting-configurations
-[tagging-objects]: https://github.com/scottdware/go-panos#tagging-objects
-[modifying-groups]: https://github.com/scottdware/go-panos#modifying-groups
-[renaming-objects]: https://github.com/scottdware/go-panos#renaming-objects
-[wildfire]: https://github.com/scottdware/go-panos#wildfire
