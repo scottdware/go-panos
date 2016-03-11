@@ -46,20 +46,6 @@ type DeviceGroup struct {
 	Devices []Serial `xml:"devices>entry"`
 }
 
-// Templates lists all of the templates in Panorama.
-type Templates struct {
-	XMLName   xml.Name   `xml:"response"`
-	Status    string     `xml:"status,attr"`
-	Code      string     `xml:"code,attr"`
-	Templates []Template `xml:"result>template>entry"`
-}
-
-// Template contains information about each individual template.
-type Template struct {
-	Name    string   `xml:"name,attr"`
-	Devices []Serial `xml:"devices>entry"`
-}
-
 // Serial contains the serial number of each device in the device-group.
 type Serial struct {
 	Serial string `xml:"name,attr"`
@@ -567,37 +553,6 @@ func (p *PaloAlto) RemoveDevice(serial string, devicegroup ...string) error {
 	}
 
 	return nil
-}
-
-// Templates returns information about all of the templates in Panorama, and what devices they are
-// applied to.
-func (p *PaloAlto) Templates() (*Templates, error) {
-	var temps Templates
-	xpath := "/config/devices/entry//template"
-	// xpath := "/config/devices/entry/vsys/entry/address"
-	r := rested.NewRequest()
-
-	if p.DeviceType != "panorama" {
-		return nil, errors.New("templates can only be listed from a Panorama device")
-	}
-
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
-	}
-	tData := r.Send("get", p.URI, nil, headers, query)
-
-	if err := xml.Unmarshal(tData.Body, &temps); err != nil {
-		return nil, err
-	}
-
-	if temps.Status != "success" {
-		return nil, fmt.Errorf("error code %s: %s", temps.Code, errorCodes[temps.Code])
-	}
-
-	return &temps, nil
 }
 
 // Tags returns information about all tags on the system.
