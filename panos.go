@@ -5,6 +5,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -164,6 +166,17 @@ var (
 		"22":  "Session timed out - The session for this query timed out",
 	}
 )
+
+// splitSWVersion
+func splitSWVersion(version string) []int {
+	re := regexp.MustCompile(`(\d+)\.(\d+)\.(\d+)`)
+	match := re.FindStringSubmatch(version)
+	maj, _ := strconv.Atoi(match[1])
+	min, _ := strconv.Atoi(match[2])
+	rel, _ := strconv.Atoi(match[3])
+
+	return []int{maj, min, rel}
+}
 
 // NewSession sets up our connection to the Palo Alto firewall or Panorama device.
 func NewSession(host, user, passwd string) (*PaloAlto, error) {
