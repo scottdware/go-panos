@@ -158,7 +158,8 @@ func (p *PaloAlto) CreateTemplate(name, description string, devices ...string) e
 }
 
 // CreateTemplateStack adds a new template stack to Panorama. Templates must be separated by a comma, i.e.: "user_template, object_template".
-// If you wish to associate devices, then separate them with a comma, just like you would template names. This is ONLY available on Panorama version 7.0.0 and higher.
+// If you wish to associate devices, then separate them with a comma, just like you would template names.
+// This is ONLY available on Panorama version 7.0.0 and higher.
 func (p *PaloAlto) CreateTemplateStack(name, description, templates string, devices ...string) error {
 	var reqError requestError
 	ver := splitSWVersion(p.SoftwareVersion)
@@ -216,7 +217,8 @@ func (p *PaloAlto) CreateTemplateStack(name, description, templates string, devi
 
 // AssignTemplate will assign devices to the given template. Devices must be serial numbers,
 // and each serial must be separated by a comma, i.e.: "010101010101, 020202020202". If you wish to assign
-// devices to a template stack, then specify "true" for the stack parameter. Template stacks are ONLY
+// devices to a template stack, then specify "true" for the stack parameter, otherwise specifying "false"
+// will only assign devices to a single template. Template stacks are ONLY
 // available on Panorama version 7.0.0 and higher.
 func (p *PaloAlto) AssignTemplate(name, devices string, stack bool) error {
 	var reqError requestError
@@ -266,7 +268,8 @@ func (p *PaloAlto) AssignTemplate(name, devices string, stack bool) error {
 }
 
 // DeleteTemplate removes the given template from Panorama. If you wish to delete
-// a template stack, then specify "true" for the stack parameter. Template stacks are ONLY
+// a template stack, then specify "true" for the stack parameter, otherwise specifying "false"
+// will only delete single templates. Template stacks are ONLY
 // available on Panorama version 7.0.0 and higher.
 func (p *PaloAlto) DeleteTemplate(name string, stack bool) error {
 	var reqError requestError
