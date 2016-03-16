@@ -1199,7 +1199,7 @@ func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 	r := rested.NewRequest()
 
 	if p.DeviceType == "panorama" && len(devices) <= 0 {
-		cmd = fmt.Sprintf("<commit-all><shared-policy><device-group><name>%s</name></device-group></shared-policy></commit-all>", devicegroup)
+		cmd = fmt.Sprintf("<commit-all><shared-policy><device-group><entry name=\"%s\"/></device-group></shared-policy></commit-all>", devicegroup)
 	}
 
 	if p.DeviceType == "panorama" && len(devices) > 0 {
