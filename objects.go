@@ -9,6 +9,63 @@ import (
 	"github.com/scottdware/go-rested"
 )
 
+// URLCategory contains a slice of all custom URL category objects.
+type URLCategory struct {
+	XMLName xml.Name    `xml:"response"`
+	Status  string      `xml:"status,attr"`
+	Code    string      `xml:"code,attr"`
+	URLs    []CustomURL `xml:"result>custom-url-category>entry"`
+}
+
+// CustomURL contains information about each individual custom URL category object.
+type CustomURL struct {
+	Name        string   `xml:"name,attr"`
+	Description string   `xml:"description,omitempty"`
+	Members     []string `xml:"list>member,omitempty"`
+}
+
+// URLCategory returns a list of all custom URL category objects. You can (optionally) specify a device-group
+// when ran against a Panorama device. If no device-group is specified, then all objects are returned.
+func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
+	var urls URLCategory
+	xpath := "/config/devices/entry//custom-url-category"
+	r := rested.NewRequest()
+
+	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+	}
+
+	if p.DeviceType == "panos" && p.Panorama == true {
+		xpath = "/config/panorama//custom-url-category"
+	}
+
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/profiles/custom-url-category"
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/profiles/custom-url-category", devicegroup[0])
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "get",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+	urlData := r.Send("get", p.URI, nil, headers, query)
+
+	if err := xml.Unmarshal(urlData.Body, &urls); err != nil {
+		return nil, err
+	}
+
+	if urls.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", urls.Code, errorCodes[urls.Code])
+	}
+
+	return &urls, nil
+}
+
 // CreateURLCategory creates a custom URL category to be used in a policy. When specifying multiple URL's, separate them
 // using a comma, i.e. "www.*.com, *.sdubs.org". When creating a custom URL category on a Panorama device, specify the
 // device-group as the last parameter.
