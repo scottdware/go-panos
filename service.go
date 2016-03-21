@@ -40,21 +40,27 @@ type ServiceGroup struct {
 	Description string   `xml:"description,omitempty"`
 }
 
-// Services returns information about all of the service objects. When run against a Panorama device,
-// services from all device-groups are returned.
-func (p *PaloAlto) Services() (*ServiceObjects, error) {
+// Services returns information about all of the service objects. You can (optionally) specify a device-group
+// when ran against a Panorama device. If no device-group is specified, then all objects are returned.
+func (p *PaloAlto) Services(devicegroup ...string) (*ServiceObjects, error) {
 	var svcs ServiceObjects
 	xpath := "/config/devices/entry//service"
-	// xpath := "/config/devices/entry/vsys/entry/address"
 	r := rested.NewRequest()
+
+	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+	}
 
 	if p.DeviceType == "panos" && p.Panorama == true {
 		xpath = "/config/panorama//service"
 	}
 
-	if p.DeviceType == "panorama" {
-		// xpath = "/config/devices/entry/device-group/entry/address"
-		xpath = "/config/devices/entry//service"
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service"
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service", devicegroup[0])
 	}
 
 	query := map[string]string{
@@ -76,21 +82,27 @@ func (p *PaloAlto) Services() (*ServiceObjects, error) {
 	return &svcs, nil
 }
 
-// ServiceGroups returns information about all of the service groups. When run against a Panorama device,
-// service groups from all device-groups are returned.
-func (p *PaloAlto) ServiceGroups() (*ServiceGroups, error) {
+// ServiceGroups returns information about all of the service groups. You can (optionally) specify a device-group
+// when ran against a Panorama device. If no device-group is specified, then all service groups are returned.
+func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) {
 	var groups ServiceGroups
 	xpath := "/config/devices/entry//service-group"
-	// xpath := "/config/devices/entry/vsys/entry/address-group"
 	r := rested.NewRequest()
+
+	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+	}
 
 	if p.DeviceType == "panos" && p.Panorama == true {
 		xpath = "/config/panorama//service-group"
 	}
 
-	if p.DeviceType == "panorama" {
-		// xpath = "/config/devices/entry/device-group/entry/address-group"
-		xpath = "/config/devices/entry//service-group"
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group"
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group", devicegroup[0])
 	}
 
 	query := map[string]string{
