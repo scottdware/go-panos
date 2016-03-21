@@ -56,21 +56,27 @@ type xmlAddressGroup struct {
 	Description   string   `xml:"description,omitempty"`
 }
 
-// Addresses returns information about all of the address objects. When run against a Panorama device,
-// addresses from all device-groups are returned.
-func (p *PaloAlto) Addresses() (*AddressObjects, error) {
+// Addresses returns information about all of the address objects. You can (optionally) specify a device-group
+// when ran against a Panorama device. If no device-group is specified, then all objects are returned.
+func (p *PaloAlto) Addresses(devicegroup ...string) (*AddressObjects, error) {
 	var addrs AddressObjects
 	xpath := "/config/devices/entry//address"
-	// xpath := "/config/devices/entry/vsys/entry/address"
 	r := rested.NewRequest()
+
+	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+	}
 
 	if p.DeviceType == "panos" && p.Panorama == true {
 		xpath = "/config/panorama//address"
 	}
 
-	if p.DeviceType == "panorama" {
-		// xpath = "/config/devices/entry/device-group/entry/address"
-		xpath = "/config/devices/entry//address"
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address"
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address", devicegroup[0])
 	}
 
 	query := map[string]string{
@@ -92,22 +98,28 @@ func (p *PaloAlto) Addresses() (*AddressObjects, error) {
 	return &addrs, nil
 }
 
-// AddressGroups returns information about all of the address groups. When run against a Panorama device,
-// address groups from all device-groups are returned.
-func (p *PaloAlto) AddressGroups() (*AddressGroups, error) {
+// AddressGroups returns information about all of the address groups. You can (optionally) specify a device-group
+// when ran against a Panorama device. If no device-group is specified, then all address groups are returned.
+func (p *PaloAlto) AddressGroups(devicegroup ...string) (*AddressGroups, error) {
 	var parsedGroups xmlAddressGroups
 	var groups AddressGroups
 	xpath := "/config/devices/entry//address-group"
-	// xpath := "/config/devices/entry/vsys/entry/address-group"
 	r := rested.NewRequest()
+
+	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+	}
 
 	if p.DeviceType == "panos" && p.Panorama == true {
 		xpath = "/config/panorama//address-group"
 	}
 
-	if p.DeviceType == "panorama" {
-		// xpath = "/config/devices/entry/device-group/entry/address-group"
-		xpath = "/config/devices/entry//address-group"
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group"
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group", devicegroup[0])
 	}
 
 	query := map[string]string{
