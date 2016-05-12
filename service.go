@@ -179,6 +179,56 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 	return nil
 }
 
+// CreateSharedService adds a new shared service object to Panorama. Port can be a single port #, range (1-65535), or comma separated (80, 8080, 443).
+func (p *PaloAlto) CreateSharedService(name, protocol, port, description string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	switch protocol {
+	case "tcp":
+		xmlBody = fmt.Sprintf("<protocol><tcp><port>%s</port></tcp></protocol>", strings.Replace(port, " ", "", -1))
+	case "udp":
+		xmlBody = fmt.Sprintf("<protocol><udp><port>%s</port></udp></protocol>", strings.Replace(port, " ", "", -1))
+	}
+
+	if description != "" {
+		xmlBody += fmt.Sprintf("<description>%s</description>", description)
+	}
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // CreateServiceGroup will create a new service group on the device. You can specify multiple members
 // by separating them with a comma, i.e. "tcp-ports, udp-ports". If creating a service group on
 // a Panorama device, then specify the given device-group name as the last parameter.
@@ -209,6 +259,57 @@ func (p *PaloAlto) CreateServiceGroup(name, members string, devicegroup ...strin
 
 	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateSharedServiceGroup will create a new shared service group on Panorama. You can specify multiple members
+// by separating them with a comma, i.e. "tcp-ports, udp-ports".
+func (p *PaloAlto) CreateSharedServiceGroup(name, members string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+	m := strings.Split(members, ",")
+
+	if members == "" {
+		return errors.New("you cannot create a service group without any members")
+	}
+
+	xmlBody = "<members>"
+	for _, member := range m {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(member))
+	}
+	xmlBody += "</members>"
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
 	}
 
 	query := map[string]string{

@@ -212,6 +212,58 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, de
 	return nil
 }
 
+// CreateSharedAddress will add a new shared address object to Panorama. addrtype should be one of: ip, range, or fqdn.
+func (p *PaloAlto) CreateSharedAddress(name, addrtype, address, description string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	switch addrtype {
+	case "ip":
+		xmlBody = fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
+	case "range":
+		xmlBody = fmt.Sprintf("<ip-range>%s</ip-range>", address)
+	case "fqdn":
+		xmlBody = fmt.Sprintf("<fqdn>%s</fqdn>", address)
+	}
+
+	if description != "" {
+		xmlBody += fmt.Sprintf("<description>%s</description>", description)
+	}
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", name)
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // CreateStaticGroup will create a new static address group on the device. You can specify multiple members
 // by separating them with a comma, i.e. "web-server1, web-server2". If creating an address group on
 // a Panorama device, then specify the given device-group name as the last parameter.
@@ -272,6 +324,61 @@ func (p *PaloAlto) CreateStaticGroup(name, members, description string, devicegr
 	return nil
 }
 
+// CreateSharedStaticGroup will create a new shared static address group on Panorama. You can specify multiple members
+// by separating them with a comma, i.e. "web-server1, web-server2".
+func (p *PaloAlto) CreateSharedStaticGroup(name, members, description string) error {
+	var xmlBody string
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+	m := strings.Split(members, ",")
+
+	if members == "" {
+		return errors.New("you cannot create a static address group without any members")
+	}
+
+	xmlBody = "<static>"
+	for _, member := range m {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(member))
+	}
+	xmlBody += "</static>"
+
+	if description != "" {
+		xmlBody += fmt.Sprintf("<description>%s</description>", description)
+	}
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // CreateDynamicGroup will create a new dynamic address group on the device. The filter must be written like so:
 // 'vm-servers' and 'some tag' or 'pcs' - using the tags as the match criteria. If creating an address group on a
 // Panorama device, then specify the given device-group name as the last parameter.
@@ -299,6 +406,54 @@ func (p *PaloAlto) CreateDynamicGroup(name, criteria, description string, device
 
 	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":    "config",
+		"action":  "set",
+		"xpath":   xpath,
+		"element": xmlBody,
+		"key":     p.Key,
+	}
+
+	resp := r.Send("post", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateSharedDynamicGroup will create a new shared dynamic address group on Panorama. The filter must be written like so:
+// 'vm-servers' and 'some tag' or 'pcs' - using the tags as the match criteria.
+func (p *PaloAlto) CreateSharedDynamicGroup(name, criteria, description string) error {
+	xmlBody := fmt.Sprintf("<dynamic><filter>%s</filter></dynamic>", criteria)
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if criteria == "" {
+		return errors.New("you cannot create a dynamic address group without any filter")
+	}
+
+	if description != "" {
+		xmlBody += fmt.Sprintf("<description>%s</description>", description)
+	}
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
 	}
 
 	query := map[string]string{
