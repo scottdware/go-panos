@@ -522,6 +522,43 @@ func (p *PaloAlto) DeleteAddress(name string, devicegroup ...string) error {
 	return nil
 }
 
+// DeleteSharedAddress will remove a shared address object from Panorama.
+func (p *PaloAlto) DeleteSharedAddress(name string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only remove shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", name)
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // DeleteAddressGroup will remove an address group from the device. If deleting an address group on a
 // Panorama device, then specify the given device-group name as the last parameter.
 func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error {
@@ -539,6 +576,43 @@ func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error 
 
 	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteSharedAddressGroup will remove a shared address group from Panorama.
+func (p *PaloAlto) DeleteSharedAddressGroup(name string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
 	}
 
 	query := map[string]string{

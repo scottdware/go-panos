@@ -378,6 +378,43 @@ func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
 	return nil
 }
 
+// DeleteSharedService will remove a shared service object from Panorama.
+func (p *PaloAlto) DeleteSharedService(name string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // DeleteServiceGroup will remove a service group from the device. If deleting a service group on a
 // Panorama device, then specify the given device-group name as the last parameter.
 func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error {
@@ -395,6 +432,43 @@ func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error 
 
 	if p.DeviceType == "panorama" && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when connected to a Panorama device")
+	}
+
+	query := map[string]string{
+		"type":   "config",
+		"action": "delete",
+		"xpath":  xpath,
+		"key":    p.Key,
+	}
+
+	resp := r.Send("get", p.URI, nil, nil, query)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteSharedServiceGroup will remove a shared service group from Panorama.
+func (p *PaloAlto) DeleteSharedServiceGroup(name string) error {
+	var xpath string
+	var reqError requestError
+	r := rested.NewRequest()
+
+	if p.DeviceType == "panos" {
+		return errors.New("you can only create shared objects when connected to a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" {
+		xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
 	}
 
 	query := map[string]string{
