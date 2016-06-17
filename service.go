@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/scottdware/go-rested"
 )
 
 // ServiceObjects contains a slice of all service objects.
@@ -45,7 +43,6 @@ type ServiceGroup struct {
 func (p *PaloAlto) Services(devicegroup ...string) (*ServiceObjects, error) {
 	var svcs ServiceObjects
 	xpath := "/config/devices/entry//service"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
 		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
@@ -63,15 +60,12 @@ func (p *PaloAlto) Services(devicegroup ...string) (*ServiceObjects, error) {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service", devicegroup[0])
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, svcData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
-	svcData := r.Send("get", p.URI, nil, headers, query)
 
-	if err := xml.Unmarshal(svcData.Body, &svcs); err != nil {
+	if err := xml.Unmarshal([]byte(svcData), &svcs); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +81,6 @@ func (p *PaloAlto) Services(devicegroup ...string) (*ServiceObjects, error) {
 func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) {
 	var groups ServiceGroups
 	xpath := "/config/devices/entry//service-group"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
 		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
@@ -105,15 +98,12 @@ func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) 
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group", devicegroup[0])
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, groupData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
-	groupData := r.Send("get", p.URI, nil, headers, query)
 
-	if err := xml.Unmarshal(groupData.Body, &groups); err != nil {
+	if err := xml.Unmarshal([]byte(groupData), &groups); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +120,6 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	switch protocol {
 	case "tcp":
@@ -155,20 +144,12 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"element": xmlBody,
-		"key":     p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -184,7 +165,6 @@ func (p *PaloAlto) CreateSharedService(name, protocol, port, description string)
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	switch protocol {
 	case "tcp":
@@ -205,20 +185,12 @@ func (p *PaloAlto) CreateSharedService(name, protocol, port, description string)
 		xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"element": xmlBody,
-		"key":     p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -236,7 +208,6 @@ func (p *PaloAlto) CreateServiceGroup(name, members string, devicegroup ...strin
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 	m := strings.Split(members, ",")
 
 	if members == "" {
@@ -261,20 +232,12 @@ func (p *PaloAlto) CreateServiceGroup(name, members string, devicegroup ...strin
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"element": xmlBody,
-		"key":     p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -291,7 +254,6 @@ func (p *PaloAlto) CreateSharedServiceGroup(name, members string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 	m := strings.Split(members, ",")
 
 	if members == "" {
@@ -312,20 +274,12 @@ func (p *PaloAlto) CreateSharedServiceGroup(name, members string) error {
 		xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"element": xmlBody,
-		"key":     p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -341,7 +295,6 @@ func (p *PaloAlto) CreateSharedServiceGroup(name, members string) error {
 func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", name)
@@ -355,19 +308,12 @@ func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -382,7 +328,6 @@ func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
 func (p *PaloAlto) DeleteSharedService(name string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" {
 		return errors.New("you can only create shared objects when connected to a Panorama device")
@@ -392,19 +337,12 @@ func (p *PaloAlto) DeleteSharedService(name string) error {
 		xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -420,7 +358,6 @@ func (p *PaloAlto) DeleteSharedService(name string) error {
 func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
@@ -434,19 +371,12 @@ func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error 
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -461,7 +391,6 @@ func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error 
 func (p *PaloAlto) DeleteSharedServiceGroup(name string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" {
 		return errors.New("you can only create shared objects when connected to a Panorama device")
@@ -471,19 +400,12 @@ func (p *PaloAlto) DeleteSharedServiceGroup(name string) error {
 		xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 

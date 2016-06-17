@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/scottdware/go-rested"
 )
 
 // URLCategory contains a slice of all custom URL category objects.
@@ -29,7 +27,6 @@ type CustomURL struct {
 func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
 	var urls URLCategory
 	xpath := "/config/devices/entry//custom-url-category"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
 		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
@@ -47,15 +44,12 @@ func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/profiles/custom-url-category", devicegroup[0])
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, urlData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
-	urlData := r.Send("get", p.URI, nil, headers, query)
 
-	if err := xml.Unmarshal(urlData.Body, &urls); err != nil {
+	if err := xml.Unmarshal([]byte(urlData), &urls); err != nil {
 		return nil, err
 	}
 
@@ -72,7 +66,6 @@ func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
 func (p *PaloAlto) CreateURLCategory(name, urls, description string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 	u := strings.Split(urls, ",")
 
 	xmlBody := "<list>"
@@ -97,20 +90,12 @@ func (p *PaloAlto) CreateURLCategory(name, urls, description string, devicegroup
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"key":     p.Key,
-		"element": xmlBody,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -127,26 +112,21 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, devicegroup ...stri
 	var xpath string
 	var xmlBody string
 	var reqError requestError
-	r := rested.NewRequest()
 
-	query := map[string]string{
-		"type": "config",
-		"key":  p.Key,
-	}
+	query := fmt.Sprintf("type=config&key=%s", p.Key)
 
 	if p.DeviceType == "panos" {
 		if action == "add" {
 			xmlBody += fmt.Sprintf("<member>%s</member>", url)
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/profiles/custom-url-category/entry[@name='%s']/list", name)
-			query["action"] = "set"
-			query["element"] = xmlBody
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=set&xpath=%s&element=%s", xpath, xmlBody)
 		}
 
 		if action == "remove" {
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/profiles/custom-url-category/entry[@name='%s']/list/member[text()='%s']", name, url)
-			query["action"] = "delete"
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=delete&xpath=%s", xpath)
 		}
 	}
 
@@ -154,15 +134,14 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, devicegroup ...stri
 		if action == "add" {
 			xmlBody = fmt.Sprintf("<member>%s</member>", url)
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/profiles/custom-url-category/entry[@name='%s']/list", devicegroup[0], name)
-			query["action"] = "set"
-			query["element"] = xmlBody
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=set&xpath=%s&element=%s", xpath, xmlBody)
 		}
 
 		if action == "remove" {
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/profiles/custom-url-category/entry[@name='%s']/list/member[text()='%s']", devicegroup[0], name, url)
-			query["action"] = "delete"
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=delete&xpath=%s", xpath)
 		}
 	}
 
@@ -170,12 +149,12 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, devicegroup ...stri
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -191,7 +170,6 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, devicegroup ...stri
 func (p *PaloAlto) DeleteURLCategory(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/profiles/custom-url-category/entry[@name='%s']", name)
@@ -205,19 +183,12 @@ func (p *PaloAlto) DeleteURLCategory(name string, devicegroup ...string) error {
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -234,12 +205,8 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
-	query := map[string]string{
-		"type": "config",
-		"key":  p.Key,
-	}
+	query := fmt.Sprintf("type=config&key=%s", p.Key)
 
 	if p.DeviceType == "panos" {
 		if action == "add" {
@@ -248,9 +215,8 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 			if objecttype == "service" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/members", group)
 			}
-			query["action"] = "set"
-			query["element"] = xmlBody
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=set&xpath=%s&element=%s", xpath, xmlBody)
 		}
 
 		if action == "remove" {
@@ -258,8 +224,8 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 			if objecttype == "service" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/members/member[text()='%s']", group, object)
 			}
-			query["action"] = "delete"
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=delete&xpath=%s", xpath)
 		}
 	}
 
@@ -270,9 +236,8 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 			if objecttype == "service" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/members", devicegroup[0], group)
 			}
-			query["action"] = "set"
-			query["element"] = xmlBody
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=set&xpath=%s&element=%s", xpath, xmlBody)
 		}
 
 		if action == "remove" {
@@ -280,8 +245,8 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 			if objecttype == "service" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/members/member[text()='%s']", devicegroup[0], group, object)
 			}
-			query["action"] = "delete"
-			query["xpath"] = xpath
+
+			query += fmt.Sprintf("&action=delete&xpath=%s", xpath)
 		}
 	}
 
@@ -289,12 +254,12 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -311,33 +276,23 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 	adObj, _ := p.Addresses()
 	agObj, _ := p.AddressGroups()
 	sObj, _ := p.Services()
 	sgObj, _ := p.ServiceGroups()
 	tags, _ := p.Tags()
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "rename",
-		"key":     p.Key,
-		"newname": newname,
-	}
-
 	for _, a := range adObj.Addresses {
 		if oldname == a.Name {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -351,14 +306,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -380,14 +333,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -401,14 +352,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -430,14 +379,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -451,14 +398,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -480,14 +425,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -501,14 +444,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -530,14 +471,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag/entry[@name='%s']", oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -551,14 +490,12 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], oldname)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 

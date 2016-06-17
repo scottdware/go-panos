@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/scottdware/go-rested"
 )
 
 // Templates lists all of the templates in Panorama.
@@ -46,22 +44,17 @@ func (p *PaloAlto) Templates() (*Templates, error) {
 	var temps Templates
 	xpath := "/config/devices/entry//template"
 	// xpath := "/config/devices/entry/vsys/entry/address"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("templates can only be listed on a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, tData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
 
-	tData := r.Send("get", p.URI, nil, headers, query)
-
-	if err := xml.Unmarshal(tData.Body, &temps); err != nil {
+	if err := xml.Unmarshal([]byte(tData), &temps); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +72,6 @@ func (p *PaloAlto) TemplateStacks() (*TemplateStacks, error) {
 	ver := splitSWVersion(p.SoftwareVersion)
 	xpath := "/config/devices/entry//template-stack"
 	// xpath := "/config/devices/entry/vsys/entry/address"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("template stacks can only be listed on a Panorama device")
@@ -89,16 +81,12 @@ func (p *PaloAlto) TemplateStacks() (*TemplateStacks, error) {
 		return nil, errors.New("you must be running version 7.0.0 or higher to use template stacks")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, tData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
 
-	tData := r.Send("get", p.URI, nil, headers, query)
-
-	if err := xml.Unmarshal(tData.Body, &temps); err != nil {
+	if err := xml.Unmarshal([]byte(tData), &temps); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +103,6 @@ func (p *PaloAlto) CreateTemplate(name, description string, devices ...string) e
 	var reqError requestError
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='%s']", name)
 	xmlBody := "<settings><default-vsys>vsys1</default-vsys></settings><config><devices><entry name=\"localhost.localdomain\"><vsys><entry name=\"vsys1\"/></vsys></entry></devices></config>"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" {
 		return errors.New("templates can only be created on a Panorama device")
@@ -133,20 +120,12 @@ func (p *PaloAlto) CreateTemplate(name, description string, devices ...string) e
 		xmlBody += "</devices>"
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"key":     p.Key,
-		"element": xmlBody,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, headers, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -169,7 +148,6 @@ func (p *PaloAlto) CreateTemplateStack(name, description, templates string, devi
 		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(t))
 	}
 	xmlBody += "</templates>"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" {
 		return errors.New("template stacks can only be created on a Panorama device")
@@ -191,20 +169,12 @@ func (p *PaloAlto) CreateTemplateStack(name, description, templates string, devi
 		xmlBody += "</devices>"
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"key":     p.Key,
-		"element": xmlBody,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, headers, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -229,7 +199,6 @@ func (p *PaloAlto) AssignTemplate(name, devices string, stack bool) error {
 		xmlBody += fmt.Sprintf("<entry name=\"%s\"/>", strings.TrimSpace(d))
 	}
 	xmlBody += "</devices>"
-	r := rested.NewRequest()
 
 	if stack {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/template-stack/entry[@name='%s']", name)
@@ -243,20 +212,12 @@ func (p *PaloAlto) AssignTemplate(name, devices string, stack bool) error {
 		return errors.New("you must be running version 7.0.0 or higher to use template stacks")
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"key":     p.Key,
-		"element": xmlBody,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -275,7 +236,6 @@ func (p *PaloAlto) DeleteTemplate(name string, stack bool) error {
 	var reqError requestError
 	ver := splitSWVersion(p.SoftwareVersion)
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='%s']", name)
-	r := rested.NewRequest()
 
 	if stack {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/template-stack/entry[@name='%s']", name)
@@ -289,19 +249,12 @@ func (p *PaloAlto) DeleteTemplate(name string, stack bool) error {
 		return errors.New("you must be running version 7.0.0 or higher to use template stacks")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, headers, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 

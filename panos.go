@@ -2,6 +2,7 @@
 package panos
 
 import (
+	"crypto/tls"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scottdware/go-rested"
+	"github.com/parnurzeal/gorequest"
 )
 
 // PaloAlto is a container for our session state.
@@ -116,9 +117,7 @@ type requestError struct {
 }
 
 var (
-	headers = map[string]string{
-		"Content-Type": "application/xml",
-	}
+	r = gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 
 	tagColors = map[string]string{
 		"Red":         "color1",
@@ -185,14 +184,13 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 	var pan panoramaStatus
 	status := false
 	deviceType := "panos"
-	r := rested.NewRequest()
 
-	resp := r.Send("get", fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd), nil, nil, nil)
-	if resp.Error != nil {
-		return nil, resp.Error
+	_, body, errs := r.Get(fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
 
-	err := xml.Unmarshal(resp.Body, &key)
+	err := xml.Unmarshal([]byte(body), &key)
 	if err != nil {
 		return nil, err
 	}
@@ -202,13 +200,12 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 	}
 
 	uri := fmt.Sprintf("https://%s/api/?", host)
-	getInfo := r.Send("get", fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key.Key), nil, nil, nil)
-
-	if getInfo.Error != nil {
-		return nil, getInfo.Error
+	_, getInfo, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
 
-	err = xml.Unmarshal(getInfo.Body, &info)
+	err = xml.Unmarshal([]byte(getInfo), &info)
 	if err != nil {
 		return nil, err
 	}
@@ -217,12 +214,12 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 		return nil, fmt.Errorf("error code %s: %s (show system info)", info.Code, errorCodes[info.Code])
 	}
 
-	panStatus := r.Send("get", fmt.Sprintf("%s&key=%s&type=op&cmd=<show><panorama-status></panorama-status></show>", uri, key.Key), nil, nil, nil)
-	if panStatus.Error != nil {
-		return nil, panStatus.Error
+	_, panStatus, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><panorama-status></panorama-status></show>", uri, key.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
 
-	err = xml.Unmarshal(panStatus.Body, &pan)
+	err = xml.Unmarshal([]byte(panStatus), &pan)
 	if err != nil {
 		return nil, err
 	}
@@ -253,21 +250,17 @@ func (p *PaloAlto) Devices() (*Devices, error) {
 	var devices Devices
 	xpath := "/config/mgt-config/devices"
 	// xpath := "/config/devices/entry/vsys/entry/address"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("devices can only be listed from a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, devData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
-	devData := r.Send("get", p.URI, nil, headers, query)
 
-	if err := xml.Unmarshal(devData.Body, &devices); err != nil {
+	if err := xml.Unmarshal([]byte(devData), &devices); err != nil {
 		return nil, err
 	}
 
@@ -284,21 +277,17 @@ func (p *PaloAlto) DeviceGroups() (*DeviceGroups, error) {
 	var devices DeviceGroups
 	xpath := "/config/devices/entry//device-group"
 	// xpath := "/config/devices/entry/vsys/entry/address"
-	r := rested.NewRequest()
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("device-groups can only be listed from a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, devData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
-	devData := r.Send("get", p.URI, nil, headers, query)
 
-	if err := xml.Unmarshal(devData.Body, &devices); err != nil {
+	if err := xml.Unmarshal([]byte(devData), &devices); err != nil {
 		return nil, err
 	}
 
@@ -315,7 +304,6 @@ func (p *PaloAlto) CreateDeviceGroup(name, description string, devices []string)
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
 		return errors.New("you must be connected to a Panorama device when creating a device-group")
@@ -340,20 +328,12 @@ func (p *PaloAlto) CreateDeviceGroup(name, description string, devices []string)
 
 	xmlBody += "</entry>"
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"element": xmlBody,
-		"key":     p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -368,7 +348,6 @@ func (p *PaloAlto) CreateDeviceGroup(name, description string, devices []string)
 func (p *PaloAlto) DeleteDeviceGroup(name string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
 		return errors.New("you must be connected to a Panorama device when deleting a device-group")
@@ -378,19 +357,12 @@ func (p *PaloAlto) DeleteDeviceGroup(name string) error {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']", name)
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -405,7 +377,6 @@ func (p *PaloAlto) DeleteDeviceGroup(name string) error {
 // it will also add the device to the given device-group.
 func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
 		return errors.New("you must be connected to Panorama when adding devices")
@@ -415,20 +386,12 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 		xpath := "/config/mgt-config/devices"
 		xmlBody := fmt.Sprintf("<entry name=\"%s\"/>", serial)
 
-		query := map[string]string{
-			"type":    "config",
-			"action":  "set",
-			"xpath":   xpath,
-			"element": xmlBody,
-			"key":     p.Key,
+		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		if errs != nil {
+			return errs[0]
 		}
 
-		resp := r.Send("post", p.URI, nil, nil, query)
-		if resp.Error != nil {
-			return resp.Error
-		}
-
-		if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 			return err
 		}
 
@@ -443,20 +406,12 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']", devicegroup[0])
 		xmlBody := fmt.Sprintf("<devices><entry name=\"%s\"/></devices>", serial)
 
-		deviceQuery := map[string]string{
-			"type":    "config",
-			"action":  "set",
-			"xpath":   deviceXpath,
-			"element": deviceXMLBody,
-			"key":     p.Key,
+		_, addResp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", deviceXpath, deviceXMLBody, p.Key)).End()
+		if errs != nil {
+			return errs[0]
 		}
 
-		addResp := r.Send("post", p.URI, nil, nil, deviceQuery)
-		if addResp.Error != nil {
-			return addResp.Error
-		}
-
-		if err := xml.Unmarshal(addResp.Body, &reqError); err != nil {
+		if err := xml.Unmarshal([]byte(addResp), &reqError); err != nil {
 			return err
 		}
 
@@ -466,20 +421,12 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 
 		time.Sleep(200 * time.Millisecond)
 
-		query := map[string]string{
-			"type":    "config",
-			"action":  "set",
-			"xpath":   xpath,
-			"element": xmlBody,
-			"key":     p.Key,
+		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		if errs != nil {
+			return errs[0]
 		}
 
-		resp := r.Send("post", p.URI, nil, nil, query)
-		if resp.Error != nil {
-			return resp.Error
-		}
-
-		if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 			return err
 		}
 
@@ -494,7 +441,6 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 // SetPanoramaServer will configure a device to be managed by the given Panorama server's IP address.
 func (p *PaloAlto) SetPanoramaServer(ip string) error {
 	var reqError requestError
-	r := rested.NewRequest()
 	xpath := "/config/devices/entry[@name='localhost.localdomain']/deviceconfig/system"
 	xmlBody := fmt.Sprintf("<panorama-server>%s</panorama-server>", ip)
 
@@ -502,20 +448,12 @@ func (p *PaloAlto) SetPanoramaServer(ip string) error {
 		return errors.New("you must be connected to a non-Panorama device in order to configure a Panorama server")
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"key":     p.Key,
-		"element": xmlBody,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -531,7 +469,6 @@ func (p *PaloAlto) SetPanoramaServer(ip string) error {
 func (p *PaloAlto) RemoveDevice(serial string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" || p.DeviceType != "panorama" {
 		return errors.New("you must be connected to Panorama when removing devices")
@@ -545,19 +482,12 @@ func (p *PaloAlto) RemoveDevice(serial string, devicegroup ...string) error {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/devices/entry[@name='%s']", devicegroup[0], serial)
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -575,7 +505,6 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 	var tcolor string
 	xpath := "/config/devices/entry//tag"
 	// xpath := "/config/devices/entry/vsys/entry/tag"
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" && p.Panorama == true {
 		xpath = "/config/panorama//tag"
@@ -586,15 +515,12 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 		xpath = "/config/devices/entry//tag"
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "get",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, tData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
 	}
-	tData := r.Send("get", p.URI, nil, headers, query)
 
-	if err := xml.Unmarshal(tData.Body, &parsedTags); err != nil {
+	if err := xml.Unmarshal([]byte(tData), &parsedTags); err != nil {
 		return nil, err
 	}
 
@@ -626,7 +552,6 @@ func (p *PaloAlto) CreateTag(name, color, comments string, devicegroup ...string
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	xmlBody = fmt.Sprintf("<color>%s</color>", tagColors[color])
 
@@ -646,20 +571,12 @@ func (p *PaloAlto) CreateTag(name, color, comments string, devicegroup ...string
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "set",
-		"xpath":   xpath,
-		"element": xmlBody,
-		"key":     p.Key,
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("post", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -675,7 +592,6 @@ func (p *PaloAlto) CreateTag(name, color, comments string, devicegroup ...string
 func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 
 	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag/entry[@name='%s']", name)
@@ -689,19 +605,12 @@ func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 		return errors.New("you must specify a device-group when connected to a Panorama device")
 	}
 
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"xpath":  xpath,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -719,7 +628,6 @@ func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 	tags := strings.Split(tag, ",")
 	adObj, _ := p.Addresses()
 	agObj, _ := p.AddressGroups()
@@ -732,26 +640,17 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 	}
 	xmlBody += "</tag>"
 
-	query := map[string]string{
-		"type":    "config",
-		"action":  "edit",
-		"element": xmlBody,
-		"key":     p.Key,
-	}
-
 	for _, a := range adObj.Addresses {
 		if object == a.Name {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag", object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -765,14 +664,12 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag", devicegroup[0], object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -794,14 +691,12 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/tag", object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -815,14 +710,12 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag", devicegroup[0], object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -844,14 +737,12 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']/tag", object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -865,14 +756,12 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag", devicegroup[0], object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -894,14 +783,12 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/tag", object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -915,14 +802,12 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag", devicegroup[0], object)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -947,31 +832,22 @@ func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	r := rested.NewRequest()
 	adObj, _ := p.Addresses()
 	agObj, _ := p.AddressGroups()
 	sObj, _ := p.Services()
 	sgObj, _ := p.ServiceGroups()
-
-	query := map[string]string{
-		"type":   "config",
-		"action": "delete",
-		"key":    p.Key,
-	}
 
 	for _, a := range adObj.Addresses {
 		if object == a.Name {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -985,14 +861,12 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -1014,14 +888,12 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -1035,14 +907,12 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -1064,14 +934,12 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -1085,14 +953,12 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -1114,14 +980,12 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -1135,14 +999,12 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 			if p.DeviceType == "panorama" && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
-				query["xpath"] = xpath
-
-				resp := r.Send("post", p.URI, nil, nil, query)
-				if resp.Error != nil {
-					return resp.Error
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+				if errs != nil {
+					return errs[0]
 				}
 
-				if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 					return err
 				}
 
@@ -1166,20 +1028,13 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 // the configuration will only be committed to Panorama, and not an individual device-group.
 func (p *PaloAlto) Commit() error {
 	var reqError requestError
-	r := rested.NewRequest()
 
-	query := map[string]string{
-		"type": "commit",
-		"cmd":  "<commit></commit>",
-		"key":  p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=commit&cmd=<commit></commit>&key=%s", p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
@@ -1196,8 +1051,6 @@ func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 	var reqError requestError
 	var cmd string
 
-	r := rested.NewRequest()
-
 	if p.DeviceType == "panorama" && len(devices) <= 0 {
 		cmd = fmt.Sprintf("<commit-all><shared-policy><device-group><entry name=\"%s\"/></device-group></shared-policy></commit-all>", devicegroup)
 	}
@@ -1212,19 +1065,12 @@ func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 		cmd += "</devices></device-group></shared-policy></commit-all>"
 	}
 
-	query := map[string]string{
-		"type":   "commit",
-		"action": "all",
-		"cmd":    cmd,
-		"key":    p.Key,
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=commit&action=all&cmd=%s&key=%s", cmd, p.Key)).End()
+	if errs != nil {
+		return errs[0]
 	}
 
-	resp := r.Send("get", p.URI, nil, nil, query)
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	if err := xml.Unmarshal(resp.Body, &reqError); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
 		return err
 	}
 
