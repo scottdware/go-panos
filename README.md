@@ -13,6 +13,8 @@ This API allows you to do the following:
 * Create templates and template stacks and assign devices, templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
 * Wildfire - submit files and URL's for analysis, retrieve reports (XML format)
+* Create layer-3 interfaces locally, as well as zones, virtual-routers, etc.
+* Assign interfaces to zones and virtual-routers.
 
 <!--### Examples
 
