@@ -85,7 +85,7 @@ func (p *PaloAlto) AddInterfaceToZone(name, zonetype, ifname string) error {
 	ints := strings.Split(ifname, ",")
 
 	if p.DeviceType == "panorama" {
-		return errors.New("you cannot create zones on a Panorama device")
+		return errors.New("you cannot add interfaces to zones on a Panorama device")
 	}
 
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/zone/entry[@name='%s']", name)
