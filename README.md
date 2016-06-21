@@ -6,15 +6,19 @@ A Go package that interacts with Palo Alto and Panorama devices using the XML AP
 
 This API allows you to do the following:
 
-* List objects (address, service, custom-url-category, device-groups, tags, templates, etc.) and managed devices (Panorama)
+* List various types of objects: address, service, custom-url-category, device-groups, tags, templates, managed devices (Panorama), etc..
 * Create, rename, and delete objects
 * Create, apply, and remove tags from objects
 * Edit/modify address, service groups and custom-url-categories
 * Create templates and template stacks and assign devices, templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
-* Wildfire - submit files and URL's for analysis, retrieve reports (XML format)
-* Create layer-3 interfaces locally, as well as zones, virtual-routers, etc.
-* Assign interfaces to zones and virtual-routers.
+* Wildfire - submit files and URL's for analysis.
+
+The following features are available only on the local device, currently:
+
+* Create layer-3 interfaces, zones, virtual-routers and static routes.
+* Assign and remove interfaces to zones and virtual-routers.
+* Delete interfaces, zones, virtual-routers and static routes.
 
 <!--### Examples
 
