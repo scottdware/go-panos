@@ -12,7 +12,6 @@ This API allows you to do the following:
 * Edit/modify address, service groups and custom-url-categories
 * Create templates and template stacks and assign devices, templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
-* Wildfire - submit files and URL's for analysis.
 
 The following features are available only on the local device, currently:
 
