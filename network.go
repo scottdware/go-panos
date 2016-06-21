@@ -40,6 +40,32 @@ func (p *PaloAlto) CreateL3Interface(ifname, ipaddress string, comment ...string
 	return nil
 }
 
+// DeleteL3Interface removes a layer-3 interface from the device.
+func (p *PaloAlto) DeleteL3Interface(ifname string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot delete interfaces on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifname)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // CreateZone will add a new zone to the device. zonetype must be one of: tap, vwire, layer2, layer3.
 func (p *PaloAlto) CreateZone(name, zonetype string) error {
 	var xmlBody string
@@ -77,6 +103,32 @@ func (p *PaloAlto) CreateZone(name, zonetype string) error {
 	return nil
 }
 
+// DeleteZone will remove a zone from the device.
+func (p *PaloAlto) DeleteZone(name string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot delete zones on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/zone/entry[@name='%s']", name)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // AddInterfaceToZone adds an interface or interfaces to the given zone. zonetype must be one of: tap, vwire, layer2, layer3.
 // Separate multiple interfaces using a comma, i.e.: "ethernet1/2, ethernet1/3"
 func (p *PaloAlto) AddInterfaceToZone(name, zonetype, ifname string) error {
@@ -89,6 +141,7 @@ func (p *PaloAlto) AddInterfaceToZone(name, zonetype, ifname string) error {
 	}
 
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/zone/entry[@name='%s']", name)
+
 	switch zonetype {
 	case "tap":
 		xmlBody = "<network><tap>"
@@ -115,7 +168,45 @@ func (p *PaloAlto) AddInterfaceToZone(name, zonetype, ifname string) error {
 		}
 		xmlBody += "</layer3></network>"
 	}
+
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// RemoveInterfaceFromZone removes an interface from the specified zone.
+func (p *PaloAlto) RemoveInterfaceFromZone(name, zonetype, ifname string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot remove interfaces from zones on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/zone/entry[@name='%s']", name)
+
+	switch zonetype {
+	case "tap":
+		xpath += fmt.Sprintf("/network/tap/member[text()='%s']", ifname)
+	case "vwire":
+		xpath += fmt.Sprintf("/network/virtual-wire/member[text()='%s']", ifname)
+	case "layer2":
+		xpath += fmt.Sprintf("/network/layer2/member[text()='%s']", ifname)
+	case "layer3":
+		xpath += fmt.Sprintf("/network/layer3/member[text()='%s']", ifname)
+	}
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
 	if errs != nil {
 		return errs[0]
 	}
@@ -159,6 +250,32 @@ func (p *PaloAlto) CreateVirtualRouter(name string) error {
 	return nil
 }
 
+// DeleteVirtualRouter removes a virtual-router from the device.
+func (p *PaloAlto) DeleteVirtualRouter(vr string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot delete a virtual-router on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='%s']", vr)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // AddInterfaceToVirtualRouter will add an interface or interfaces to the given virtual-router. Separate multiple
 // interfaces using a comma, i.e.: "ethernet1/2, ethernet1/3"
 func (p *PaloAlto) AddInterfaceToVirtualRouter(name, ifname string) error {
@@ -178,6 +295,102 @@ func (p *PaloAlto) AddInterfaceToVirtualRouter(name, ifname string) error {
 	xmlBody += "</interface>"
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// RemoveInterfaceFromVirtualRouter removes a given interface from the specified virtual-router.
+func (p *PaloAlto) RemoveInterfaceFromVirtualRouter(vr, ifname string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot remove interfaces from a virtual-router on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='%s']/interface/member[text()='%s']", vr, ifname)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateStaticRoute adds a new static route to a given virtual-router. For the destination, you must
+// include the mask, i.e. "192.168.0.0/24" or "0.0.0.0/0." You can optionally specify a metric
+// for the route, and if you do not, the metric will be 10.
+func (p *PaloAlto) CreateStaticRoute(vr, name, destination, nexthop string, metric ...int) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create static routes on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='%s']", vr)
+	xmlBody = fmt.Sprintf("<routing-table><ip><static-route><entry name=\"%s\">", name)
+
+	if strings.Contains(nexthop, "ethernet") {
+		xmlBody += fmt.Sprintf("<interface>%s</interface><destination>%s</destination>", nexthop, destination)
+	} else {
+		xmlBody += fmt.Sprintf("<nexthop><ip-address>%s</ip-address></nexthop><destination>%s</destination>", nexthop, destination)
+	}
+
+	if len(metric) > 0 {
+		xmlBody += fmt.Sprintf("<metric>%d</metric>", metric[0])
+	} else {
+		xmlBody += "<metric>10</metric>"
+	}
+
+	xmlBody += "</entry></static-route></ip></routing-table>"
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteStaticRoute will remove a static route from the device.
+func (p *PaloAlto) DeleteStaticRoute(vr, name string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot delete static routes on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='%s']/routing-table/ip/static-route/entry[@name='%s']", vr, name)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
 	if errs != nil {
 		return errs[0]
 	}
