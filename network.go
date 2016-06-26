@@ -278,7 +278,7 @@ func (p *PaloAlto) DeleteVirtualRouter(vr string) error {
 
 // AddInterfaceToVirtualRouter will add an interface or interfaces to the given virtual-router. Separate multiple
 // interfaces using a comma, i.e.: "ethernet1/2, ethernet1/3"
-func (p *PaloAlto) AddInterfaceToVirtualRouter(name, ifname string) error {
+func (p *PaloAlto) AddInterfaceToVirtualRouter(vr, ifname string) error {
 	var xmlBody string
 	var reqError requestError
 	ints := strings.Split(ifname, ",")
@@ -287,7 +287,7 @@ func (p *PaloAlto) AddInterfaceToVirtualRouter(name, ifname string) error {
 		return errors.New("you cannot add interfaces to virtual-routers on a Panorama device")
 	}
 
-	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='%s']", name)
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='%s']", vr)
 	xmlBody = "<interface>"
 	for _, i := range ints {
 		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(i))
@@ -337,8 +337,8 @@ func (p *PaloAlto) RemoveInterfaceFromVirtualRouter(vr, ifname string) error {
 }
 
 // CreateStaticRoute adds a new static route to a given virtual-router. For the destination, you must
-// include the mask, i.e. "192.168.0.0/24" or "0.0.0.0/0." You can optionally specify a metric
-// for the route, and if you do not, the metric will be 10.
+// include the mask, i.e. "192.168.0.0/24" or "0.0.0.0/0." For nexthop, you can also specify an interface
+// instead of an IP address. You can optionally specify a metric for the route, and if you do not, the metric will be 10.
 func (p *PaloAlto) CreateStaticRoute(vr, name, destination, nexthop string, metric ...int) error {
 	var xmlBody string
 	var reqError requestError
