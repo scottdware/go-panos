@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-// CreateL3Interface adds a new layer-3 interface to the device. You must specify the subnet mask in
+// CreateL3Interface adds a new layer-3 interface or sub-interface to the device. If adding a sub-interface,
+// be sure to append the VLAN tag to the interface name like so: ethernet1/1.700. You must specify the subnet mask in
 // CIDR notation when specifying the IP address, i.e.: 1.1.1.1/32.
 func (p *PaloAlto) CreateL3Interface(ifname, ipaddress string, comment ...string) error {
 	var xmlBody string
@@ -17,11 +18,21 @@ func (p *PaloAlto) CreateL3Interface(ifname, ipaddress string, comment ...string
 		return errors.New("you cannot create interfaces on a Panorama device")
 	}
 
-	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifname)
-	xmlBody = fmt.Sprintf("<layer3><ip><entry name=\"%s\"/></ip></layer3>", ipaddress)
+	ifDetails := strings.Split(ifname, ".")
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
 
-	if len(comment) > 0 {
-		xmlBody += fmt.Sprintf("<comment>%s</comment>", comment[0])
+	if len(ifDetails[1]) > 0 {
+		xmlBody = fmt.Sprintf("<layer3><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip><tag>%s</tag>", ifDetails[0], ifDetails[1], ipaddress, ifDetails[1])
+		if len(comment) > 0 {
+			xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></layer3>", comment[0])
+		} else {
+			xmlBody += "</entry></units></layer3>"
+		}
+	} else {
+		xmlBody = fmt.Sprintf("<layer3><ip><entry name=\"%s\"/></ip></layer3>", ipaddress)
+		if len(comment) > 0 {
+			xmlBody += fmt.Sprintf("<comment>%s</comment>", comment[0])
+		}
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -40,15 +51,23 @@ func (p *PaloAlto) CreateL3Interface(ifname, ipaddress string, comment ...string
 	return nil
 }
 
-// DeleteL3Interface removes a layer-3 interface from the device.
+// DeleteL3Interface removes a layer-3 interface or sub-interface from the device.
 func (p *PaloAlto) DeleteL3Interface(ifname string) error {
 	var reqError requestError
+	var xpath string
 
 	if p.DeviceType == "panorama" {
 		return errors.New("you cannot delete interfaces on a Panorama device")
 	}
 
-	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifname)
+	ifDetails := strings.Split(ifname, ".")
+	subIntName := fmt.Sprintf("%s.%s", ifDetails[0], ifDetails[1])
+
+	if len(ifDetails[1]) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/layer3/units/entry[@name='%s']", ifDetails[0], subIntName)
+	} else {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+	}
 
 	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
 	if errs != nil {
