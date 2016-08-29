@@ -66,6 +66,31 @@ type Tag struct {
 	Comments string
 }
 
+// Policy lists all of the security rules for a given device-group.
+type Policy struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Rules   []Rule   `xml:"result>rules>entry"`
+}
+
+// Rule contains information about each individual security rule.
+type Rule struct {
+	Name        string   `xml:"name,attr"`
+	From        string   `xml:"from>member"`
+	To          string   `xml:"to>member"`
+	Source      []string `xml:"source>member"`
+	Destination []string `xml:"destination>member"`
+	SourceUser  []string `xml:"source-user>member"`
+	Application []string `xml:"application>member"`
+	Service     []string `xml:"service>member"`
+	Action      string   `xml:"action"`
+	LogStart    string   `xml:"log-start"`
+	LogEnd      string   `xml:"log-end"`
+	Tag         []string `xml:"tag>member"`
+	LogSetting  string   `xml:"log-setting"`
+}
+
 // xmlTags is used for parsing all tags on the system.
 type xmlTags struct {
 	XMLName xml.Name `xml:"response"`
@@ -1076,6 +1101,103 @@ func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 
 	if reqError.Status != "success" {
 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// Policy returns information about all of the security rules for the given device-group.
+func (p *PaloAlto) Policy(devicegroup string) (*Policy, error) {
+	var policy Policy
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules", devicegroup)
+
+	if p.DeviceType != "panorama" {
+		return nil, errors.New("policies can only be listed from a Panorama device")
+	}
+
+	_, policyData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(policyData), &policy); err != nil {
+		return nil, err
+	}
+
+	if policy.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", policy.Code, errorCodes[policy.Code])
+	}
+
+	return &policy, nil
+}
+
+// ApplyLogForwardingToPolicy will apply a Log Forwarding profile to every rule in the policy for the given device-group.
+// func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) error {
+// 	var reqError requestError
+// 	var xmlBody string
+
+// 	if p.DeviceType != "panorama" {
+// 		return errors.New("log forwarding profiles can only be applied on a Panorama device")
+// 	}
+
+// 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules", devicegroup)
+// 	rules, err := p.Policy(devicegroup)
+// 	if err != nil {
+// 		return errors.New("no policy found for the given device-group")
+// 	}
+
+// 	for _, rule := range rules.Rules {
+// 		xmlBody += fmt.Sprintf("<entry name=\"%s\"><log-setting>%s</log-setting></entry>", rule.Name, logprofile)
+// 		time.Sleep(10 * time.Millisecond)
+// 	}
+
+// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+// 	if errs != nil {
+// 		return errs[0]
+// 	}
+
+// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+// 		return err
+// 	}
+
+// 	if reqError.Status != "success" {
+// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+// 	}
+
+// 	return nil
+// }
+
+// ApplyLogForwardingToPolicy will apply a Log Forwarding profile to every rule in the policy for the given device-group.
+// For policies with a large number of rules, this process may take a few minutes to complete.
+func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) error {
+	if p.DeviceType != "panorama" {
+		return errors.New("log forwarding profiles can only be applied on a Panorama device")
+	}
+
+	rules, err := p.Policy(devicegroup)
+	if err != nil {
+		return errors.New("no policy found for the given device-group")
+	}
+
+	for _, rule := range rules.Rules {
+		var reqError requestError
+		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+		xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
+
+		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		if errs != nil {
+			return errs[0]
+		}
+
+		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+			return err
+		}
+
+		if reqError.Status != "success" {
+			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		}
+
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	return nil
