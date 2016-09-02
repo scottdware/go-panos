@@ -1124,6 +1124,10 @@ func (p *PaloAlto) Policy(devicegroup string) (*Policy, error) {
 		return nil, err
 	}
 
+	if len(policy.Rules) == 0 {
+		return nil, fmt.Errorf("there are no rules created, or the device-group %s does not exist", devicegroup)
+	}
+
 	if policy.Status != "success" {
 		return nil, fmt.Errorf("error code %s: %s", policy.Code, errorCodes[policy.Code])
 	}
@@ -1176,7 +1180,7 @@ func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) er
 
 	rules, err := p.Policy(devicegroup)
 	if err != nil {
-		return errors.New("no policy found for the given device-group")
+		return err
 	}
 
 	for _, rule := range rules.Rules {
