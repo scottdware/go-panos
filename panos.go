@@ -76,19 +76,33 @@ type Policy struct {
 
 // Rule contains information about each individual security rule.
 type Rule struct {
-	Name        string   `xml:"name,attr"`
-	From        string   `xml:"from>member"`
-	To          string   `xml:"to>member"`
-	Source      []string `xml:"source>member"`
-	Destination []string `xml:"destination>member"`
-	SourceUser  []string `xml:"source-user>member"`
-	Application []string `xml:"application>member"`
-	Service     []string `xml:"service>member"`
-	Action      string   `xml:"action"`
-	LogStart    string   `xml:"log-start"`
-	LogEnd      string   `xml:"log-end"`
-	Tag         []string `xml:"tag>member"`
-	LogSetting  string   `xml:"log-setting"`
+	Name                 string   `xml:"name,attr"`
+	From                 string   `xml:"from>member"`
+	To                   string   `xml:"to>member"`
+	Source               []string `xml:"source>member"`
+	Destination          []string `xml:"destination>member"`
+	SourceUser           []string `xml:"source-user>member"`
+	Application          []string `xml:"application>member"`
+	Service              []string `xml:"service>member"`
+	Action               string   `xml:"action"`
+	LogStart             string   `xml:"log-start"`
+	LogEnd               string   `xml:"log-end"`
+	Tag                  []string `xml:"tag>member"`
+	LogSetting           string   `xml:"log-setting"`
+	AntiVirusProfile     string   `xml:"profile-setting>profiles>virus>member"`
+	AntiSpywareProfile   string   `xml:"profile-setting>profiles>spyware>member"`
+	VulnerabilityProfile string   `xml:"profile-setting>profiles>vulnerability>member"`
+	WildfireProfile      string   `xml:"profile-setting>profiles>wildfire-analysis>member"`
+}
+
+// SecurityProfiles contains a list of security profiles to apply to a rule. If you have a security group
+// then you can just specify that and omit the individual ones.
+type SecurityProfiles struct {
+	AntiVirus     string
+	AntiSpyware   string
+	Vulnerability string
+	Wildfire      string
+	Group         string
 }
 
 // xmlTags is used for parsing all tags on the system.
@@ -1136,42 +1150,6 @@ func (p *PaloAlto) Policy(devicegroup string) (*Policy, error) {
 }
 
 // ApplyLogForwardingToPolicy will apply a Log Forwarding profile to every rule in the policy for the given device-group.
-// func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) error {
-// 	var reqError requestError
-// 	var xmlBody string
-
-// 	if p.DeviceType != "panorama" {
-// 		return errors.New("log forwarding profiles can only be applied on a Panorama device")
-// 	}
-
-// 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules", devicegroup)
-// 	rules, err := p.Policy(devicegroup)
-// 	if err != nil {
-// 		return errors.New("no policy found for the given device-group")
-// 	}
-
-// 	for _, rule := range rules.Rules {
-// 		xmlBody += fmt.Sprintf("<entry name=\"%s\"><log-setting>%s</log-setting></entry>", rule.Name, logprofile)
-// 		time.Sleep(10 * time.Millisecond)
-// 	}
-
-// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
-// 	if errs != nil {
-// 		return errs[0]
-// 	}
-
-// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-// 		return err
-// 	}
-
-// 	if reqError.Status != "success" {
-// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-// 	}
-
-// 	return nil
-// }
-
-// ApplyLogForwardingToPolicy will apply a Log Forwarding profile to every rule in the policy for the given device-group.
 // For policies with a large number of rules, this process may take a few minutes to complete.
 func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) error {
 	if p.DeviceType != "panorama" {
@@ -1187,6 +1165,68 @@ func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) er
 		var reqError requestError
 		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
 		xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
+
+		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		if errs != nil {
+			return errs[0]
+		}
+
+		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+			return err
+		}
+
+		if reqError.Status != "success" {
+			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	return nil
+}
+
+// ApplySecurityProfilesToPolicy will apply the following security profiles (Antivirus, Anti-Spyware, Vulnerability, Wildfire)
+// to every rule in the policy for the given device-group. You can also specify a security group instead of individual ones.
+// This is done by ONLY specifying the "Group" field in the SecurityProfiles struct. For policies with a large number of rules,
+// this process may take a few minutes to complete.
+func (p *PaloAlto) ApplySecurityProfilesToPolicy(secprofiles *SecurityProfiles, devicegroup string) error {
+	if p.DeviceType != "panorama" {
+		return errors.New("security profiles can only be applied on a Panorama device")
+	}
+
+	rules, err := p.Policy(devicegroup)
+	if err != nil {
+		return err
+	}
+
+	for _, rule := range rules.Rules {
+		var reqError requestError
+		var xmlBody string
+		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+
+		if len(secprofiles.Group) > 0 {
+			xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
+		} else {
+			xmlBody = "<profile-setting><profiles>"
+
+			if len(secprofiles.AntiVirus) > 0 {
+				xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
+			}
+
+			if len(secprofiles.AntiSpyware) > 0 {
+				xmlBody += fmt.Sprintf("<spyware><member>%s</member></spyware>", secprofiles.AntiSpyware)
+			}
+
+			if len(secprofiles.Vulnerability) > 0 {
+				xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+			}
+
+			if len(secprofiles.Wildfire) > 0 {
+				xmlBody += fmt.Sprintf("<wildfire-analysis><member>%s</member></wildfire-analysis>", secprofiles.Wildfire)
+			}
+
+			xmlBody += "</profiles></profile-setting>"
+		}
 
 		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
 		if errs != nil {
