@@ -93,6 +93,7 @@ type Rule struct {
 	AntiSpywareProfile   string   `xml:"profile-setting>profiles>spyware>member"`
 	VulnerabilityProfile string   `xml:"profile-setting>profiles>vulnerability>member"`
 	WildfireProfile      string   `xml:"profile-setting>profiles>wildfire-analysis>member"`
+	SecurityProfileGroup string   `xml:"profile-setting>group>member"`
 }
 
 // SecurityProfiles contains a list of security profiles to apply to a rule. If you have a security group
