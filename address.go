@@ -236,21 +236,20 @@ func (p *PaloAlto) CreateSharedAddress(name, addrtype, address, description stri
 	return nil
 }
 
-// CreateAddressGroup will create a new static address group on the device. You can specify multiple members
-// by separating them with a comma, i.e. "web-server1, web-server2". If creating an address group on
+// CreateAddressGroup will create a new static address group on the device. You can specify members to add
+// by using a []string variable (i.e. members := []string{"server1", "server2"}). If creating an address group on
 // a Panorama device, then specify the given device-group name as the last parameter.
-func (p *PaloAlto) CreateAddressGroup(name, members, description string, devicegroup ...string) error {
+func (p *PaloAlto) CreateAddressGroup(name string, members []string, description string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
-	m := strings.Split(members, ",")
 
-	if members == "" {
+	if len(members) <= 0 {
 		return errors.New("you cannot create a static address group without any members")
 	}
 
 	xmlBody = "<static>"
-	for _, member := range m {
+	for _, member := range members {
 		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(member))
 	}
 	xmlBody += "</static>"
