@@ -43,7 +43,6 @@ type TemplateStack struct {
 func (p *PaloAlto) Templates() (*Templates, error) {
 	var temps Templates
 	xpath := "/config/devices/entry//template"
-	// xpath := "/config/devices/entry/vsys/entry/address"
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("templates can only be listed on a Panorama device")
@@ -71,7 +70,6 @@ func (p *PaloAlto) TemplateStacks() (*TemplateStacks, error) {
 	var temps TemplateStacks
 	ver := splitSWVersion(p.SoftwareVersion)
 	xpath := "/config/devices/entry//template-stack"
-	// xpath := "/config/devices/entry/vsys/entry/address"
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("template stacks can only be listed on a Panorama device")
