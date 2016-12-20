@@ -1349,9 +1349,9 @@ func (p *PaloAlto) Policy(devicegroup string) (*Policy, error) {
 	return &policy, nil
 }
 
-// ApplyLogForwardingToPolicy will apply a Log Forwarding profile to every rule in the policy for the given device-group.
+// ApplyLogForwardingProfile will apply a Log Forwarding profile to every rule in the policy for the given device-group.
 // For policies with a large number of rules, this process may take a few minutes to complete.
-func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) error {
+func (p *PaloAlto) ApplyLogForwardingProfile(logprofile, devicegroup string) error {
 	if p.DeviceType != "panorama" {
 		return errors.New("log forwarding profiles can only be applied on a Panorama device")
 	}
@@ -1385,11 +1385,11 @@ func (p *PaloAlto) ApplyLogForwardingToPolicy(logprofile, devicegroup string) er
 	return nil
 }
 
-// ApplySecurityProfilesToPolicy will apply the following security profiles (Antivirus, Anti-Spyware, Vulnerability, Wildfire)
+// ApplySecurityProfile will apply the following security profiles (Antivirus, Anti-Spyware, Vulnerability, Wildfire)
 // to every rule in the policy for the given device-group. You can also specify a security group instead of individual ones.
 // This is done by ONLY specifying the "Group" field in the SecurityProfiles struct. For policies with a large number of rules,
 // this process may take a few minutes to complete.
-func (p *PaloAlto) ApplySecurityProfilesToPolicy(secprofiles *SecurityProfiles, devicegroup string) error {
+func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegroup string) error {
 	if p.DeviceType != "panorama" {
 		return errors.New("security profiles can only be applied on a Panorama device")
 	}
