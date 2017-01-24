@@ -1446,3 +1446,24 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 
 	return nil
 }
+
+// RestartSystem will issue a system restart to the device.
+func (p *PaloAlto) RestartSystem() error {
+	var reqError requestError
+	command := "<request><restart><system></system></restart></request>"
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
