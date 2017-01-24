@@ -1,9 +1,11 @@
 package panos
 
 import (
+	"encoding/csv"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -397,6 +399,87 @@ func (p *PaloAlto) DeleteAddressGroup(name string, shared bool, devicegroup ...s
 
 	if reqError.Status != "success" {
 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateAddressesFromCsv takes a .csv file with the following format: name,type,ip,description,address-group.
+// 'name' is what you want the address object to be called. 'type' is one of: ip, range, or fqdn.
+// 'ip' is the address of the object. 'description' is optional, just leave blank if you do not want one. 'address-group' will assign the
+// object to the given address-group if you wish (leave blank if you do not want to add it to a group). If creating
+// shared address objects on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
+// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+func (p *PaloAlto) CreateAddressesFromCsv(file string, shared bool, devicegroup ...string) error {
+	fn, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+
+	defer fn.Close()
+
+	reader := csv.NewReader(fn)
+	fields, err := reader.ReadAll()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, line := range fields {
+		var addrgroup string
+		name := line[0]
+		addrtype := line[1]
+		ip := line[2]
+		description := ""
+
+		if len(line[3]) > 0 {
+			description = line[3]
+		}
+
+		if len(line[4]) > 0 {
+			addrgroup = line[4]
+		}
+
+		if shared && len(devicegroup) > 0 {
+			err = p.CreateAddress(name, addrtype, ip, description, true, devicegroup[0])
+			if err != nil {
+				return err
+			}
+
+			if len(addrgroup) > 0 {
+				err = p.EditGroup("address", "add", name, addrgroup, true, devicegroup[0])
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if !shared && len(devicegroup) > 0 {
+			err = p.CreateAddress(name, addrtype, ip, description, false, devicegroup[0])
+			if err != nil {
+				return err
+			}
+
+			if len(addrgroup) > 0 {
+				err = p.EditGroup("address", "add", name, addrgroup, false, devicegroup[0])
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if !shared && len(devicegroup) <= 0 {
+			err = p.CreateAddress(name, addrtype, ip, description, false)
+			if err != nil {
+				return err
+			}
+
+			if len(addrgroup) > 0 {
+				err = p.EditGroup("address", "add", name, addrgroup, false)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return nil
