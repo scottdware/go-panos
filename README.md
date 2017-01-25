@@ -21,6 +21,8 @@ The following features are currently available only on the local device:
 * Assign and remove interfaces to zones and virtual-routers.
 * Delete interfaces, zones, virtual-routers and static routes.
 * Add and remove proxy-id's to VPN tunnels.
+* Test URL's to see what they are being categorized under.
+* Test route lookup.
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
