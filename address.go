@@ -151,7 +151,7 @@ func (p *PaloAlto) AddressGroups(devicegroup ...string) (*AddressGroups, error) 
 
 // CreateAddress will add a new address object to the device. addrtype should be one of: ip, range, or fqdn. If creating
 // a shared address object on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, shared bool, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -209,7 +209,7 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, sh
 // CreateAddressGroup will create a new static address group on the device. You can specify members to add
 // by using a []string variable (i.e. members := []string{"server1", "server2"}). If creating
 // a shared address group on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateAddressGroup(name string, members []string, description string, shared bool, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -268,7 +268,7 @@ func (p *PaloAlto) CreateAddressGroup(name string, members []string, description
 // CreateDynamicAddressGroup will create a new dynamic address group on the device. The filter must be written like so:
 // 'vm-servers' and 'some tag' or 'pcs' - using the tags as the match criteria. If creating
 // a shared address group on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string, shared bool, devicegroup ...string) error {
 	xmlBody := fmt.Sprintf("<dynamic><filter>%s</filter></dynamic>", criteria)
 	var xpath string
@@ -320,7 +320,7 @@ func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string,
 
 // DeleteAddress will remove an address object from the device. If deleting
 // a shared address object on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not deleting a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not deleting a shared object, then just specify "false."
 func (p *PaloAlto) DeleteAddress(name string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -363,7 +363,7 @@ func (p *PaloAlto) DeleteAddress(name string, shared bool, devicegroup ...string
 
 // DeleteAddressGroup will remove an address group from the device. If deleting
 // a shared address group on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not deleting a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not deleting a shared object, then just specify "false."
 func (p *PaloAlto) DeleteAddressGroup(name string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -404,13 +404,13 @@ func (p *PaloAlto) DeleteAddressGroup(name string, shared bool, devicegroup ...s
 	return nil
 }
 
-// CreateAddressesFromCsv takes a .csv file with the following format: name,type,ip,description,address-group.
+// CreateAddressFromCsv takes a .csv file with the following format: name,type,address,description,address-group.
 // 'name' is what you want the address object to be called. 'type' is one of: ip, range, or fqdn.
-// 'ip' is the address of the object. 'description' is optional, just leave blank if you do not want one. 'address-group' will assign the
-// object to the given address-group if you wish (leave blank if you do not want to add it to a group). If creating
-// shared address objects on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
-func (p *PaloAlto) CreateAddressesFromCsv(file string, shared bool, devicegroup ...string) error {
+// 'address' is the address of the object. 'description' is optional, just leave the field blank if you do not want one.
+// 'address-group' will assign the object to the pre-existing address-group if you wish (leave blank if you do not want to add it to a group).
+// If creating shared address objects on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
+// name as the last parameter. If not creating a shared object, then just specify "false."
+func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ...string) error {
 	fn, err := os.Open(file)
 	if err != nil {
 		return err
