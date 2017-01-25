@@ -156,6 +156,26 @@ type requestError struct {
 	Message string   `xml:"result>msg,omitempty"`
 }
 
+// testURL contains the results of the operational command test url.
+type testURL struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Result  string   `xml:"result"`
+}
+
+// testRoute contains the results of the operational command test routing fib-lookup.
+type testRoute struct {
+	XMLName   xml.Name `xml:"response"`
+	Status    string   `xml:"status,attr"`
+	Code      string   `xml:"code,attr"`
+	NextHop   string   `xml:"result>nh"`
+	Source    string   `xml:"result>src"`
+	IP        string   `xml:"result>ip"`
+	Metric    int      `xml:"result>metric"`
+	Interface string   `xml:"result>interface"`
+}
+
 var (
 	r = gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 
@@ -1466,4 +1486,56 @@ func (p *PaloAlto) RestartSystem() error {
 	}
 
 	return nil
+}
+
+// TestURL will verify what category the given URL falls under.
+func (p *PaloAlto) TestURL(url string) (string, error) {
+	var urlResults testURL
+	command := fmt.Sprintf("<test><url>%s</url></test>", url)
+
+	if p.DeviceType == "panorama" {
+		return "", errors.New("you can only test URL's from a local device")
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
+	if errs != nil {
+		return "", errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &urlResults); err != nil {
+		return "", err
+	}
+
+	if urlResults.Status != "success" {
+		return "", fmt.Errorf("error code %s: %s", urlResults.Code, errorCodes[urlResults.Code])
+	}
+
+	return urlResults.Result, nil
+}
+
+// TestRouteLookup will lookup the given destination IP in the virtual-router 'vr' and check the routing (fib) table and display the results.
+func (p *PaloAlto) TestRouteLookup(vr, destination string) (string, error) {
+	var routeLookup testRoute
+	command := fmt.Sprintf("<test><routing><fib-lookup><virtual-router>%s</virtual-router><ip>%s</ip></fib-lookup></routing></test>", vr, destination)
+
+	if p.DeviceType == "panorama" {
+		return "", errors.New("you can only test route lookups from a local device")
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
+	if errs != nil {
+		return "", errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &routeLookup); err != nil {
+		return "", err
+	}
+
+	if routeLookup.Status != "success" {
+		return "", fmt.Errorf("error code %s: %s", routeLookup.Code, errorCodes[routeLookup.Code])
+	}
+
+	result := fmt.Sprintf("Destination %s via %s interface %s, source %s, metric %d (%s)\n", destination, routeLookup.IP, routeLookup.Interface, routeLookup.Source, routeLookup.Metric, vr)
+
+	return result, nil
 }
