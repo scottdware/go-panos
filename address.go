@@ -426,16 +426,17 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ..
 
 	for _, line := range fields {
 		var addrgroup string
+		linelen := len(line)
 		name := line[0]
 		addrtype := line[1]
 		ip := line[2]
 		description := ""
 
-		if len(line[3]) > 0 {
+		if linelen == 4 && len(line[3]) > 0 {
 			description = line[3]
 		}
 
-		if len(line[4]) > 0 {
+		if linelen == 5 && len(line[4]) > 0 {
 			addrgroup = line[4]
 		}
 
