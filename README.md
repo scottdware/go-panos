@@ -8,17 +8,19 @@ This API allows you to do the following:
 
 * List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, managed devices (Panorama), etc..
 * Create, rename, and delete objects
+* Create address objects by using a .csv file.
 * Create, apply, and remove tags from objects
 * Edit/modify address, service groups and custom-url-categories
-* Create templates and template stacks and assign devices, templates to them (Panorama)
+* Create templates, template stacks and assign devices, templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
-* Apply a log forwarding profile to an entire policy.
+* Apply a log forwarding or security profile to an entire policy.
 
-The following features are available only on the local device, currently:
+The following features are currently available only on the local device:
 
 * Create layer-3 interfaces (including sub-interfaces), zones, virtual-routers and static routes.
 * Assign and remove interfaces to zones and virtual-routers.
 * Delete interfaces, zones, virtual-routers and static routes.
+* Add and remove proxy-id's to VPN tunnels.
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
