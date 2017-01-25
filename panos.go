@@ -583,7 +583,7 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 // CreateTag will add a new tag to the device. You can use the following colors: Red, Green, Blue, Yellow, Copper,
 // Orange, Purple, Gray, Light Green, Cyan, Light Gray, Blue Gray, Lime, Black, Gold, Brown. If creating
 // a shared tag on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateTag(name, color, comments string, shared bool, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -633,7 +633,7 @@ func (p *PaloAlto) CreateTag(name, color, comments string, shared bool, devicegr
 
 // DeleteTag will remove a tag from the device. If deleting
 // a shared tag on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) DeleteTag(name string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -678,7 +678,7 @@ func (p *PaloAlto) DeleteTag(name string, shared bool, devicegroup ...string) er
 // by separating them with a comma, i.e. "servers, vm". If you have address/service objects with the same
 // name, then the tag(s) will be applied to all that match. When tagging
 // a shared object on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -975,7 +975,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 
 // RemoveTag will remove a single tag from an address/service object. If removing
 // a tag from a shared object on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError

@@ -120,7 +120,7 @@ func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) 
 // CreateService adds a new service object to the device. Port can be a single port #, range (1-65535), or comma separated (80, 8080, 443).
 // If creating
 // a shared service object on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateService(name, protocol, port, description string, shared bool, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -176,7 +176,7 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, share
 // CreateServiceGroup will create a new service group on the device. You can specify members to add
 // by using a []string variable (i.e. members := []string{"tcp-service1", "udp-service1"}). If creating
 // a shared service group on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateServiceGroup(name string, members []string, shared bool, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -230,7 +230,7 @@ func (p *PaloAlto) CreateServiceGroup(name string, members []string, shared bool
 
 // DeleteService will remove a service object from the device. If deleting
 // a shared service object on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not deleting a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not deleting a shared object, then just specify "false."
 func (p *PaloAlto) DeleteService(name string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -273,7 +273,7 @@ func (p *PaloAlto) DeleteService(name string, shared bool, devicegroup ...string
 
 // DeleteServiceGroup will remove a service group from the device. If deleting
 // a shared service group on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not deleting a shared object, then specify "false" and do not include the device-group parameter.
+// name as the last parameter. If not deleting a shared object, then just specify "false."
 func (p *PaloAlto) DeleteServiceGroup(name string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
