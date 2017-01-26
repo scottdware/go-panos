@@ -407,7 +407,7 @@ func (p *PaloAlto) DeleteAddressGroup(name string, shared bool, devicegroup ...s
 // CreateAddressFromCsv takes a .csv file with the following format: name,type,address,description,address-group.
 // 'name' is what you want the address object to be called. 'type' is one of: ip, range, or fqdn.
 // 'address' is the address of the object. 'description' is optional, just leave the field blank if you do not want one.
-// 'address-group' will assign the object to the pre-existing address-group if you wish (leave blank if you do not want to add it to a group).
+// 'address-group' will assign the object to the given address-group if you wish (leave blank if you do not want to add it to a group).
 // If creating shared address objects on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
 // name as the last parameter. If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ...string) error {
