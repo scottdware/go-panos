@@ -62,8 +62,8 @@ func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
 
 // CreateURLCategory creates a custom URL category to be used in a policy. When specifying multiple URL's, use a
 // []string variable for the url parameter (i.e. members := []string{"www.*.com", "*.somesite.net"}). If creating
-// a shared URL category on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not creating a shared object, then just specify "false."
+// a shared URL category on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
+// If not creating a shared object, then just specify "false."
 func (p *PaloAlto) CreateURLCategory(name string, urls []string, description string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -115,8 +115,8 @@ func (p *PaloAlto) CreateURLCategory(name string, urls []string, description str
 }
 
 // EditURLCategory adds or removes URL's from the given custom URL category. Action must be "add" or "remove". If editing
-// a shared URL category on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not editing a shared object, then just specify "false."
+// a shared URL category on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
+// If not editing a shared object, then just specify "false."
 func (p *PaloAlto) EditURLCategory(action, url, name string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var xmlBody string
@@ -194,8 +194,8 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, shared bool, device
 }
 
 // DeleteURLCategory removes a custom URL category from the device. If deleting
-// a shared URL category on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not editing a shared object, then just specify "false."
+// a shared URL category on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
+// If not editing a shared object, then just specify "false."
 func (p *PaloAlto) DeleteURLCategory(name string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -238,8 +238,8 @@ func (p *PaloAlto) DeleteURLCategory(name string, shared bool, devicegroup ...st
 
 // EditGroup will add or remove objects from the specified group type (i.e., "address" or "service"). Action must be
 // "add" or "remove". If editing
-// a group on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not editing a shared object, then just specify "false."
+// a group on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
+// If not editing a shared object, then just specify "false."
 func (p *PaloAlto) EditGroup(objecttype, action, object, group string, shared bool, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -336,8 +336,8 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, shared bo
 
 // RenameObject will rename the given object from it's 'oldname' to the 'newname.' You can rename the following
 // object types: address, address-groups, service, service-groups, tags. If renaming
-// a shared object on a Panorama device, then specify "true" for the shared parameter, as well as the device-group
-// name as the last parameter. If not editing a shared object, then just specify "false."
+// a shared object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
+// If not editing a shared object, then just specify "false."
 func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
