@@ -20,7 +20,6 @@ The following features are currently available only on the local device:
 * Create layer-3 interfaces (including sub-interfaces), zones, virtual-routers and static routes.
 * Assign and remove interfaces to zones and virtual-routers.
 * Delete interfaces, zones, virtual-routers and static routes.
-* Add and remove proxy-id's to VPN tunnels.
 * Test URL's to see what they are being categorized under.
 * Test route lookup.
 
