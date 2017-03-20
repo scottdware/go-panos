@@ -473,7 +473,7 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ..
 			}
 		}
 
-		if !shared {
+		if !shared && len(devicegroup) <= 0 {
 			err = p.CreateAddress(name, addrtype, ip, description, false)
 			if err != nil {
 				return err
