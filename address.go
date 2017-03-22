@@ -441,7 +441,23 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ..
 			addrgroup = line[4]
 		}
 
-		if shared {
+		if shared == true && len(devicegroup) > 0 {
+			err = p.CreateAddress(name, addrtype, ip, description, true, devicegroup[0])
+			if err != nil {
+				return err
+			}
+
+			time.Sleep(10 * time.Millisecond)
+
+			if len(addrgroup) > 0 {
+				err = p.EditGroup("address", "add", name, addrgroup, true, devicegroup[0])
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if shared == true && len(devicegroup) <= 0 {
 			err = p.CreateAddress(name, addrtype, ip, description, true)
 			if err != nil {
 				return err
@@ -457,7 +473,7 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ..
 			}
 		}
 
-		if !shared && len(devicegroup) > 0 {
+		if shared == false && len(devicegroup) > 0 {
 			err = p.CreateAddress(name, addrtype, ip, description, false, devicegroup[0])
 			if err != nil {
 				return err
@@ -473,7 +489,7 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ..
 			}
 		}
 
-		if !shared && len(devicegroup) <= 0 {
+		if shared == false && len(devicegroup) <= 0 {
 			err = p.CreateAddress(name, addrtype, ip, description, false)
 			if err != nil {
 				return err
