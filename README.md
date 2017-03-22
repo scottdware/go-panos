@@ -23,5 +23,31 @@ The following features are currently available only on the local device:
 * Test URL's to see what they are being categorized under.
 * Test route lookup.
 
+### Installation
+
+`go get -u github.com/scottdware/go-panos`
+
+### Example
+
+Establish a session to a Panorama device
+
+```Go
+pan, err := panos.NewSession("panorama.company.com", "admin", "paloalto")
+if err != nil {
+    fmt.Println(err)
+}
+
+// Add a device to Panorama.
+pan.AddDevice("00102345678")
+
+// Create a device-group on Panorama, and add the device from above.
+pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
+
+// Create address objects from a csv file within our device-group we added above.
+pan.CreateAddressFromCsv("addresses.csv", false, "Some-DeviceGroup")
+
+//
+```
+
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
