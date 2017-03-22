@@ -284,7 +284,7 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 		return nil, err
 	}
 
-	if info.Platform == "m" {
+	if info.Platform == "m" || info.Model == "Panorama" {
 		deviceType = "panorama"
 	}
 
