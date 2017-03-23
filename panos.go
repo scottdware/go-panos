@@ -106,6 +106,32 @@ type SecurityProfiles struct {
 	Group         string
 }
 
+// Jobs holds information about all jobs on the device.
+type Jobs struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Jobs    []Job    `xml:"result>job"`
+}
+
+// Job holds information about each individual job.
+type Job struct {
+	ID            int      `xml:"id"`
+	User          string   `xml:"user"`
+	Type          string   `xml:"type"`
+	Status        string   `xml:"status"`
+	Queued        string   `xml:"queued"`
+	Stoppable     string   `xml:"stoppable"`
+	Result        string   `xml:"result"`
+	Description   string   `xml:"description,omitempty"`
+	QueuePosition int      `xml:"positionInQ"`
+	Progress      string   `xml:"progress"`
+	Details       []string `xml:"details>line"`
+	Warnings      string   `xml:"warnings,omitempty"`
+	StartTime     string   `xml:"tdeq"`
+	EndTime       string   `xml:"tfin"`
+}
+
 // xmlTags is used for parsing all tags on the system.
 type xmlTags struct {
 	XMLName xml.Name `xml:"response"`
@@ -140,8 +166,8 @@ type systemInfo struct {
 	SoftwareVersion string   `xml:"result>system>sw-version"`
 }
 
-// panoramaStatus gets the connection status to Panorama.
-type panoramaStatus struct {
+// commandOutput holds the results of our operational mode commands that were issued.
+type commandOutput struct {
 	XMLName xml.Name `xml:"response"`
 	Status  string   `xml:"status,attr"`
 	Code    string   `xml:"code,attr"`
@@ -241,7 +267,7 @@ func splitSWVersion(version string) []int {
 func NewSession(host, user, passwd string) (*PaloAlto, error) {
 	var key authKey
 	var info systemInfo
-	var pan panoramaStatus
+	var pan commandOutput
 	status := false
 	deviceType := "panos"
 
@@ -1611,3 +1637,78 @@ func (p *PaloAlto) TestRouteLookup(vr, destination string) (string, error) {
 
 	return result, nil
 }
+
+// Jobs returns information about every job on the device. "status" can be one of: "all," "pending," or "processed." If you want
+// information about a specific job, specify the id instead of one of the other options.
+func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
+	var jobs Jobs
+	var cmd string
+
+	switch status.(type) {
+	case string:
+		if status == "all" {
+			cmd += "<show><jobs><all></all></jobs></show>"
+		}
+
+		if status == "pending" {
+			cmd += "<show><jobs><pending></pending></jobs></show>"
+		}
+
+		if status == "processed" {
+			cmd += "<show><jobs><processed></processed></jobs></show>"
+		}
+	case int:
+		cmd += fmt.Sprintf("<show><jobs><id>%d</id></jobs></show>", status)
+	}
+
+	_, res, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, cmd)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	err := xml.Unmarshal([]byte(res), &jobs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &jobs, nil
+}
+
+// Command lets you run any operational mode command against the given device, and it returns the output.
+// func (p *PaloAlto) Command(command string) (string, error) {
+// 	var output commandOutput
+// 	var cmd string
+//
+// 	if len(command) > 0 {
+// 		secs := strings.Split(command, " ")
+// 		nSecs := len(secs)
+//
+// 		if nSecs >= 0 {
+// 			for i := 0; i < nSecs; i++ {
+// 				cmd += fmt.Sprintf("<%s>", secs[i])
+// 			}
+// 			// cmd += fmt.Sprintf("<%s/>", secs[nSecs])
+//
+// 			for j := nSecs - 1; j >= 0; j-- {
+// 				cmd += fmt.Sprintf("</%s>", secs[j])
+// 			}
+// 			// command += fmt.Sprint("</configuration></get-configuration>")
+// 		}
+// 	}
+//
+// 	fmt.Println(cmd)
+//
+// 	_, res, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, cmd)).End()
+// 	if errs != nil {
+// 		return "", errs[0]
+// 	}
+//
+// 	fmt.Println(res)
+//
+// 	err := xml.Unmarshal([]byte(res), &output)
+// 	if err != nil {
+// 		return "", err
+// 	}
+//
+// 	return output.Data, nil
+// }
