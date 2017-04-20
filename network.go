@@ -7,6 +7,25 @@ import (
 	"strings"
 )
 
+// ARPTable contains information about all of the ARP entries on the device.
+type ARPTable struct {
+	XMLName        xml.Name   `xml:"response"`
+	MaxEntries     int        `xml:"result>max"`
+	TotalEntries   int        `xml:"result>total"`
+	DefaultTimeout int        `xml:"result>timeout"`
+	Entries        []ARPEntry `xml:"result>entries>entry"`
+}
+
+// ARPEntry contains information about each individual ARP entry.
+type ARPEntry struct {
+	Status     string `xml:"status"`
+	IPAddress  string `xml:"ip"`
+	MACAddress string `xml:"mac"`
+	TTL        int    `xml:"ttl"`
+	Interface  string `xml:"interface"`
+	Port       string `xml:"port"`
+}
+
 // Tunnels contains information of all the IPsec tunnels configured on a device.
 // type Tunnels struct {
 // 	XMLName xml.Name `xml:"response"`
@@ -444,6 +463,34 @@ func (p *PaloAlto) DeleteStaticRoute(vr, name string) error {
 	}
 
 	return nil
+}
+
+// GetARPTable will gather all of the ARP entires on the device. Without any parameters, it will return all ARP entries.
+// You can specify an interface name for the 'option' parameter if you choose to only view the ARP entries for that specific
+// interface (i.e. "ethernet1/1.200" or "ethernet1/21"). Status codes are as follows: s - static, c - complete, e - expiring, i - incomplete.
+func (p *PaloAlto) GetARPTable(option ...string) (*ARPTable, error) {
+	var arpTable ARPTable
+	command := "<show><arp><entry name = 'all'/></arp></show>"
+
+	if p.DeviceType == "panorama" {
+		return nil, errors.New("you cannot view the ARP table on a Panorama device")
+	}
+
+	if len(option) > 0 {
+		command = fmt.Sprintf("<show><arp><entry name = '%s'/></arp></show>", option[0])
+	}
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	formatted := strings.Replace(resp, "  ", "", -1)
+	if err := xml.Unmarshal([]byte(formatted), &arpTable); err != nil {
+		return nil, err
+	}
+
+	return &arpTable, nil
 }
 
 // ListTunnels will return a list of all configured IPsec tunnels on the device.
