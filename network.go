@@ -465,10 +465,10 @@ func (p *PaloAlto) DeleteStaticRoute(vr, name string) error {
 	return nil
 }
 
-// GetARPTable will gather all of the ARP entires on the device. Without any parameters, it will return all ARP entries.
+// ARPTable will gather all of the ARP entires on the device. Without any parameters, it will return all ARP entries.
 // You can specify an interface name for the 'option' parameter if you choose to only view the ARP entries for that specific
 // interface (i.e. "ethernet1/1.200" or "ethernet1/21"). Status codes are as follows: s - static, c - complete, e - expiring, i - incomplete.
-func (p *PaloAlto) GetARPTable(option ...string) (*ARPTable, error) {
+func (p *PaloAlto) ARPTable(option ...string) (*ARPTable, error) {
 	var arpTable ARPTable
 	command := "<show><arp><entry name = 'all'/></arp></show>"
 
