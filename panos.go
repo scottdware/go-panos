@@ -522,11 +522,16 @@ func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 	return nil
 }
 
-// SetPanoramaServer will configure a device to be managed by the given Panorama server's IP address.
-func (p *PaloAlto) SetPanoramaServer(ip string) error {
+// SetPanoramaServer will configure a device to be managed by the given Panorama server's primary IP address.
+// You can optionally add a second Panorama server by specifying an IP address for the "secondary" parameter.
+func (p *PaloAlto) SetPanoramaServer(primary string, secondary ...string) error {
 	var reqError requestError
 	xpath := "/config/devices/entry[@name='localhost.localdomain']/deviceconfig/system"
-	xmlBody := fmt.Sprintf("<panorama-server>%s</panorama-server>", ip)
+	xmlBody := fmt.Sprintf("<panorama-server>%s</panorama-server>", primary)
+
+	if len(secondary) > 0 {
+		xmlBody = fmt.Sprintf("<panorama-server>%s</panorama-server><panorama-server-2>%s</panorama-server-2>", primary, secondary[0])
+	}
 
 	if p.DeviceType == "panorama" && p.Panorama == true {
 		return errors.New("you must be connected to a non-Panorama device in order to configure a Panorama server")
