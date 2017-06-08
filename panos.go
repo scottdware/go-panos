@@ -1591,29 +1591,43 @@ func (p *PaloAlto) RestartSystem() error {
 	return nil
 }
 
-// TestURL will verify what category the given URL falls under.
-func (p *PaloAlto) TestURL(url string) (string, error) {
+// TestURL will verify what category the given URL falls under. It will return two results in a string slice ([]string). The
+// first one is from the Base db categorization, and the second is from the Cloud db categorization. If you specify a URL
+// with a wildcard, such as *.paloaltonetworks.com, it will not return a result.
+func (p *PaloAlto) TestURL(url string) ([]string, error) {
 	var urlResults testURL
+	rex := regexp.MustCompile(`(?m)^([\d\.a-zA-Z-]+)\s([\w-]+)\s.*seconds\s([\d\.a-zA-Z-]+)\s([\w-]+)\s`)
 	command := fmt.Sprintf("<test><url>%s</url></test>", url)
 
 	if p.DeviceType == "panorama" {
-		return "", errors.New("you can only test URL's from a local device")
+		return nil, errors.New("you can only test URL's from a local device")
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
 	if errs != nil {
-		return "", errs[0]
+		return nil, errs[0]
 	}
 
 	if err := xml.Unmarshal([]byte(resp), &urlResults); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if urlResults.Status != "success" {
-		return "", fmt.Errorf("error code %s: %s", urlResults.Code, errorCodes[urlResults.Code])
+		return nil, fmt.Errorf("error code %s: %s", urlResults.Code, errorCodes[urlResults.Code])
 	}
 
-	return urlResults.Result, nil
+	categorization := rex.FindStringSubmatch(urlResults.Result)
+
+	if len(categorization) == 0 {
+		return nil, fmt.Errorf("cannot resolve the site %s", url)
+	}
+
+	results := []string{
+		fmt.Sprintf("%s", categorization[2]),
+		fmt.Sprintf("%s", categorization[4]),
+	}
+
+	return results, nil
 }
 
 // TestRouteLookup will lookup the given destination IP in the virtual-router 'vr' and check the routing (fib) table and display the results.
