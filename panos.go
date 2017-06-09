@@ -68,6 +68,20 @@ type Tag struct {
 
 // Policy lists all of the security rules for a given device-group.
 type Policy struct {
+	Pre  []Rule
+	Post []Rule
+}
+
+// prePolicy lists all of the pre-rulebase security rules for a given device-group.
+type prePolicy struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Rules   []Rule   `xml:"result>rules>entry"`
+}
+
+// postPolicy lists all of the post-rulebase security rules for a given device-group.
+type postPolicy struct {
 	XMLName xml.Name `xml:"response"`
 	Status  string   `xml:"status,attr"`
 	Code    string   `xml:"code,attr"`
@@ -1371,31 +1385,71 @@ func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 	return nil
 }
 
-// Policy returns information about all of the security rules for the given device-group.
+// Policy returns information about the security policies for the given device-group. If you have pre and/or post rules,
+// then both of them will be returned. They are separated under a "Pre" and "Post" field in the returned "Policy" struct.
 func (p *PaloAlto) Policy(devicegroup string) (*Policy, error) {
 	var policy Policy
-	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules", devicegroup)
+	var prePolicy prePolicy
+	var postPolicy postPolicy
+	preXpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules", devicegroup)
+	postXpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/post-rulebase/security/rules", devicegroup)
 
-	if p.DeviceType != "panorama" {
-		return nil, errors.New("policies can only be listed from a Panorama device")
+	// if p.DeviceType == "panos" && len(devicegroup) > 0 {
+	// 	return nil, errors.New("you do not need to specify a device-group when connected to a non-Panorama device")
+	// }
+
+	if p.DeviceType == "panos" {
+		return nil, errors.New("you must be connected to a Panorama device to view policies")
 	}
 
-	_, policyData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if p.DeviceType == "panorama" && len(devicegroup) == 0 {
+		return nil, errors.New("you must specify a device-group when viewing policies on a Panorama device")
+	}
+
+	// if p.DeviceType == "panos" && rulebase == "pre" {
+	// 	xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/pre-rulebase/security/rules"
+	// }
+
+	// if p.DeviceType == "panos" && rulebase == "post" {
+	// 	xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/post-rulebase/security/rules"
+	// }
+
+	_, prePolicyData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", preXpath, p.Key)).End()
 	if errs != nil {
 		return nil, errs[0]
 	}
 
-	if err := xml.Unmarshal([]byte(policyData), &policy); err != nil {
+	if err := xml.Unmarshal([]byte(prePolicyData), &prePolicy); err != nil {
 		return nil, err
 	}
 
-	if len(policy.Rules) == 0 {
+	_, postPolicyData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", postXpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(postPolicyData), &postPolicy); err != nil {
+		return nil, err
+	}
+
+	// if p.DeviceType == "panos" && len(policy.Rules) == 0 {
+	// 	return nil, errors.New("there are no rules created")
+	// }
+
+	if len(prePolicy.Rules) == 0 && len(postPolicy.Rules) == 0 {
 		return nil, fmt.Errorf("there are no rules created, or the device-group %s does not exist", devicegroup)
 	}
 
-	if policy.Status != "success" {
-		return nil, fmt.Errorf("error code %s: %s", policy.Code, errorCodes[policy.Code])
+	if prePolicy.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", prePolicy.Code, errorCodes[prePolicy.Code])
 	}
+
+	if postPolicy.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", postPolicy.Code, errorCodes[postPolicy.Code])
+	}
+
+	policy.Pre = prePolicy.Rules
+	policy.Post = postPolicy.Rules
 
 	return &policy, nil
 }
@@ -1408,15 +1462,89 @@ func (p *PaloAlto) ApplyLogForwardingProfile(logprofile, devicegroup string, rul
 		return errors.New("log forwarding profiles can only be applied on a Panorama device")
 	}
 
+	rules, err := p.Policy(devicegroup)
+	if err != nil {
+		return err
+	}
+
 	if len(rule) <= 0 {
-		rules, err := p.Policy(devicegroup)
-		if err != nil {
-			return err
+		// rules, err := p.Policy(devicegroup)
+		// if err != nil {
+		// 	return err
+		// }
+
+		if len(rules.Pre) > 0 {
+			for _, rule := range rules.Pre {
+				var reqError requestError
+				xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+				xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
+
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
+				}
+
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				time.Sleep(10 * time.Millisecond)
+			}
 		}
 
-		for _, rule := range rules.Rules {
+		if len(rules.Post) > 0 {
+			for _, rule := range rules.Post {
+				var reqError requestError
+				xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/post-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+				xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
+
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
+				}
+
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
+
+		// for _, rule := range rules.Rules {
+		// 	var reqError requestError
+		// 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+		// 	xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
+
+		// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		// 	if errs != nil {
+		// 		return errs[0]
+		// 	}
+
+		// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		// 		return err
+		// 	}
+
+		// 	if reqError.Status != "success" {
+		// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		// 	}
+
+		// 	time.Sleep(10 * time.Millisecond)
+		// }
+	}
+
+	if len(rule) > 0 {
+		if len(rules.Pre) > 0 {
 			var reqError requestError
-			xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+			xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
 			xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
 
 			_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -1434,27 +1562,46 @@ func (p *PaloAlto) ApplyLogForwardingProfile(logprofile, devicegroup string, rul
 
 			time.Sleep(10 * time.Millisecond)
 		}
-	}
 
-	if len(rule) > 0 {
-		var reqError requestError
-		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
-		xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
+		if len(rules.Post) > 0 {
+			var reqError requestError
+			xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/post-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
+			xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
 
-		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
-		if errs != nil {
-			return errs[0]
+			_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+			if errs != nil {
+				return errs[0]
+			}
+
+			if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+				return err
+			}
+
+			if reqError.Status != "success" {
+				return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+			}
+
+			time.Sleep(10 * time.Millisecond)
 		}
 
-		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-			return err
-		}
+		// var reqError requestError
+		// xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
+		// xmlBody := fmt.Sprintf("<log-setting>%s</log-setting>", logprofile)
 
-		if reqError.Status != "success" {
-			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-		}
+		// _, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		// if errs != nil {
+		// 	return errs[0]
+		// }
 
-		time.Sleep(10 * time.Millisecond)
+		// if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		// 	return err
+		// }
+
+		// if reqError.Status != "success" {
+		// 	return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		// }
+
+		// time.Sleep(10 * time.Millisecond)
 	}
 
 	return nil
@@ -1470,16 +1617,162 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 		return errors.New("security profiles can only be applied on a Panorama device")
 	}
 
+	rules, err := p.Policy(devicegroup)
+	if err != nil {
+		return err
+	}
+
 	if len(rule) <= 0 {
-		rules, err := p.Policy(devicegroup)
-		if err != nil {
-			return err
+		// rules, err := p.Policy(devicegroup)
+		// if err != nil {
+		// 	return err
+		// }
+
+		if len(rules.Pre) > 0 {
+			for _, rule := range rules.Pre {
+				var reqError requestError
+				var xmlBody string
+				xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+
+				if len(secprofiles.Group) > 0 {
+					xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
+				} else {
+					xmlBody = "<profile-setting><profiles>"
+
+					if len(secprofiles.AntiVirus) > 0 {
+						xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
+					}
+
+					if len(secprofiles.AntiSpyware) > 0 {
+						xmlBody += fmt.Sprintf("<spyware><member>%s</member></spyware>", secprofiles.AntiSpyware)
+					}
+
+					if len(secprofiles.Vulnerability) > 0 {
+						xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+					}
+
+					if len(secprofiles.Wildfire) > 0 {
+						xmlBody += fmt.Sprintf("<wildfire-analysis><member>%s</member></wildfire-analysis>", secprofiles.Wildfire)
+					}
+
+					xmlBody += "</profiles></profile-setting>"
+				}
+
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
+				}
+
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				time.Sleep(10 * time.Millisecond)
+			}
 		}
 
-		for _, rule := range rules.Rules {
+		if len(rules.Post) > 0 {
+			for _, rule := range rules.Post {
+				var reqError requestError
+				var xmlBody string
+				xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/post-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+
+				if len(secprofiles.Group) > 0 {
+					xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
+				} else {
+					xmlBody = "<profile-setting><profiles>"
+
+					if len(secprofiles.AntiVirus) > 0 {
+						xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
+					}
+
+					if len(secprofiles.AntiSpyware) > 0 {
+						xmlBody += fmt.Sprintf("<spyware><member>%s</member></spyware>", secprofiles.AntiSpyware)
+					}
+
+					if len(secprofiles.Vulnerability) > 0 {
+						xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+					}
+
+					if len(secprofiles.Wildfire) > 0 {
+						xmlBody += fmt.Sprintf("<wildfire-analysis><member>%s</member></wildfire-analysis>", secprofiles.Wildfire)
+					}
+
+					xmlBody += "</profiles></profile-setting>"
+				}
+
+				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+				if errs != nil {
+					return errs[0]
+				}
+
+				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+					return err
+				}
+
+				if reqError.Status != "success" {
+					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+				}
+
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
+
+		// for _, rule := range rules.Rules {
+		// 	var reqError requestError
+		// 	var xmlBody string
+		// 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+
+		// 	if len(secprofiles.Group) > 0 {
+		// 		xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
+		// 	} else {
+		// 		xmlBody = "<profile-setting><profiles>"
+
+		// 		if len(secprofiles.AntiVirus) > 0 {
+		// 			xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
+		// 		}
+
+		// 		if len(secprofiles.AntiSpyware) > 0 {
+		// 			xmlBody += fmt.Sprintf("<spyware><member>%s</member></spyware>", secprofiles.AntiSpyware)
+		// 		}
+
+		// 		if len(secprofiles.Vulnerability) > 0 {
+		// 			xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+		// 		}
+
+		// 		if len(secprofiles.Wildfire) > 0 {
+		// 			xmlBody += fmt.Sprintf("<wildfire-analysis><member>%s</member></wildfire-analysis>", secprofiles.Wildfire)
+		// 		}
+
+		// 		xmlBody += "</profiles></profile-setting>"
+		// 	}
+
+		// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		// 	if errs != nil {
+		// 		return errs[0]
+		// 	}
+
+		// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		// 		return err
+		// 	}
+
+		// 	if reqError.Status != "success" {
+		// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		// 	}
+
+		// 	time.Sleep(10 * time.Millisecond)
+		// }
+	}
+
+	if len(rule) > 0 {
+		if len(rules.Pre) > 0 {
 			var reqError requestError
 			var xmlBody string
-			xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule.Name)
+			xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
 
 			if len(secprofiles.Group) > 0 {
 				xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
@@ -1520,51 +1813,94 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 
 			time.Sleep(10 * time.Millisecond)
 		}
-	}
 
-	if len(rule) > 0 {
-		var reqError requestError
-		var xmlBody string
-		xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
+		if len(rules.Post) > 0 {
+			var reqError requestError
+			var xmlBody string
+			xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/post-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
 
-		if len(secprofiles.Group) > 0 {
-			xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
-		} else {
-			xmlBody = "<profile-setting><profiles>"
+			if len(secprofiles.Group) > 0 {
+				xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
+			} else {
+				xmlBody = "<profile-setting><profiles>"
 
-			if len(secprofiles.AntiVirus) > 0 {
-				xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
+				if len(secprofiles.AntiVirus) > 0 {
+					xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
+				}
+
+				if len(secprofiles.AntiSpyware) > 0 {
+					xmlBody += fmt.Sprintf("<spyware><member>%s</member></spyware>", secprofiles.AntiSpyware)
+				}
+
+				if len(secprofiles.Vulnerability) > 0 {
+					xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+				}
+
+				if len(secprofiles.Wildfire) > 0 {
+					xmlBody += fmt.Sprintf("<wildfire-analysis><member>%s</member></wildfire-analysis>", secprofiles.Wildfire)
+				}
+
+				xmlBody += "</profiles></profile-setting>"
 			}
 
-			if len(secprofiles.AntiSpyware) > 0 {
-				xmlBody += fmt.Sprintf("<spyware><member>%s</member></spyware>", secprofiles.AntiSpyware)
+			_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+			if errs != nil {
+				return errs[0]
 			}
 
-			if len(secprofiles.Vulnerability) > 0 {
-				xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+			if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+				return err
 			}
 
-			if len(secprofiles.Wildfire) > 0 {
-				xmlBody += fmt.Sprintf("<wildfire-analysis><member>%s</member></wildfire-analysis>", secprofiles.Wildfire)
+			if reqError.Status != "success" {
+				return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
 			}
 
-			xmlBody += "</profiles></profile-setting>"
+			time.Sleep(10 * time.Millisecond)
 		}
 
-		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
-		if errs != nil {
-			return errs[0]
-		}
+		// var reqError requestError
+		// var xmlBody string
+		// xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/pre-rulebase/security/rules/entry[@name='%s']", devicegroup, rule[0])
 
-		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-			return err
-		}
+		// if len(secprofiles.Group) > 0 {
+		// 	xmlBody = fmt.Sprintf("<profile-setting><group><member>%s</member></group></profile-setting>", secprofiles.Group)
+		// } else {
+		// 	xmlBody = "<profile-setting><profiles>"
 
-		if reqError.Status != "success" {
-			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-		}
+		// 	if len(secprofiles.AntiVirus) > 0 {
+		// 		xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
+		// 	}
 
-		time.Sleep(10 * time.Millisecond)
+		// 	if len(secprofiles.AntiSpyware) > 0 {
+		// 		xmlBody += fmt.Sprintf("<spyware><member>%s</member></spyware>", secprofiles.AntiSpyware)
+		// 	}
+
+		// 	if len(secprofiles.Vulnerability) > 0 {
+		// 		xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+		// 	}
+
+		// 	if len(secprofiles.Wildfire) > 0 {
+		// 		xmlBody += fmt.Sprintf("<wildfire-analysis><member>%s</member></wildfire-analysis>", secprofiles.Wildfire)
+		// 	}
+
+		// 	xmlBody += "</profiles></profile-setting>"
+		// }
+
+		// _, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+		// if errs != nil {
+		// 	return errs[0]
+		// }
+
+		// if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		// 	return err
+		// }
+
+		// if reqError.Status != "success" {
+		// 	return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		// }
+
+		// time.Sleep(10 * time.Millisecond)
 	}
 
 	return nil
