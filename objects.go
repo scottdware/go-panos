@@ -22,6 +22,17 @@ type CustomURL struct {
 	Members     []string `xml:"list>member,omitempty"`
 }
 
+// Recurrance contains the information for external dynamic lists when it comes to how often they are downloaded. "Method"
+// must be one of: five-minute, hourly, daily, weekly, monthly. "DayOfWeek" is the name of the day, such as "tuesday." "DayOfMonth"
+// is specified as a number, ranging from 1-31. "Hour" must be in 23-hour format, such as "03" for 3 am. The "hourly" and "five-minute"
+// methods do not require any additional fields. "DayOfWeek" and "DayOfMonth" both require the "Hour" field as well.
+type Recurrance struct {
+	Method     string
+	DayOfWeek  string
+	DayOfMonth int
+	Hour       string
+}
+
 // URLCategory returns a list of all custom URL category objects. You can (optionally) specify a device-group
 // when ran against a Panorama device. If no device-group is specified, then all objects are returned.
 func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
@@ -690,6 +701,75 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
+	}
+
+	return nil
+}
+
+// CreateExternalDynamicList will create an external dynamic list on the device. "listtype" must be one of: ip, domain, or url. Configuring the
+// recurrance requires you to use the Recurrance struct when passing the configuration for this parameter - please see the documentation for that struct.
+// If creating a shared object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
+// If not creating a shared object, then just specify "false."
+func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url string, recurrance *Recurrance, shared bool, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+	var xmlBody string
+	var recurring string
+
+	ver := splitSWVersion(p.SoftwareVersion)
+
+	switch recurrance.Method {
+	case "hourly":
+		recurring = "<hourly/>"
+	case "five-minute":
+		recurring = "<five-minute/>"
+	case "daily":
+		recurring = fmt.Sprintf("<daily><at>%s</at></daily>", recurrance.Hour)
+	case "weekly":
+		recurring = fmt.Sprintf("<weekly><day-of-week>%s</day-of-week><at>%s</at></weekly>", recurrance.DayOfWeek, recurrance.Hour)
+	case "monthly":
+		recurring = fmt.Sprintf("<monthly><day-of-month>%d</day-of-month><at>%s</at></monthly>", recurrance.DayOfMonth, recurrance.Hour)
+	}
+
+	if ver[0] >= 8 {
+		xmlBody = fmt.Sprintf("<type><%s><recurring>%s</recurring><url>%s</url></%s></type>", listtype, recurring, url, listtype)
+	}
+
+	if ver[0] <= 7 {
+		xmlBody = fmt.Sprintf("<recurring>%s</recurring><url>%s</url><type>%s</type>", recurring, url, listtype)
+	}
+
+	if p.DeviceType == "panos" && shared == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/external-list/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panos" && shared == true {
+		return errors.New("you can only create a shared EDL on a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" && shared == true {
+		xpath = fmt.Sprintf("/config/shared/external-list/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/external-list/entry[@name='%s']", devicegroup[0], name)
+	}
+
+	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+		return errors.New("you must specify a device-group when creating a EDL on a Panorama device")
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
 	}
 
 	return nil
