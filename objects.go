@@ -744,7 +744,7 @@ func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url s
 	}
 
 	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared EDL on a Panorama device")
+		return errors.New("you can only create a shared external dynamic list on a Panorama device")
 	}
 
 	if p.DeviceType == "panorama" && shared == true {
@@ -756,10 +756,53 @@ func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url s
 	}
 
 	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
-		return errors.New("you must specify a device-group when creating a EDL on a Panorama device")
+		return errors.New("you must specify a device-group when creating an external dynamic list on a Panorama device")
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteExternalDynamicList removes an external dynamic list from the device. If deleting
+// a shared EDL on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
+// If not removing a shared object, then just specify "false."
+func (p *PaloAlto) DeleteExternalDynamicList(name string, shared bool, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+
+	if p.DeviceType == "panos" && shared == false {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/external-list/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panos" && shared == true {
+		return errors.New("you can only delete a shared external dynamic list on a Panorama device")
+	}
+
+	if p.DeviceType == "panorama" && shared == true {
+		xpath = fmt.Sprintf("/config/shared/external-list/entry[@name='%s']", name)
+	}
+
+	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/external-list/entry[@name='%s']", devicegroup[0], name)
+	}
+
+	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+		return errors.New("you must specify a device-group when deleting a external dynamic list on a Panorama device")
+	}
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
 	if errs != nil {
 		return errs[0]
 	}
