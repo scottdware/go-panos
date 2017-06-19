@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 )
 
 // AddressObjects contains a slice of all address objects.
@@ -150,10 +149,9 @@ func (p *PaloAlto) AddressGroups(devicegroup ...string) (*AddressGroups, error) 
 	return &groups, nil
 }
 
-// CreateAddress will add a new address object to the device. addrtype should be one of: ip, range, or fqdn. If creating
-// a shared address object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, shared bool, devicegroup ...string) error {
+// CreateAddress will add a new address object to the device. addrtype should be one of: ip, range, or fqdn. If creating an address
+// object on a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
@@ -171,23 +169,19 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, sh
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared address object on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating address objects on a Panorama device")
 	}
 
@@ -208,10 +202,9 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, sh
 }
 
 // CreateAddressGroup will create a new static address group on the device. You can specify members to add
-// by using a []string variable (i.e. members := []string{"server1", "server2"}). If creating
-// a shared address group on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateAddressGroup(name string, members []string, description string, shared bool, devicegroup ...string) error {
+// by using a []string variable (i.e. members := []string{"server1", "server2"}). If creating an address group on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateAddressGroup(name string, members []string, description string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
@@ -230,23 +223,19 @@ func (p *PaloAlto) CreateAddressGroup(name string, members []string, description
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared address group on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating address groups on a Panorama device")
 	}
 
@@ -267,10 +256,9 @@ func (p *PaloAlto) CreateAddressGroup(name string, members []string, description
 }
 
 // CreateDynamicAddressGroup will create a new dynamic address group on the device. The filter must be written like so:
-// 'vm-servers' and 'some tag' or 'pcs' - using the tags as the match criteria. If creating
-// a shared address group on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string, shared bool, devicegroup ...string) error {
+// 'vm-servers' and 'some tag' or 'pcs' - using the tags as the match criteria. If creating dynamic address group on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string, devicegroup ...string) error {
 	xmlBody := fmt.Sprintf("<dynamic><filter>%s</filter></dynamic>", criteria)
 	var xpath string
 	var reqError requestError
@@ -283,23 +271,19 @@ func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string,
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared address group on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating address groups on a Panorama device")
 	}
 
@@ -319,30 +303,25 @@ func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string,
 	return nil
 }
 
-// DeleteAddress will remove an address object from the device. If deleting
-// a shared address object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not deleting a shared object, then just specify "false."
-func (p *PaloAlto) DeleteAddress(name string, shared bool, devicegroup ...string) error {
+// DeleteAddress will remove an address object from the device. If deleting an address object on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) DeleteAddress(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only delete a shared address object on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when deleting address objects on a Panorama device")
 	}
 
@@ -362,30 +341,25 @@ func (p *PaloAlto) DeleteAddress(name string, shared bool, devicegroup ...string
 	return nil
 }
 
-// DeleteAddressGroup will remove an address group from the device. If deleting
-// a shared address group on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not deleting a shared object, then just specify "false."
-func (p *PaloAlto) DeleteAddressGroup(name string, shared bool, devicegroup ...string) error {
+// DeleteAddressGroup will remove an address group from the device. If deleting an address group on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only delete a shared address group on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when deleting address groups on a Panorama device")
 	}
 
@@ -405,13 +379,35 @@ func (p *PaloAlto) DeleteAddressGroup(name string, shared bool, devicegroup ...s
 	return nil
 }
 
-// CreateAddressFromCsv takes a .csv file with the following format: name,type,address,description,address-group.
+// CreateAddressFromCsv takes a .csv file with the following format: name,type,address,description.
 // 'name' is what you want the address object to be called. 'type' is one of: ip, range, or fqdn.
 // 'address' is the address of the object. 'description' is optional, just leave the field blank if you do not want one.
-// 'address-group' will assign the object to the given address-group if you wish (leave blank if you do not want to add it to a group).
-// If creating shared address objects on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ...string) error {
+// If creating addresses on a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateAddressFromCsv(file string, devicegroup ...string) error {
+	var xpath string
+	var reqError requestError
+	var addrXMLBody string
+
+	if p.Shared == true {
+		xpath = "/config/shared/address"
+	}
+
+	if p.Shared == false && len(devicegroup) <= 0 {
+		if p.DeviceType == "panorama" {
+			return errors.New("you must specify a device-group when creating address objects on a Panorama device")
+		}
+
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address"
+	}
+
+	if len(devicegroup) > 0 {
+		if p.DeviceType == "panos" {
+			return errors.New("you can only specify a device-group on a Panorama device")
+		}
+
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address", devicegroup[0])
+	}
+
 	fn, err := os.Open(file)
 	if err != nil {
 		return err
@@ -426,84 +422,54 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, shared bool, devicegroup ..
 	}
 
 	for _, line := range fields {
-		var addrgroup string
+		// var addrgroup string
 		linelen := len(line)
 		name := line[0]
 		addrtype := line[1]
-		ip := line[2]
+		address := line[2]
 		description := ""
 
 		if linelen == 4 && len(line[3]) > 0 {
 			description = line[3]
 		}
 
-		if linelen == 5 && len(line[4]) > 0 {
-			addrgroup = line[4]
+		// if linelen == 5 && len(line[4]) > 0 {
+		// 	addrgroup = line[4]
+		// }
+
+		entry := fmt.Sprintf("<entry name=\"%s\">", name)
+
+		switch addrtype {
+		case "ip":
+			entry += fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
+		case "range":
+			entry += fmt.Sprintf("<ip-range>%s</ip-range>", address)
+		case "fqdn":
+			entry += fmt.Sprintf("<fqdn>%s</fqdn>", address)
 		}
 
-		if shared == true && len(devicegroup) > 0 {
-			err = p.CreateAddress(name, addrtype, ip, description, true, devicegroup[0])
-			if err != nil {
-				return err
-			}
-
-			time.Sleep(10 * time.Millisecond)
-
-			if len(addrgroup) > 0 {
-				err = p.EditGroup("address", "add", name, addrgroup, true, devicegroup[0])
-				if err != nil {
-					return err
-				}
-			}
+		if len(description) > 0 {
+			entry += fmt.Sprintf("<description>%s</description>", description)
 		}
 
-		if shared == true && len(devicegroup) <= 0 {
-			err = p.CreateAddress(name, addrtype, ip, description, true)
-			if err != nil {
-				return err
-			}
+		entry += "</entry>"
+		addrXMLBody += entry
+	}
 
-			time.Sleep(10 * time.Millisecond)
+	fmt.Println(xpath)
+	fmt.Println(addrXMLBody)
 
-			if len(addrgroup) > 0 {
-				err = p.EditGroup("address", "add", name, addrgroup, true)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, addrXMLBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
 
-		if shared == false && len(devicegroup) > 0 {
-			err = p.CreateAddress(name, addrtype, ip, description, false, devicegroup[0])
-			if err != nil {
-				return err
-			}
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
 
-			time.Sleep(10 * time.Millisecond)
-
-			if len(addrgroup) > 0 {
-				err = p.EditGroup("address", "add", name, addrgroup, false, devicegroup[0])
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		if shared == false && len(devicegroup) <= 0 {
-			err = p.CreateAddress(name, addrtype, ip, description, false)
-			if err != nil {
-				return err
-			}
-
-			time.Sleep(10 * time.Millisecond)
-
-			if len(addrgroup) > 0 {
-				err = p.EditGroup("address", "add", name, addrgroup, false)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
 	}
 
 	return nil

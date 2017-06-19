@@ -25,6 +25,7 @@ type PaloAlto struct {
 	SoftwareVersion string
 	DeviceType      string
 	Panorama        bool
+	Shared          bool
 }
 
 // Devices lists all of the devices in Panorama.
@@ -342,7 +343,18 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 		SoftwareVersion: info.SoftwareVersion,
 		DeviceType:      deviceType,
 		Panorama:        status,
+		Shared:          false,
 	}, nil
+}
+
+// SetShared will set Panorama's device-group to shared for all subsequent configuration changes. For example, if you set this
+// to "true" and then create address or service objects, they will all be shared objects. Set this back to "false" to return to normal mode.
+func (p *PaloAlto) SetShared(shared bool) {
+	if p.DeviceType == "panos" {
+		panic(errors.New("you can only set the shared option on a Panorama device"))
+	}
+
+	p.Shared = shared
 }
 
 // Devices returns information about all of the devices that are managed by Panorama.
@@ -646,10 +658,9 @@ func (p *PaloAlto) Tags() (*Tags, error) {
 }
 
 // CreateTag will add a new tag to the device. You can use the following colors: Red, Green, Blue, Yellow, Copper,
-// Orange, Purple, Gray, Light Green, Cyan, Light Gray, Blue Gray, Lime, Black, Gold, Brown. If creating
-// a shared tag on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateTag(name, color, comments string, shared bool, devicegroup ...string) error {
+// Orange, Purple, Gray, Light Green, Cyan, Light Gray, Blue Gray, Lime, Black, Gold, Brown. If creating a tag on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateTag(name, color, comments string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
@@ -660,23 +671,23 @@ func (p *PaloAlto) CreateTag(name, color, comments string, shared bool, devicegr
 		xmlBody += fmt.Sprintf("<comments>%s</comments>", comments)
 	}
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared tag on a Panorama device")
+	if p.DeviceType == "panos" && len(devicegroup) > 0 {
+		return errors.New("you do not need to specify a device-group on a non-Panorama device")
 	}
 
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/tag/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating a tag to a Panorama device")
 	}
 
@@ -696,30 +707,25 @@ func (p *PaloAlto) CreateTag(name, color, comments string, shared bool, devicegr
 	return nil
 }
 
-// DeleteTag will remove a tag from the device. If deleting
-// a shared tag on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) DeleteTag(name string, shared bool, devicegroup ...string) error {
+// DeleteTag will remove a tag from the device. If deleting a tag on a Panorama device, specify the
+// device-group as the last parameter.
+func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only delete a tag on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/tag/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when deleting a tag on a Panorama device")
 	}
 
@@ -741,10 +747,9 @@ func (p *PaloAlto) DeleteTag(name string, shared bool, devicegroup ...string) er
 
 // ApplyTag will apply the given tag to the specified address or service object(s). You can specify multiple tags
 // by separating them with a comma, i.e. "servers, vm". If you have address/service objects with the same
-// name, then the tag(s) will be applied to all that match. When tagging
-// a shared object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...string) error {
+// name, then the tag(s) will be applied to all that match. If tagging objects on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) ApplyTag(tag, object string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 	tags := strings.Split(tag, ",")
@@ -761,7 +766,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 
 	for _, a := range adObj.Addresses {
 		if object == a.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -780,11 +785,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only apply a tag to a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -803,7 +804,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) >= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) >= 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag", devicegroup[0], object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -822,7 +823,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when tagging objects on a Panorama device")
 			}
 		}
@@ -830,7 +831,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 
 	for _, ag := range agObj.Groups {
 		if object == ag.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -849,11 +850,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only apply a tag to a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -872,7 +869,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag", devicegroup[0], object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -891,7 +888,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when tagging objects on a Panorama device")
 			}
 		}
@@ -899,7 +896,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 
 	for _, s := range sObj.Services {
 		if object == s.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -918,11 +915,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only apply a tag to a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -941,7 +934,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag", devicegroup[0], object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -960,7 +953,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when tagging objects on a Panorama device")
 			}
 		}
@@ -968,7 +961,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 
 	for _, sg := range sgObj.Groups {
 		if object == sg.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -987,11 +980,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only apply a tag to a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']/tag", object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -1010,7 +999,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag", devicegroup[0], object)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=edit&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -1029,7 +1018,7 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when tagging objects on a Panorama device")
 			}
 		}
@@ -1038,10 +1027,9 @@ func (p *PaloAlto) ApplyTag(tag, object string, shared bool, devicegroup ...stri
 	return nil
 }
 
-// RemoveTag will remove a single tag from an address/service object. If removing
-// a tag from a shared object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...string) error {
+// RemoveTag will remove a single tag from an address/service object. If removing a tag on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 	adObj, _ := p.Addresses()
@@ -1051,7 +1039,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 
 	for _, a := range adObj.Addresses {
 		if object == a.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1070,11 +1058,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only remove a tag from a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1093,7 +1077,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1112,7 +1096,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when removing tags on a Panorama device")
 			}
 		}
@@ -1120,7 +1104,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 
 	for _, ag := range agObj.Groups {
 		if object == ag.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1139,11 +1123,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only remove a tag from a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1162,7 +1142,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1181,7 +1161,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when removing tags on a Panorama device")
 			}
 		}
@@ -1189,7 +1169,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 
 	for _, s := range sObj.Services {
 		if object == s.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1208,11 +1188,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only remove a tag from a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1231,7 +1207,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1250,7 +1226,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when removing tags on a Panorama device")
 			}
 		}
@@ -1258,7 +1234,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 
 	for _, sg := range sgObj.Groups {
 		if object == sg.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1277,11 +1253,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only remove a tag from a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']/tag/member[text()='%s']", object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1300,7 +1272,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag/member[text()='%s']", devicegroup[0], object, tag)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
@@ -1319,7 +1291,7 @@ func (p *PaloAlto) RemoveTag(tag, object string, shared bool, devicegroup ...str
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when removing tags on a Panorama device")
 			}
 		}

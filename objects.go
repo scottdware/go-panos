@@ -72,10 +72,9 @@ func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
 }
 
 // CreateURLCategory creates a custom URL category to be used in a policy. When specifying multiple URL's, use a
-// []string variable for the url parameter (i.e. members := []string{"www.*.com", "*.somesite.net"}). If creating
-// a shared URL category on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateURLCategory(name string, urls []string, description string, shared bool, devicegroup ...string) error {
+// []string variable for the url parameter (i.e. members := []string{"www.*.com", "*.somesite.net"}). If creating a
+// URL category on a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateURLCategory(name string, urls []string, description string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
@@ -89,23 +88,19 @@ func (p *PaloAlto) CreateURLCategory(name string, urls []string, description str
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/profiles/custom-url-category/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared URL category on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/profiles/custom-url-category/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/profiles/custom-url-category/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating a URL category on a Panorama device")
 	}
 
@@ -126,16 +121,15 @@ func (p *PaloAlto) CreateURLCategory(name string, urls []string, description str
 }
 
 // EditURLCategory adds or removes URL's from the given custom URL category. Action must be "add" or "remove". If editing
-// a shared URL category on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not editing a shared object, then just specify "false."
-func (p *PaloAlto) EditURLCategory(action, url, name string, shared bool, devicegroup ...string) error {
+// a URL category on a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) EditURLCategory(action, url, name string, devicegroup ...string) error {
 	var xpath string
 	var xmlBody string
 	var reqError requestError
 
 	query := fmt.Sprintf("type=config&key=%s", p.Key)
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		if action == "add" {
 			xmlBody += fmt.Sprintf("<member>%s</member>", url)
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/profiles/custom-url-category/entry[@name='%s']/list", name)
@@ -150,11 +144,7 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, shared bool, device
 		}
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only edit a shared URL category on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		if action == "add" {
 			xmlBody = fmt.Sprintf("<member>%s</member>", url)
 			xpath = fmt.Sprintf("/config/shared/profiles/custom-url-category/entry[@name='%s']/list", name)
@@ -169,7 +159,7 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, shared bool, device
 		}
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		if action == "add" {
 			xmlBody = fmt.Sprintf("<member>%s</member>", url)
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/profiles/custom-url-category/entry[@name='%s']/list", devicegroup[0], name)
@@ -184,7 +174,7 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, shared bool, device
 		}
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when editing a URL category on a Panorama device")
 	}
 
@@ -204,30 +194,25 @@ func (p *PaloAlto) EditURLCategory(action, url, name string, shared bool, device
 	return nil
 }
 
-// DeleteURLCategory removes a custom URL category from the device. If deleting
-// a shared URL category on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not editing a shared object, then just specify "false."
-func (p *PaloAlto) DeleteURLCategory(name string, shared bool, devicegroup ...string) error {
+// DeleteURLCategory removes a custom URL category from the device. If deleting a URL category on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) DeleteURLCategory(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/profiles/custom-url-category/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only delete a shared URL category on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/profiles/custom-url-category/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/profiles/custom-url-category/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when deleting a URL category on a Panorama device")
 	}
 
@@ -248,17 +233,15 @@ func (p *PaloAlto) DeleteURLCategory(name string, shared bool, devicegroup ...st
 }
 
 // EditGroup will add or remove objects from the specified group type (i.e., "address" or "service"). Action must be
-// "add" or "remove". If editing
-// a group on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not editing a shared object, then just specify "false."
-func (p *PaloAlto) EditGroup(objecttype, action, object, group string, shared bool, devicegroup ...string) error {
+// "add" or "remove". If editing a group on a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
 
 	query := fmt.Sprintf("type=config&key=%s", p.Key)
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		if action == "add" {
 			xmlBody = fmt.Sprintf("<member>%s</member>", object)
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']/static", group)
@@ -279,11 +262,7 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, shared bo
 		}
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only edit a shared group on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		if action == "add" {
 			xmlBody = fmt.Sprintf("<member>%s</member>", object)
 			xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']/static", group)
@@ -304,7 +283,7 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, shared bo
 		}
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		if action == "add" {
 			xmlBody = fmt.Sprintf("<member>%s</member>", object)
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/static", devicegroup[0], group)
@@ -325,7 +304,7 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, shared bo
 		}
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when editing a shared group on a Panorama device")
 	}
 
@@ -346,10 +325,9 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, shared bo
 }
 
 // RenameObject will rename the given object from it's 'oldname' to the 'newname.' You can rename the following
-// object types: address, address-groups, service, service-groups, tags. If renaming
-// a shared object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not editing a shared object, then just specify "false."
-func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegroup ...string) error {
+// object types: address, address-groups, service, service-groups, tags. If renaming objects on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 	adObj, _ := p.Addresses()
@@ -360,7 +338,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 
 	for _, a := range adObj.Addresses {
 		if oldname == a.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -379,11 +357,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only rename a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -402,7 +376,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -421,7 +395,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when renaming an object on a Panorama device")
 			}
 		}
@@ -429,7 +403,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 
 	for _, ag := range agObj.Groups {
 		if oldname == ag.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -448,11 +422,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only rename a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -471,7 +441,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -490,7 +460,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
@@ -498,7 +468,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 
 	for _, s := range sObj.Services {
 		if oldname == s.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -517,11 +487,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only rename a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -540,7 +506,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -559,7 +525,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
@@ -567,7 +533,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 
 	for _, sg := range sgObj.Groups {
 		if oldname == sg.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -586,11 +552,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only rename a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -609,7 +571,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -628,7 +590,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
@@ -636,7 +598,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 
 	for _, t := range tags.Tags {
 		if oldname == t.Name {
-			if p.DeviceType == "panos" && shared == false {
+			if p.DeviceType == "panos" {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -655,11 +617,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panos" && shared == true {
-				return errors.New("you can only rename a shared object on a Panorama device")
-			}
-
-			if p.DeviceType == "panorama" && shared == true {
+			if p.DeviceType == "panorama" && p.Shared == true {
 				xpath = fmt.Sprintf("/config/shared/tag/entry[@name='%s']", oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -678,7 +636,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], oldname)
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
@@ -697,7 +655,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
@@ -708,9 +666,8 @@ func (p *PaloAlto) RenameObject(oldname, newname string, shared bool, devicegrou
 
 // CreateExternalDynamicList will create an external dynamic list on the device. "listtype" must be one of: ip, domain, or url. Configuring the
 // recurrance requires you to use the Recurrance struct when passing the configuration for this parameter - please see the documentation for that struct.
-// If creating a shared object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url string, recurrance *Recurrance, shared bool, devicegroup ...string) error {
+// If creating an EDL on a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url string, recurrance *Recurrance, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 	var xmlBody string
@@ -739,23 +696,19 @@ func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url s
 		xmlBody = fmt.Sprintf("<recurring>%s</recurring><url>%s</url><type>%s</type>", recurring, url, listtype)
 	}
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/external-list/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared external dynamic list on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/external-list/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/external-list/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating an external dynamic list on a Panorama device")
 	}
 
@@ -775,30 +728,25 @@ func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url s
 	return nil
 }
 
-// DeleteExternalDynamicList removes an external dynamic list from the device. If deleting
-// a shared EDL on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not removing a shared object, then just specify "false."
-func (p *PaloAlto) DeleteExternalDynamicList(name string, shared bool, devicegroup ...string) error {
+// DeleteExternalDynamicList removes an external dynamic list from the device. If deleting an EDL on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) DeleteExternalDynamicList(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/external-list/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only delete a shared external dynamic list on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/external-list/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/external-list/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when deleting a external dynamic list on a Panorama device")
 	}
 

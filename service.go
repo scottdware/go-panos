@@ -118,10 +118,8 @@ func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) 
 }
 
 // CreateService adds a new service object to the device. Port can be a single port #, range (1-65535), or comma separated (80, 8080, 443).
-// If creating
-// a shared service object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateService(name, protocol, port, description string, shared bool, devicegroup ...string) error {
+// If creating a service on a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateService(name, protocol, port, description string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
@@ -137,23 +135,19 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, share
 		xmlBody += fmt.Sprintf("<description>%s</description>", description)
 	}
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared service object on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating service objects on a Panorama device")
 	}
 
@@ -174,10 +168,9 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, share
 }
 
 // CreateServiceGroup will create a new service group on the device. You can specify members to add
-// by using a []string variable (i.e. members := []string{"tcp-service1", "udp-service1"}). If creating
-// a shared service group on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not creating a shared object, then just specify "false."
-func (p *PaloAlto) CreateServiceGroup(name string, members []string, shared bool, devicegroup ...string) error {
+// by using a []string variable (i.e. members := []string{"tcp-service1", "udp-service1"}). If creating a service group on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateServiceGroup(name string, members []string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
@@ -192,23 +185,19 @@ func (p *PaloAlto) CreateServiceGroup(name string, members []string, shared bool
 	}
 	xmlBody += "</members>"
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only create a shared service group on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when creating service groups on a Panorama device")
 	}
 
@@ -228,30 +217,25 @@ func (p *PaloAlto) CreateServiceGroup(name string, members []string, shared bool
 	return nil
 }
 
-// DeleteService will remove a service object from the device. If deleting
-// a shared service object on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not deleting a shared object, then just specify "false."
-func (p *PaloAlto) DeleteService(name string, shared bool, devicegroup ...string) error {
+// DeleteService will remove a service object from the device. If deleting a service on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) DeleteService(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only delete a shared service object on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when deleting service objects on a Panorama device")
 	}
 
@@ -271,30 +255,25 @@ func (p *PaloAlto) DeleteService(name string, shared bool, devicegroup ...string
 	return nil
 }
 
-// DeleteServiceGroup will remove a service group from the device. If deleting
-// a shared service group on a Panorama device, then specify "true" for the shared parameter, and omit the device-group.
-// If not deleting a shared object, then just specify "false."
-func (p *PaloAlto) DeleteServiceGroup(name string, shared bool, devicegroup ...string) error {
+// DeleteServiceGroup will remove a service group from the device. If deleting a service group on a
+// Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) DeleteServiceGroup(name string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
 
-	if p.DeviceType == "panos" && shared == false {
+	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panos" && shared == true {
-		return errors.New("you can only delete a shared service group on a Panorama device")
-	}
-
-	if p.DeviceType == "panorama" && shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], name)
 	}
 
-	if p.DeviceType == "panorama" && shared == false && len(devicegroup) <= 0 {
+	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
 		return errors.New("you must specify a device-group when deleting service groups on a Panorama device")
 	}
 
