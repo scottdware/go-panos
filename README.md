@@ -44,7 +44,7 @@ pan.AddDevice("00102345678")
 pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
 
 // Create address objects from a csv file within our device-group we added above.
-pan.CreateAddressFromCsv("addresses.csv", false, "Some-DeviceGroup")
+pan.CreateAddressFromCsv("addresses.csv", "Some-DeviceGroup")
 
 //
 ```
