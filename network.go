@@ -47,10 +47,10 @@ type ARPEntry struct {
 // 	RemoteIP string `xml:"remote"`
 // }
 
-// CreateL3Interface adds a new layer-3 interface or sub-interface to the device. If adding a sub-interface,
+// CreateLayer3Interface adds a new layer-3 interface or sub-interface to the device. If adding a sub-interface,
 // be sure to append the VLAN tag to the interface name like so: ethernet1/1.700. You must specify the subnet mask in
 // CIDR notation when specifying the IP address, i.e.: 1.1.1.1/32.
-func (p *PaloAlto) CreateL3Interface(ifname, ipaddress string, comment ...string) error {
+func (p *PaloAlto) CreateLayer3Interface(ifname, ipaddress string, comment ...string) error {
 	var xmlBody string
 	var reqError requestError
 
@@ -91,8 +91,8 @@ func (p *PaloAlto) CreateL3Interface(ifname, ipaddress string, comment ...string
 	return nil
 }
 
-// DeleteL3Interface removes a layer-3 interface or sub-interface from the device.
-func (p *PaloAlto) DeleteL3Interface(ifname string) error {
+// DeleteLayer3Interface removes a layer-3 interface or sub-interface from the device.
+func (p *PaloAlto) DeleteLayer3Interface(ifname string) error {
 	var reqError requestError
 	var xpath string
 
