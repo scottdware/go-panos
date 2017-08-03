@@ -99,11 +99,14 @@ type Rule struct {
 	SourceUser           []string `xml:"source-user>member"`
 	Application          []string `xml:"application>member"`
 	Service              []string `xml:"service>member"`
+	Category             []string `xml:"category>member"`
 	Action               string   `xml:"action"`
 	LogStart             string   `xml:"log-start"`
 	LogEnd               string   `xml:"log-end"`
 	Tag                  []string `xml:"tag>member"`
 	LogSetting           string   `xml:"log-setting"`
+	URLFilteringProfile  string   `xml:"profile-setting>profiles>url-filtering>member"`
+	FileBlockingProfile  string   `xml:"profile-setting>profiles>file-blocking>member"`
 	AntiVirusProfile     string   `xml:"profile-setting>profiles>virus>member"`
 	AntiSpywareProfile   string   `xml:"profile-setting>profiles>spyware>member"`
 	VulnerabilityProfile string   `xml:"profile-setting>profiles>vulnerability>member"`
@@ -114,6 +117,8 @@ type Rule struct {
 // SecurityProfiles contains a list of security profiles to apply to a rule. If you have a security group
 // then you can just specify that and omit the individual ones.
 type SecurityProfiles struct {
+	URLFiltering  string
+	FileBlocking  string
 	AntiVirus     string
 	AntiSpyware   string
 	Vulnerability string
@@ -1611,6 +1616,14 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 				} else {
 					xmlBody = "<profile-setting><profiles>"
 
+					// if len(secprofiles.URLFiltering) > 0 {
+					// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+					// }
+
+					// if len(secprofiles.FileBlocking) > 0 {
+					// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+					// }
+
 					if len(secprofiles.AntiVirus) > 0 {
 						xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
 					}
@@ -1620,7 +1633,7 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 					}
 
 					if len(secprofiles.Vulnerability) > 0 {
-						xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+						xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.Vulnerability)
 					}
 
 					if len(secprofiles.Wildfire) > 0 {
@@ -1658,6 +1671,14 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 				} else {
 					xmlBody = "<profile-setting><profiles>"
 
+					// if len(secprofiles.URLFiltering) > 0 {
+					// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+					// }
+
+					// if len(secprofiles.FileBlocking) > 0 {
+					// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+					// }
+
 					if len(secprofiles.AntiVirus) > 0 {
 						xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
 					}
@@ -1667,7 +1688,7 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 					}
 
 					if len(secprofiles.Vulnerability) > 0 {
-						xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+						xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.Vulnerability)
 					}
 
 					if len(secprofiles.Wildfire) > 0 {
@@ -1751,6 +1772,14 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 			} else {
 				xmlBody = "<profile-setting><profiles>"
 
+				// if len(secprofiles.URLFiltering) > 0 {
+				// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+				// }
+
+				// if len(secprofiles.FileBlocking) > 0 {
+				// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+				// }
+
 				if len(secprofiles.AntiVirus) > 0 {
 					xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
 				}
@@ -1760,7 +1789,7 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 				}
 
 				if len(secprofiles.Vulnerability) > 0 {
-					xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+					xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.Vulnerability)
 				}
 
 				if len(secprofiles.Wildfire) > 0 {
@@ -1796,6 +1825,14 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 			} else {
 				xmlBody = "<profile-setting><profiles>"
 
+				// if len(secprofiles.URLFiltering) > 0 {
+				// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+				// }
+
+				// if len(secprofiles.FileBlocking) > 0 {
+				// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+				// }
+
 				if len(secprofiles.AntiVirus) > 0 {
 					xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
 				}
@@ -1805,7 +1842,7 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 				}
 
 				if len(secprofiles.Vulnerability) > 0 {
-					xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.AntiSpyware)
+					xmlBody += fmt.Sprintf("<vulnerability><member>%s</member></vulnerability>", secprofiles.Vulnerability)
 				}
 
 				if len(secprofiles.Wildfire) > 0 {
