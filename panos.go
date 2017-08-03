@@ -1616,13 +1616,13 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 				} else {
 					xmlBody = "<profile-setting><profiles>"
 
-					// if len(secprofiles.URLFiltering) > 0 {
-					// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
-					// }
+					if len(secprofiles.URLFiltering) > 0 {
+						xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+					}
 
-					// if len(secprofiles.FileBlocking) > 0 {
-					// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
-					// }
+					if len(secprofiles.FileBlocking) > 0 {
+						xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+					}
 
 					if len(secprofiles.AntiVirus) > 0 {
 						xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
@@ -1671,13 +1671,13 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 				} else {
 					xmlBody = "<profile-setting><profiles>"
 
-					// if len(secprofiles.URLFiltering) > 0 {
-					// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
-					// }
+					if len(secprofiles.URLFiltering) > 0 {
+						xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+					}
 
-					// if len(secprofiles.FileBlocking) > 0 {
-					// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
-					// }
+					if len(secprofiles.FileBlocking) > 0 {
+						xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+					}
 
 					if len(secprofiles.AntiVirus) > 0 {
 						xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
@@ -1772,13 +1772,13 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 			} else {
 				xmlBody = "<profile-setting><profiles>"
 
-				// if len(secprofiles.URLFiltering) > 0 {
-				// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
-				// }
+				if len(secprofiles.URLFiltering) > 0 {
+					xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+				}
 
-				// if len(secprofiles.FileBlocking) > 0 {
-				// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
-				// }
+				if len(secprofiles.FileBlocking) > 0 {
+					xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+				}
 
 				if len(secprofiles.AntiVirus) > 0 {
 					xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
@@ -1825,13 +1825,13 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 			} else {
 				xmlBody = "<profile-setting><profiles>"
 
-				// if len(secprofiles.URLFiltering) > 0 {
-				// 	xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
-				// }
+				if len(secprofiles.URLFiltering) > 0 {
+					xmlBody += fmt.Sprintf("<url-filtering><member>%s</member></url-filtering>", secprofiles.URLFiltering)
+				}
 
-				// if len(secprofiles.FileBlocking) > 0 {
-				// 	xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
-				// }
+				if len(secprofiles.FileBlocking) > 0 {
+					xmlBody += fmt.Sprintf("<file-blocking><member>%s</member></file-blocking>", secprofiles.FileBlocking)
+				}
 
 				if len(secprofiles.AntiVirus) > 0 {
 					xmlBody += fmt.Sprintf("<virus><member>%s</member></virus>", secprofiles.AntiVirus)
