@@ -280,15 +280,15 @@ func (p *PaloAlto) DeleteInterface(iftype, ifname string) error {
 		}
 	case "vlan":
 		if len(ifDetails) > 1 {
-			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/vlan/units/entry[@name='%s']", ifDetails[0], subIntName)
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units/entry[@name='%s']", subIntName)
 		}
 	case "loopback":
 		if len(ifDetails) > 1 {
-			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/loopback/units/entry[@name='%s']", ifDetails[0], subIntName)
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/loopback/units/entry[@name='%s']", subIntName)
 		}
 	case "tunnel":
 		if len(ifDetails) > 1 {
-			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/tunnel/units/entry[@name='%s']", ifDetails[0], subIntName)
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/tunnel/units/entry[@name='%s']", subIntName)
 		}
 	}
 
