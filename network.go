@@ -177,23 +177,18 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			return errors.New("you must specify a numeric identifier (i.e. vlan.1) greater than 0 for the vlan interface")
 		}
 
-		// xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
 		xpath = "/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units"
 
 		if len(ifDetails) > 1 {
-			// xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
 			xmlBody = fmt.Sprintf("<entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
 
 			if len(ipaddr) > 0 {
-				// xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
 				xmlBody = fmt.Sprintf("<entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
 			}
 
 			if len(comment) > 0 {
-				// xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></vlan>", comment)
 				xmlBody += fmt.Sprintf("<comment>%s</comment></entry>", comment)
 			} else {
-				// xmlBody += "</entry></units></vlan>"
 				xmlBody += "</entry>"
 			}
 		}
@@ -202,19 +197,19 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			return errors.New("you must specify a numeric identifier (i.e. loopback.1) greater than 0 for the loopback interface")
 		}
 
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/loopback/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/network/interface/loopback/units"
 
 		if len(ifDetails) > 1 {
-			xmlBody = fmt.Sprintf("<loopback><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
+			xmlBody = fmt.Sprintf("<entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
 
 			if len(ipaddr) > 0 {
-				xmlBody = fmt.Sprintf("<loopback><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
+				xmlBody = fmt.Sprintf("<entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
 			}
 
 			if len(comment) > 0 {
-				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></loopback>", comment)
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry>", comment)
 			} else {
-				xmlBody += "</entry></units></loopback>"
+				xmlBody += "</entry>"
 			}
 		}
 	case "tunnel":
@@ -222,19 +217,19 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			return errors.New("you must specify a numeric identifier (i.e. tunnel.1) greater than 0 for the tunnel interface")
 		}
 
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/tunnel/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/network/interface/tunnel/units"
 
 		if len(ifDetails) > 1 {
-			xmlBody = fmt.Sprintf("<tunnel><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
+			xmlBody = fmt.Sprintf("<entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
 
 			if len(ipaddr) > 0 {
-				xmlBody = fmt.Sprintf("<tunnel><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
+				xmlBody = fmt.Sprintf("<entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
 			}
 
 			if len(comment) > 0 {
-				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></tunnel>", comment)
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry>", comment)
 			} else {
-				xmlBody += "</entry></units></tunnel>"
+				xmlBody += "</entry>"
 			}
 		}
 	}
