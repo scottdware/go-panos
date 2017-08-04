@@ -273,14 +273,20 @@ func (p *PaloAlto) DeleteInterface(iftype, ifname string) error {
 
 	switch iftype {
 	case "vwire":
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+
 		if len(ifDetails) > 1 {
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/virtual-wire/units/entry[@name='%s']", ifDetails[0], subIntName)
 		}
 	case "layer2":
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+
 		if len(ifDetails) > 1 {
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/layer2/units/entry[@name='%s']", ifDetails[0], subIntName)
 		}
 	case "layer3":
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+
 		if len(ifDetails) > 1 {
 			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/layer3/units/entry[@name='%s']", ifDetails[0], subIntName)
 		}
