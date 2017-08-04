@@ -91,11 +91,14 @@ func (p *PaloAlto) CreateLayer3Interface(ifname, ipaddress string, comment ...st
 	return nil
 }
 
-// CreateInterface creates the given interface type specified in the "iftype" parameter. If you are creating a
-// Layer 3 interface or sub-interface, you can optionally choose to specify an IP address by including the desired IP as the
-// last parameter.
+// CreateInterface creates the given interface type specified in the "iftype" parameter: tap, vwire, layer2, layer3, vlan,
+// loopback or tunnel. If adding a sub-interface, be sure to append the VLAN tag to the interface name like so: ethernet1/1.700.
+// The (optional)ipaddr parameter allows you to assign an IP address to a layer 3/vlan/loopback or tunnel interface, or an
+// IP classifier to a virtual-wire sub-interface. You do not need to specify the ipaddr parameter on a "tap" or "layer2" interface type.
+// Note that you must specify the subnet mask in CIDR notation when including an IP address, i.e.: 1.1.1.1/24.
 func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...string) error {
 	var xmlBody string
+	var xpath string
 	var reqError requestError
 
 	if p.DeviceType == "panorama" {
@@ -103,7 +106,7 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 	}
 
 	ifDetails := strings.Split(ifname, ".")
-	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+	xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
 
 	switch iftype {
 	case "tap":
@@ -116,10 +119,34 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 		if len(comment) > 0 {
 			xmlBody += fmt.Sprintf("<comment>%s</comment>", comment)
 		}
+
+		if len(ifDetails) > 1 {
+			xmlBody = fmt.Sprintf("<virtual-wire><lldp><enable>no</enable></lldp><units><entry name=\"%s.%s\"><tag>%s</tag>", ifDetails[0], ifDetails[1], ifDetails[1])
+
+			if len(ipaddr) > 0 {
+				xmlBody = fmt.Sprintf("<virtual-wire><lldp><enable>no</enable></lldp><units><entry name=\"%s.%s\"><ip-classifier><member>%s</member></ip-classifier><tag>%s</tag>", ifDetails[0], ifDetails[1], ipaddr[0], ifDetails[1])
+			}
+
+			if len(comment) > 0 {
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></virtual-wire>", comment)
+			} else {
+				xmlBody += "</entry></units></virtual-wire>"
+			}
+		}
 	case "layer2":
 		xmlBody = "<layer2><lldp><enable>no</enable></lldp></layer2>"
 		if len(comment) > 0 {
 			xmlBody += fmt.Sprintf("<comment>%s</comment>", comment)
+		}
+
+		if len(ifDetails) > 1 {
+			xmlBody = fmt.Sprintf("<layer2><lldp><enable>no</enable></lldp><units><entry name=\"%s.%s\"><tag>%s</tag>", ifDetails[0], ifDetails[1], ifDetails[1])
+
+			if len(comment) > 0 {
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></virtual-wire>", comment)
+			} else {
+				xmlBody += "</entry></units></layer2>"
+			}
 		}
 	case "layer3":
 		xmlBody = "<layer3/>"
@@ -145,6 +172,66 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 				xmlBody += "</entry></units></layer3>"
 			}
 		}
+	case "vlan":
+		if len(ifDetails) < 1 {
+			return errors.New("you must specify a numeric identifier (i.e. vlan.1) greater than 0 for the vlan interface")
+		}
+
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
+
+		if len(ifDetails) > 1 {
+			xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
+
+			if len(ipaddr) > 0 {
+				xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
+			}
+
+			if len(comment) > 0 {
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></vlan>", comment)
+			} else {
+				xmlBody += "</entry></units></vlan>"
+			}
+		}
+	case "loopback":
+		if len(ifDetails) < 1 {
+			return errors.New("you must specify a numeric identifier (i.e. loopback.1) greater than 0 for the loopback interface")
+		}
+
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/loopback/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
+
+		if len(ifDetails) > 1 {
+			xmlBody = fmt.Sprintf("<loopback><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
+
+			if len(ipaddr) > 0 {
+				xmlBody = fmt.Sprintf("<loopback><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
+			}
+
+			if len(comment) > 0 {
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></loopback>", comment)
+			} else {
+				xmlBody += "</entry></units></loopback>"
+			}
+		}
+	case "tunnel":
+		if len(ifDetails) < 1 {
+			return errors.New("you must specify a numeric identifier (i.e. tunnel.1) greater than 0 for the tunnel interface")
+		}
+
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/tunnel/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
+
+		if len(ifDetails) > 1 {
+			xmlBody = fmt.Sprintf("<tunnel><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
+
+			if len(ipaddr) > 0 {
+				xmlBody = fmt.Sprintf("<tunnel><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
+			}
+
+			if len(comment) > 0 {
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></tunnel>", comment)
+			} else {
+				xmlBody += "</entry></units></tunnel>"
+			}
+		}
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -163,8 +250,9 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 	return nil
 }
 
-// DeleteLayer3Interface removes a layer-3 interface or sub-interface from the device.
-func (p *PaloAlto) DeleteLayer3Interface(ifname string) error {
+// DeleteInterface removes an interface or sub-interface from the device. You must specify the interface
+// type in the "iftype" parameter: tap, vwire, layer2, layer3, vlan, loopback or tunnel.
+func (p *PaloAlto) DeleteInterface(iftype, ifname string) error {
 	var reqError requestError
 	var xpath string
 
@@ -175,10 +263,33 @@ func (p *PaloAlto) DeleteLayer3Interface(ifname string) error {
 	ifDetails := strings.Split(ifname, ".")
 	subIntName := fmt.Sprintf("%s.%s", ifDetails[0], ifDetails[1])
 
-	if len(ifDetails[1]) > 0 {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/layer3/units/entry[@name='%s']", ifDetails[0], subIntName)
-	} else {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+	xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+
+	switch iftype {
+	case "vwire":
+		if len(ifDetails) > 1 {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/virtual-wire/units/entry[@name='%s']", ifDetails[0], subIntName)
+		}
+	case "layer2":
+		if len(ifDetails) > 1 {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/layer2/units/entry[@name='%s']", ifDetails[0], subIntName)
+		}
+	case "layer3":
+		if len(ifDetails) > 1 {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/layer3/units/entry[@name='%s']", ifDetails[0], subIntName)
+		}
+	case "vlan":
+		if len(ifDetails) > 1 {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/vlan/units/entry[@name='%s']", ifDetails[0], subIntName)
+		}
+	case "loopback":
+		if len(ifDetails) > 1 {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/loopback/units/entry[@name='%s']", ifDetails[0], subIntName)
+		}
+	case "tunnel":
+		if len(ifDetails) > 1 {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']/tunnel/units/entry[@name='%s']", ifDetails[0], subIntName)
+		}
 	}
 
 	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
