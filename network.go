@@ -91,6 +91,68 @@ func (p *PaloAlto) CreateLayer3Interface(ifname, ipaddress string, comment ...st
 	return nil
 }
 
+// CreateInterface creates the given interface type specified in the "iftype" parameter. If you are creating a
+// Layer 3 interface or sub-interface, you can optionally choose to specify an IP address by including the desired IP as the
+// last parameter.
+func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...string) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create interfaces on a Panorama device")
+	}
+
+	ifDetails := strings.Split(ifname, ".")
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
+
+	switch iftype {
+	case "tap":
+		xmlBody = "<tap/>"
+		if len(comment) > 0 {
+			xmlBody += fmt.Sprintf("<comment>%s</comment>", comment)
+		}
+	case "vwire":
+		xmlBody = "<virtual-wire><lldp><enable>no</enable></lldp></virtual-wire>"
+		if len(comment) > 0 {
+			xmlBody += fmt.Sprintf("<comment>%s</comment>", comment)
+		}
+	case "layer2":
+		xmlBody = "<layer2><lldp><enable>no</enable></lldp></layer2>"
+		if len(comment) > 0 {
+			xmlBody += fmt.Sprintf("<comment>%s</comment>", comment)
+		}
+	case "layer3":
+		if len(ifDetails[1]) > 0 {
+			xmlBody = fmt.Sprintf("<layer3><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip><tag>%s</tag>", ifDetails[0], ifDetails[1], ipaddr, ifDetails[1])
+			if len(comment) > 0 {
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></layer3>", comment)
+			} else {
+				xmlBody += "</entry></units></layer3>"
+			}
+		} else {
+			xmlBody = fmt.Sprintf("<layer3><ip><entry name=\"%s\"/></ip></layer3>", ipaddr)
+			if len(comment) > 0 {
+				xmlBody += fmt.Sprintf("<comment>%s</comment>", comment)
+			}
+		}
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // DeleteLayer3Interface removes a layer-3 interface or sub-interface from the device.
 func (p *PaloAlto) DeleteLayer3Interface(ifname string) error {
 	var reqError requestError
@@ -125,8 +187,9 @@ func (p *PaloAlto) DeleteLayer3Interface(ifname string) error {
 	return nil
 }
 
-// CreateZone will add a new zone to the device. zonetype must be one of: tap, vwire, layer2, layer3.
-func (p *PaloAlto) CreateZone(name, zonetype string) error {
+// CreateZone will add a new zone to the device. zonetype must be one of: tap, vwire, layer2, layer3. If
+// you wish to enable user-id on the zone, specify "true" for the userid parameter, "false" if not.
+func (p *PaloAlto) CreateZone(name, zonetype string, userid bool) error {
 	var xmlBody string
 	var reqError requestError
 
@@ -144,6 +207,10 @@ func (p *PaloAlto) CreateZone(name, zonetype string) error {
 		xmlBody = "<network><layer2/></network>"
 	case "layer3":
 		xmlBody = "<network><layer3/></network>"
+	}
+
+	if userid == true {
+		xmlBody += "<enable-user-identification>yes</enable-user-identification>"
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -463,34 +530,6 @@ func (p *PaloAlto) DeleteStaticRoute(vr, name string) error {
 	}
 
 	return nil
-}
-
-// ARPTable will gather all of the ARP entires on the device. Without any parameters, it will return all ARP entries.
-// You can specify an interface name for the 'option' parameter if you choose to only view the ARP entries for that specific
-// interface (i.e. "ethernet1/1.200" or "ethernet1/21"). Status codes are as follows: s - static, c - complete, e - expiring, i - incomplete.
-func (p *PaloAlto) ARPTable(option ...string) (*ARPTable, error) {
-	var arpTable ARPTable
-	command := "<show><arp><entry name = 'all'/></arp></show>"
-
-	if p.DeviceType == "panorama" {
-		return nil, errors.New("you cannot view the ARP table on a Panorama device")
-	}
-
-	if len(option) > 0 {
-		command = fmt.Sprintf("<show><arp><entry name = '%s'/></arp></show>", option[0])
-	}
-
-	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
-	if errs != nil {
-		return nil, errs[0]
-	}
-
-	formatted := strings.Replace(resp, "  ", "", -1)
-	if err := xml.Unmarshal([]byte(formatted), &arpTable); err != nil {
-		return nil, err
-	}
-
-	return &arpTable, nil
 }
 
 // ListTunnels will return a list of all configured IPsec tunnels on the device.
