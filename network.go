@@ -669,7 +669,7 @@ func (p *PaloAlto) CreateVlan(name string, vlaninterface ...string) error {
 		return errors.New("you cannot create vlans on a Panorama device")
 	}
 
-	xpath := "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/vlan"
+	xpath := "/config/devices/entry[@name='localhost.localdomain']/network/vlan"
 	xmlBody = fmt.Sprintf("<entry name=\"%s\"/>", name)
 
 	if len(vlaninterface) > 0 {
