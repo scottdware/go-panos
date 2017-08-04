@@ -61,10 +61,7 @@ func (p *PaloAlto) CreateLayer3Interface(ifname, ipaddress string, comment ...st
 	ifDetails := strings.Split(ifname, ".")
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
 
-	fmt.Println(ifDetails)
-	fmt.Println(len(ifDetails))
-
-	if len(ifDetails[1]) > 0 {
+	if len(ifDetails) > 1 {
 		xmlBody = fmt.Sprintf("<layer3><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip><tag>%s</tag>", ifDetails[0], ifDetails[1], ipaddress, ifDetails[1])
 		if len(comment) > 0 {
 			xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></layer3>", comment[0])
@@ -135,7 +132,7 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			xmlBody += fmt.Sprintf("<comment>%s</comment>", comment)
 		}
 
-		if len(ifDetails[1]) > 0 {
+		if len(ifDetails) > 1 {
 			xmlBody = fmt.Sprintf("<layer3><units><entry name=\"%s.%s\"><tag>%s</tag>", ifDetails[0], ifDetails[1], ifDetails[1])
 
 			if len(ipaddr) > 0 {
