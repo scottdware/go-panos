@@ -177,7 +177,8 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			return errors.New("you must specify a numeric identifier (i.e. vlan.1) greater than 0 for the vlan interface")
 		}
 
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
+		// xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units"
 
 		if len(ifDetails) > 1 {
 			// xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
