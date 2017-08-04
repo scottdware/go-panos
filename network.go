@@ -203,6 +203,12 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			xmlBody = fmt.Sprintf("<entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
 
 			if len(ipaddr) > 0 {
+				ip := strings.Split(ipaddr[0], "/")
+
+				if ip[1] != "32" {
+					return errors.New("you can only specify a /32 subnet mask for a loopback interface")
+				}
+
 				xmlBody = fmt.Sprintf("<entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
 			}
 
