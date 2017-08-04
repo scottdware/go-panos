@@ -659,6 +659,39 @@ func (p *PaloAlto) DeleteStaticRoute(vr, name string) error {
 	return nil
 }
 
+// CreateVlan will add a new layer 2 vlan to the device. Optionally, if you wish to assign a vlan interface to the vlan,
+// specify the interface name as the last parameter. Otherwise, only specify the name of the vlan when creating it.
+func (p *PaloAlto) CreateVlan(name string, vlaninterface ...string) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create vlans on a Panorama device")
+	}
+
+	xpath := "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/vlan"
+	xmlBody = fmt.Sprintf("<entry name=\"%s\"/>", name)
+
+	if len(vlaninterface) > 0 {
+		xmlBody = fmt.Sprintf("<entry name=\"%s\"><virtual-interface><interface>%s</interface></virtual-interface></entry>", name, vlaninterface[0])
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // ListTunnels will return a list of all configured IPsec tunnels on the device.
 // func (p *PaloAlto) ListTunnels() (*Tunnels, error) {
 // 	var tunnels Tunnels
