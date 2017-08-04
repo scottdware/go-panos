@@ -692,6 +692,92 @@ func (p *PaloAlto) CreateVlan(name string, vlaninterface ...string) error {
 	return nil
 }
 
+// AddInterfaceToVlan will add an interface or interfaces to the given vlan. Separate multiple
+// interfaces using a comma, i.e.: "ethernet1/2, ethernet1/3"
+func (p *PaloAlto) AddInterfaceToVlan(vlan, ifname string) error {
+	var xmlBody string
+	var reqError requestError
+	ints := strings.Split(ifname, ",")
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot add interfaces to a vlan on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/vlan/entry[@name='%s']", vlan)
+	xmlBody = "<interface>"
+	for _, i := range ints {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(i))
+	}
+	xmlBody += "</interface>"
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// RemoveInterfaceFromVlan removes a given interface from the specified vlan.
+func (p *PaloAlto) RemoveInterfaceFromVlan(vlan, ifname string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot remove interfaces from a vlan on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/vlan/entry[@name='%s']/interface/member[text()='%s']", vlan, ifname)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteVlan removes a vlan from the device.
+func (p *PaloAlto) DeleteVlan(vlan string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot delete a vlan on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/vlan/entry[@name='%s']", vlan)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // ListTunnels will return a list of all configured IPsec tunnels on the device.
 // func (p *PaloAlto) ListTunnels() (*Tunnels, error) {
 // 	var tunnels Tunnels
