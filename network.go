@@ -180,16 +180,20 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/vlan/units/entry[@name='%s.%s']", ifDetails[0], ifDetails[1])
 
 		if len(ifDetails) > 1 {
-			xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
+			// xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
+			xmlBody = fmt.Sprintf("<entry name=\"%s.%s\">", ifDetails[0], ifDetails[1])
 
 			if len(ipaddr) > 0 {
-				xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
+				// xmlBody = fmt.Sprintf("<vlan><units><entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
+				xmlBody = fmt.Sprintf("<entry name=\"%s.%s\"><ip><entry name=\"%s\"/></ip>", ifDetails[0], ifDetails[1], ipaddr[0])
 			}
 
 			if len(comment) > 0 {
-				xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></vlan>", comment)
+				// xmlBody += fmt.Sprintf("<comment>%s</comment></entry></units></vlan>", comment)
+				xmlBody += fmt.Sprintf("<comment>%s</comment></entry>", comment)
 			} else {
-				xmlBody += "</entry></units></vlan>"
+				// xmlBody += "</entry></units></vlan>"
+				xmlBody += "</entry>"
 			}
 		}
 	case "loopback":
