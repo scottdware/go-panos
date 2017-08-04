@@ -173,7 +173,7 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			}
 		}
 	case "vlan":
-		if len(ifDetails) < 1 {
+		if len(ifDetails) == 1 {
 			return errors.New("you must specify a numeric identifier (i.e. vlan.1) greater than 0 for the vlan interface")
 		}
 
@@ -193,7 +193,7 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			}
 		}
 	case "loopback":
-		if len(ifDetails) < 1 {
+		if len(ifDetails) == 1 {
 			return errors.New("you must specify a numeric identifier (i.e. loopback.1) greater than 0 for the loopback interface")
 		}
 
@@ -213,7 +213,7 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 			}
 		}
 	case "tunnel":
-		if len(ifDetails) < 1 {
+		if len(ifDetails) == 1 {
 			return errors.New("you must specify a numeric identifier (i.e. tunnel.1) greater than 0 for the tunnel interface")
 		}
 
