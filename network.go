@@ -261,13 +261,19 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 func (p *PaloAlto) DeleteInterface(iftype, ifname string) error {
 	var reqError requestError
 	var xpath string
+	var ifDetails []string
+	var subIntName string
 
 	if p.DeviceType == "panorama" {
 		return errors.New("you cannot delete interfaces on a Panorama device")
 	}
 
-	ifDetails := strings.Split(ifname, ".")
-	subIntName := fmt.Sprintf("%s.%s", ifDetails[0], ifDetails[1])
+	if strings.Contains(ifname, ".") {
+		ifDetails = strings.Split(ifname, ".")
+		subIntName = fmt.Sprintf("%s.%s", ifDetails[0], ifDetails[1])
+	} else {
+		ifDetails = []string{ifname}
+	}
 
 	xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='%s']", ifDetails[0])
 
