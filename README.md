@@ -11,15 +11,15 @@ This API allows you to do the following:
 * Create address objects by using a .csv file.
 * Create, apply, and remove tags from objects
 * Edit/modify address, service groups and custom-url-categories
-* Create templates, template stacks and assign devices, templates to them (Panorama)
+* Create templates, template stacks and assign devices and templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
-* Apply a log forwarding or security profile to an entire policy.
+* Apply a log forwarding or security profile to an entire policy or individual rules.
 
 The following features are currently available only on the local device:
 
-* Create layer-3 interfaces (including sub-interfaces), zones, virtual-routers and static routes.
-* Assign and remove interfaces to zones and virtual-routers.
-* Delete interfaces, zones, virtual-routers and static routes.
+* Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
+    * Delete operation on the above as well.
+* Add and remove interfaces to zones, vlans and virtual-routers.
 * Test URL's to see what they are being categorized under.
 * Test route lookup.
 
