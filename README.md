@@ -72,6 +72,9 @@ pan.SetShared(true)
 // Create an address object
 pan.CreateAddress("test-ipv4-obj", "ip", "1.1.1.2/32", "A test object")
 
+// Create multiple objects from a CSV file
+pan.CreateAddressFromCsv("addresses.csv")
+
 // Turn off shared object creation
 pan.SetShared(false)
 ```
