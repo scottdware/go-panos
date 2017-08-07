@@ -27,6 +27,10 @@ The following features are currently available only on the local device:
 
 `go get -u github.com/scottdware/go-panos`
 
+### Usage
+
+`import "github.com/scottdware/go-panos"`
+
 ### Example
 
 Establish a session to a Panorama device
@@ -47,6 +51,29 @@ pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
 pan.CreateAddressFromCsv("addresses.csv", "Some-DeviceGroup")
 
 //
+```
+
+### Handling Shared objects on Panorama
+
+By default, when you establish a session to a Panorama server, all object creation will be in the 
+device-group you specify. If you want to create them as shared, you need to first tell your session
+that shared objects will be preferred by doing the following:
+
+```Go
+// Establish a session
+pan, err := panos.NewSession("panorama.company.com", "admin", "paloalto")
+if err != nil {
+    fmt.Println(err)
+}
+
+// Enable shared object creation
+pan.SetShared(true)
+
+// Create an address object
+pan.CreateAddress("test-ipv4-obj", "ip", "1.1.1.2/32", "A test object")
+
+// Turn off shared object creation
+pan.SetShared(false)
 ```
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
