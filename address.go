@@ -456,9 +456,6 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, devicegroup ...string) erro
 		addrXMLBody += entry
 	}
 
-	fmt.Println(xpath)
-	fmt.Println(addrXMLBody)
-
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, addrXMLBody, p.Key)).End()
 	if errs != nil {
 		return errs[0]
