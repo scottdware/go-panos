@@ -790,6 +790,61 @@ func (p *PaloAlto) DeleteVlan(vlan string) error {
 	return nil
 }
 
+// CreateVwire creates a virtual-wire on the device. For the 'tagallowed' parameter, enter either integers (e.g. 10)
+// or ranges (100-200) separated by commas (e.g. 1-10,15,20-30). Integer values can be between 0 and 4094.
+func (p *PaloAlto) CreateVwire(name, interface1, interface2, tagallowed string) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create vlans on a Panorama device")
+	}
+
+	xpath := "/config/devices/entry[@name='localhost.localdomain']/network/virtual-wire"
+	xmlBody = fmt.Sprintf("<entry name=\"%s\"><interface1>%s</interface1><interface2>%s</interface2><tag-allowed>%s</tag-allowed></entry>", name, interface1, interface2, tagallowed)
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// DeleteVwire removes a virtual-wire from the device.
+func (p *PaloAlto) DeleteVwire(name string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot delete a vlan on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-wire/entry[@name='%s']", name)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
 // ListTunnels will return a list of all configured IPsec tunnels on the device.
 // func (p *PaloAlto) ListTunnels() (*Tunnels, error) {
 // 	var tunnels Tunnels
