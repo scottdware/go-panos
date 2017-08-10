@@ -39,6 +39,10 @@ allow you to modify any part of the configuration using Xpath. The following con
 
 `show, get, set, edit, delete, rename, override, move, clone, multi-move, multi-clone`
 
+These actions are used in the following functions:
+
+`XpathConfig(), XpathGetConfig(), XpathClone(), XpathMove(), XpathMulti()`
+
 Please visit the official documentation at [Godoc][godoc-go-panos].
 
 ### Handling Shared objects on Panorama
