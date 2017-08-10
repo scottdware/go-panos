@@ -399,6 +399,156 @@ func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
 	return &jobs, nil
 }
 
+// XpathConfig allows you to configure the device using an Xpath expression and the XML element/body for
+// the given xpath. The 'action' parameter can be one of: set, edit, rename, override or delete. Set actions add, update, or
+// merge configuration nodes, while edit actions replace configuration nodes - use the 'edit' action with caution!
+// If you are renaming an object, specify the new name for the object in the 'element' parameter.
+// If you are deleting a part of the configuration, you do not need the 'element' parameter. For
+// all other actions you will need to provide it.
+func (p *PaloAlto) XpathConfig(action, xpath string, element ...string) error {
+	var reqError requestError
+	var query string
+
+	switch action {
+	case "set", "edit", "override":
+		query = fmt.Sprintf("type=config&action=%s&xpath=%s&element=%s&key=%s", action, xpath, element[0], p.Key)
+
+		if len(element) <= 0 {
+			return errors.New("you must specify the element parameter")
+		}
+	case "rename":
+		query = fmt.Sprintf("type=config&action=%s&xpath=%s&newname=%s&key=%s", action, xpath, element[0], p.Key)
+
+		if len(element) <= 0 {
+			return errors.New("you must specify the element parameter when renaming an object")
+		}
+	case "delete":
+		query = fmt.Sprintf("type=config&action=%s&xpath=%s&key=%s", action, xpath, p.Key)
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// XpathClone allows you to clone an existing part of the devices configuration. Use the xpath parameter
+// to specify the location of the object to be cloned. Use the from parameter to specify the source object,
+// and the newname parameter to provide a name for the cloned object.
+func (p *PaloAlto) XpathClone(xpath, from, newname string) error {
+	var reqError requestError
+
+	query := fmt.Sprintf("type=config&action=clone&xpath=%s&from=%s&newname=%s&key=%s", xpath, from, newname, p.Key)
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// XpathMove allows you to move the location of an existing configuration object. Use the xpath parameter to specify
+// the location of the object to be moved, and the where parameter to specify type of move. You can optionally use the
+// destination parameter to specify the destination path.
+func (p *PaloAlto) XpathMove(xpath, where string, destination ...string) error {
+	var reqError requestError
+	var query string
+
+	query = fmt.Sprintf("type=config&action=move&xpath=%s&where=%s&key=%s", xpath, where, p.Key)
+
+	if len(destination) > 0 {
+		query = fmt.Sprintf("type=config&action=move&xpath=%s&where=%s&dst=%s&key=%s", xpath, where, destination[0], p.Key)
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// XpathMulti allows you to move and clone addresses across device groups and virtual systems.
+// The 'action' parameter must be one of: clone or move. The xpath parameter is for the destination where the addresses
+// will be moved to. The 'element' parameter must include in the XML the xpath for the source and the list of objects
+// within the specified source.
+func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
+	var reqError requestError
+
+	query := fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// XpathGetConfig allows you to view the active or candidate configuration at the location specified in the
+// 'xpath' parameter.
+func (p *PaloAlto) XpathGetConfig(configtype, xpath string) (string, error) {
+	var reqError requestError
+	var query string
+
+	switch configtype {
+	case "active":
+		query = fmt.Sprintf("type=config&action=show&xpath=%s&key=%s", xpath, p.Key)
+	case "candidate":
+		query = fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return "", errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return "", err
+	}
+
+	if reqError.Status != "success" {
+		return "", fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return resp, nil
+}
+
 // Command lets you run any operational mode command against the given device, and it returns the output.
 // func (p *PaloAlto) Command(command string) (string, error) {
 // 	var output commandOutput
@@ -437,31 +587,3 @@ func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
 //
 // 	return output.Data, nil
 // }
-
-// ARPTable will gather all of the ARP entires on the device. Without any parameters, it will return all ARP entries.
-// You can specify an interface name for the 'option' parameter if you choose to only view the ARP entries for that specific
-// interface (i.e. "ethernet1/1.200" or "ethernet1/21"). Status codes are as follows: s - static, c - complete, e - expiring, i - incomplete.
-func (p *PaloAlto) ARPTable(option ...string) (*ARPTable, error) {
-	var arpTable ARPTable
-	command := "<show><arp><entry name = 'all'/></arp></show>"
-
-	if p.DeviceType == "panorama" {
-		return nil, errors.New("you cannot view the ARP table on a Panorama device")
-	}
-
-	if len(option) > 0 {
-		command = fmt.Sprintf("<show><arp><entry name = '%s'/></arp></show>", option[0])
-	}
-
-	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
-	if errs != nil {
-		return nil, errs[0]
-	}
-
-	formatted := strings.Replace(resp, "  ", "", -1)
-	if err := xml.Unmarshal([]byte(formatted), &arpTable); err != nil {
-		return nil, err
-	}
-
-	return &arpTable, nil
-}
