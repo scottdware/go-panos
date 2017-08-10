@@ -845,6 +845,34 @@ func (p *PaloAlto) DeleteVwire(name string) error {
 	return nil
 }
 
+// ARPTable will gather all of the ARP entires on the device. Without any parameters, it will return all ARP entries.
+// You can specify an interface name for the 'option' parameter if you choose to only view the ARP entries for that specific
+// interface (i.e. "ethernet1/1.200" or "ethernet1/21"). Status codes are as follows: s - static, c - complete, e - expiring, i - incomplete.
+func (p *PaloAlto) ARPTable(option ...string) (*ARPTable, error) {
+	var arpTable ARPTable
+	command := "<show><arp><entry name = 'all'/></arp></show>"
+
+	if p.DeviceType == "panorama" {
+		return nil, errors.New("you cannot view the ARP table on a Panorama device")
+	}
+
+	if len(option) > 0 {
+		command = fmt.Sprintf("<show><arp><entry name = '%s'/></arp></show>", option[0])
+	}
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	formatted := strings.Replace(resp, "  ", "", -1)
+	if err := xml.Unmarshal([]byte(formatted), &arpTable); err != nil {
+		return nil, err
+	}
+
+	return &arpTable, nil
+}
+
 // ListTunnels will return a list of all configured IPsec tunnels on the device.
 // func (p *PaloAlto) ListTunnels() (*Tunnels, error) {
 // 	var tunnels Tunnels
