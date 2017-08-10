@@ -14,6 +14,7 @@ This API allows you to do the following:
 * Create templates, template stacks and assign devices and templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
 * Apply a log forwarding or security profile to an entire policy or individual rules.
+* Manipulate the configuration using Xpath.
 
 The following features are currently available only on the local device:
 
