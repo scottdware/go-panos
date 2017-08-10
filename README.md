@@ -2,13 +2,13 @@
 [![GoDoc](https://godoc.org/github.com/scottdware/go-panos?status.svg)](https://godoc.org/github.com/scottdware/go-panos) [![Travis-CI](https://travis-ci.org/scottdware/go-panos.svg?branch=master)](https://travis-ci.org/scottdware/go-panos)
 [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/scottdware/go-panos/master/LICENSE)
 
-A Go package that interacts with Palo Alto devices using their XML API. For official package documentation, please visit the [GoDoc][godoc-go-panos] page.
+A Go package that interacts with Palo Alto devices using their XML API. For official package documentation, please visit the [Godoc][godoc-go-panos] page.
 
 This API allows you to do the following:
 
 * List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, managed devices (Panorama), etc..
 * Create, rename, and delete objects
-* Create address objects by using a .csv file.
+* Create multiple address objects at once by using a .csv file.
 * Create, apply, and remove tags from objects
 * Edit/modify address, service groups and custom-url-categories
 * Create templates, template stacks and assign devices and templates to them (Panorama)
@@ -32,27 +32,14 @@ The following features are currently available only on the local device:
 
 `import "github.com/scottdware/go-panos"`
 
-### Example
+### Configuration Using Xpath
 
-Establish a session to a Panorama device
+Outside of the built in functions that make working with the configuration simpler, there are also functions that
+allow you to modify any part of the configuration using Xpath. The following configuration actions are supported:
 
-```Go
-pan, err := panos.NewSession("panorama.company.com", "admin", "paloalto")
-if err != nil {
-    fmt.Println(err)
-}
+`show, get, set, edit, delete, rename, override, move, clone, multi-move, multi-clone`
 
-// Add a device to Panorama.
-pan.AddDevice("00102345678")
-
-// Create a device-group on Panorama, and add the device from above.
-pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
-
-// Create address objects from a csv file within our device-group we added above.
-pan.CreateAddressFromCsv("addresses.csv", "Some-DeviceGroup")
-
-//
-```
+Please visit the official documentation at [Godoc][godoc-go-panos].
 
 ### Handling Shared objects on Panorama
 
@@ -78,6 +65,26 @@ pan.CreateAddressFromCsv("addresses.csv")
 
 // Turn off shared object creation
 pan.SetShared(false)
+```
+
+### Examples
+
+Establish a session to a Panorama device
+
+```Go
+pan, err := panos.NewSession("panorama.company.com", "admin", "paloalto")
+if err != nil {
+    fmt.Println(err)
+}
+
+// Add a device to Panorama.
+pan.AddDevice("00102345678")
+
+// Create a device-group on Panorama, and add the device from above.
+pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
+
+// Create address objects from a csv file within our device-group we added above.
+pan.CreateAddressFromCsv("addresses.csv", "Some-DeviceGroup")
 ```
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
