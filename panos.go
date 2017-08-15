@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
@@ -399,9 +400,10 @@ func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
 	return &jobs, nil
 }
 
-// XpathConfig allows you to configure the device using an Xpath expression and the XML element/body for
-// the given xpath. The 'action' parameter can be one of: set, edit, rename, override or delete. Set actions add, update, or
-// merge configuration nodes, while edit actions replace configuration nodes - use the 'edit' action with caution!
+// XpathConfig allows you to configure the device using an Xpath expression for the given xpath parameter.
+// The 'element' parameter can either be an XML file or an XML string when configuring the device. The 'action' parameter can be one of:
+// set, edit, rename, override or delete. Set actions add, update, or merge configuration nodes, while edit
+// actions replace configuration nodes - use the 'edit' action with caution!
 // If you are renaming an object, specify the new name for the object in the 'element' parameter.
 // If you are deleting a part of the configuration, you do not need the 'element' parameter. For
 // all other actions you will need to provide it.
@@ -411,17 +413,27 @@ func (p *PaloAlto) XpathConfig(action, xpath string, element ...string) error {
 
 	switch action {
 	case "set", "edit", "override":
-		query = fmt.Sprintf("type=config&action=%s&xpath=%s&element=%s&key=%s", action, xpath, element[0], p.Key)
-
 		if len(element) <= 0 {
 			return errors.New("you must specify the element parameter")
 		}
-	case "rename":
-		query = fmt.Sprintf("type=config&action=%s&xpath=%s&newname=%s&key=%s", action, xpath, element[0], p.Key)
 
+		if strings.Contains(element[0], ".xml") {
+			c, err := ioutil.ReadFile(element[0])
+			if err != nil {
+				return err
+			}
+
+			xmlcontents := string(c)
+			query = fmt.Sprintf("type=config&action=%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
+		} else {
+			query = fmt.Sprintf("type=config&action=%s&xpath=%s&element=%s&key=%s", action, xpath, element[0], p.Key)
+		}
+	case "rename":
 		if len(element) <= 0 {
 			return errors.New("you must specify the element parameter when renaming an object")
 		}
+
+		query = fmt.Sprintf("type=config&action=%s&xpath=%s&newname=%s&key=%s", action, xpath, element[0], p.Key)
 	case "delete":
 		query = fmt.Sprintf("type=config&action=%s&xpath=%s&key=%s", action, xpath, p.Key)
 	}
@@ -495,14 +507,26 @@ func (p *PaloAlto) XpathMove(xpath, where string, destination ...string) error {
 	return nil
 }
 
-// XpathMulti allows you to move and clone addresses across device groups and virtual systems.
-// The 'action' parameter must be one of: clone or move. The xpath parameter is for the destination where the addresses
+// XpathMulti allows you to move and clone addresses across device groups and virtual systems. The 'element' parameter
+// can be either an XML file or XML string. The 'action' parameter must be one of: clone or move.
+// The xpath parameter is for the destination where the addresses
 // will be moved to. The 'element' parameter must include in the XML the xpath for the source and the list of objects
 // within the specified source.
 func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 	var reqError requestError
+	var query string
 
-	query := fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
+	if strings.Contains(element, ".xml") {
+		c, err := ioutil.ReadFile(element)
+		if err != nil {
+			return err
+		}
+
+		xmlcontents := string(c)
+		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
+	} else {
+		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
+	}
 
 	_, resp, errs := r.Post(p.URI).Query(query).End()
 	if errs != nil {
