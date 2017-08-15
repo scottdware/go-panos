@@ -39,11 +39,11 @@ allow you to modify any part of the configuration using Xpath. The following con
 
 `show, get, set, edit, delete, rename, override, move, clone, multi-move, multi-clone`
 
-These actions are used in the following functions:
+> *NOTE*: For specific examples of how to use xpath values when using these actions, visit the [PAN-OS XML API configuration API][pan-xml-api-config].
+
+The above actions are used in the following `go-panos` functions:
 
 `XpathConfig(), XpathGetConfig(), XpathClone(), XpathMove(), XpathMulti()`
-
-Please visit the official documentation at [Godoc][godoc-go-panos].
 
 ### Handling Shared objects on Panorama
 
@@ -93,3 +93,4 @@ pan.CreateAddressFromCsv("addresses.csv", "Some-DeviceGroup")
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
+[pan-xml-api-config]: https://www.paloaltonetworks.com/documentation/80/pan-os/xml-api/pan-os-xml-api-request-types/configuration-api
