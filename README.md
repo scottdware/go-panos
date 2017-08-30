@@ -32,6 +32,33 @@ The following features are currently available only on the local device:
 
 `import "github.com/scottdware/go-panos"`
 
+### Establishing A Session
+
+There are two ways you can authenticate to a device: username and password, or using the API key. Here is an
+example of both methods.
+
+```Go
+// Username and password
+creds := panos.AuthMethod{
+    Credentials: []string{"admin", "password"},
+}
+
+pan, err := panos.NewSession("pan-firewall.company.com", &creds)
+if err != nil {
+    fmt.Println(err)
+}
+
+// API key
+creds := panos.AuthMethod{
+    APIKey: "Awholemessofrandomcharactersandnumbers1234567890=",
+}
+
+pan, err := panos.NewSession("panorama.company.com", &creds)
+if err != nil {
+    fmt.Println(err)
+}
+```
+
 ### Configuration Using Xpath
 
 Outside of the built in functions that make working with the configuration simpler, there are also functions that
@@ -53,7 +80,11 @@ that shared objects will be preferred by doing the following:
 
 ```Go
 // Establish a session
-pan, err := panos.NewSession("panorama.company.com", "admin", "paloalto")
+creds := panos.AuthMethod{
+    Credentials: []string{"admin", "password"},
+}
+
+pan, err := panos.NewSession("panorama.company.com", &creds)
 if err != nil {
     fmt.Println(err)
 }
@@ -76,7 +107,11 @@ pan.SetShared(false)
 Establish a session to a Panorama device
 
 ```Go
-pan, err := panos.NewSession("panorama.company.com", "admin", "paloalto")
+creds := panos.AuthMethod{
+    Credentials: []string{"admin", "password"},
+}
+
+pan, err := panos.NewSession("panorama.company.com", &creds)
 if err != nil {
     fmt.Println(err)
 }
