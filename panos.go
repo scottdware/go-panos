@@ -28,6 +28,15 @@ type PaloAlto struct {
 	Shared          bool
 }
 
+// AuthMethod defines how we want to authenticate to the device. If using a
+// username and password to authenticate, the Credentials field must contain the username and password
+//, respectively (i.e. []string{"admin", "password"}). If you are using the API key for
+// authentication, provide the entire key for the APIKey field.
+type AuthMethod struct {
+	Credentials []string
+	APIKey      string
+}
+
 // Jobs holds information about all jobs on the device.
 type Jobs struct {
 	XMLName xml.Name `xml:"response"`
@@ -151,35 +160,47 @@ func splitSWVersion(version string) []int {
 	return []int{maj, min, rel}
 }
 
-// NewSession sets up our connection to the Palo Alto firewall or Panorama device.
-func NewSession(host, user, passwd string) (*PaloAlto, error) {
-	var key authKey
+// NewSession sets up our connection to the Palo Alto firewall or Panorama device. The authmethod parameter
+// is used to define two ways of authenticating to the device. One is via username / password, the other is with
+// the API key if you already have generated it. Please see the documentation for the AuthMethod struct for further
+// details.
+func NewSession(host string, authmethod *AuthMethod) (*PaloAlto, error) {
+	var keygen authKey
+	var key string
 	var info systemInfo
 	var pan commandOutput
 	status := false
 	deviceType := "panos"
 
-	_, body, errs := r.Get(fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, user, passwd)).End()
-	if errs != nil {
-		return nil, errs[0]
+	if len(authmethod.Credentials) > 0 {
+		_, body, errs := r.Get(fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, authmethod.Credentials[0], authmethod.Credentials[1])).End()
+		if errs != nil {
+			return nil, errs[0]
+		}
+
+		err := xml.Unmarshal([]byte(body), &keygen)
+		if err != nil {
+			return nil, err
+		}
+
+		if keygen.Status != "success" {
+			return nil, fmt.Errorf("error code %s: %s (keygen)", keygen.Code, errorCodes[keygen.Code])
+		}
+
+		key = keygen.Key
 	}
 
-	err := xml.Unmarshal([]byte(body), &key)
-	if err != nil {
-		return nil, err
-	}
-
-	if key.Status != "success" {
-		return nil, fmt.Errorf("error code %s: %s (keygen)", key.Code, errorCodes[key.Code])
+	if len(authmethod.APIKey) > 0 {
+		key = authmethod.APIKey
 	}
 
 	uri := fmt.Sprintf("https://%s/api/?", host)
-	_, getInfo, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key.Key)).End()
+	_, getInfo, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key)).End()
 	if errs != nil {
 		return nil, errs[0]
 	}
 
-	err = xml.Unmarshal([]byte(getInfo), &info)
+	err := xml.Unmarshal([]byte(getInfo), &info)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +209,7 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 		return nil, fmt.Errorf("error code %s: %s (show system info)", info.Code, errorCodes[info.Code])
 	}
 
-	_, panStatus, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><panorama-status></panorama-status></show>", uri, key.Key)).End()
+	_, panStatus, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><panorama-status></panorama-status></show>", uri, key)).End()
 	if errs != nil {
 		return nil, errs[0]
 	}
@@ -208,7 +229,7 @@ func NewSession(host, user, passwd string) (*PaloAlto, error) {
 
 	return &PaloAlto{
 		Host:            host,
-		Key:             key.Key,
+		Key:             key,
 		URI:             fmt.Sprintf("https://%s/api/?", host),
 		Platform:        info.Platform,
 		Model:           info.Model,
