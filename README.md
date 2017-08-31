@@ -14,9 +14,9 @@ This API allows you to do the following:
 * Create templates, template stacks and assign devices and templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
 * Apply a log forwarding or security profile to an entire policy or individual rules.
-* Manipulate the configuration using Xpath.
+* Manipulate the configuration using Xpath functions.
 
-The following features are currently available only on the local device:
+The following features are currently available only on the local firewall:
 
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
     * Delete operation on the above as well.
