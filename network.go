@@ -93,7 +93,7 @@ func (p *PaloAlto) CreateLayer3Interface(ifname, ipaddress string, comment ...st
 
 // CreateInterface creates the given interface type specified in the "iftype" parameter: tap, vwire, layer2, layer3, vlan,
 // loopback or tunnel. If adding a sub-interface, be sure to append the VLAN tag to the interface name like so: ethernet1/1.700.
-// The (optional)ipaddr parameter allows you to assign an IP address to a layer 3/vlan/loopback or tunnel interface, or an
+// The (optional) ipaddr parameter allows you to assign an IP address to a layer 3/vlan/loopback or tunnel interface, or an
 // IP classifier to a virtual-wire sub-interface. You do not need to specify the ipaddr parameter on a "tap" or "layer2" interface type.
 // Note that you must specify the subnet mask in CIDR notation when including an IP address, i.e.: 1.1.1.1/24.
 func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...string) error {
@@ -257,7 +257,7 @@ func (p *PaloAlto) CreateInterface(iftype, ifname, comment string, ipaddr ...str
 }
 
 // DeleteInterface removes an interface or sub-interface from the device. You must specify the interface
-// type in the "iftype" parameter: tap, vwire, layer2, layer3, vlan, loopback or tunnel.
+// type in the iftype parameter: tap, vwire, layer2, layer3, vlan, loopback or tunnel.
 func (p *PaloAlto) DeleteInterface(iftype, ifname string) error {
 	var reqError requestError
 	var xpath string
@@ -326,7 +326,7 @@ func (p *PaloAlto) DeleteInterface(iftype, ifname string) error {
 	return nil
 }
 
-// CreateZone will add a new zone to the device. zonetype must be one of: tap, vwire, layer2, layer3. If
+// CreateZone will add a new zone to the device. Zonetype must be one of: tap, vwire, layer2, layer3. If
 // you wish to enable user-id on the zone, specify "true" for the userid parameter, "false" if not.
 func (p *PaloAlto) CreateZone(name, zonetype string, userid bool) error {
 	var xmlBody string
@@ -603,7 +603,7 @@ func (p *PaloAlto) RemoveInterfaceFromVirtualRouter(vr, ifname string) error {
 
 // CreateStaticRoute adds a new static route to a given virtual-router. For the destination, you must
 // include the mask, i.e. "192.168.0.0/24" or "0.0.0.0/0." For nexthop, you can also specify an interface
-// instead of an IP address. You can optionally specify a metric for the route, and if you do not, the metric will be 10.
+// instead of an IP address. You can optionally specify a metric for the route (default metric is 10).
 func (p *PaloAlto) CreateStaticRoute(vr, name, destination, nexthop string, metric ...int) error {
 	var xmlBody string
 	var reqError requestError
@@ -790,7 +790,7 @@ func (p *PaloAlto) DeleteVlan(vlan string) error {
 	return nil
 }
 
-// CreateVwire creates a virtual-wire on the device. For the 'tagallowed' parameter, enter either integers (e.g. 10)
+// CreateVwire creates a virtual-wire on the device. For the tagallowed parameter, enter integers (e.g. 10)
 // or ranges (100-200) separated by commas (e.g. 1-10,15,20-30). Integer values can be between 0 and 4094.
 func (p *PaloAlto) CreateVwire(name, interface1, interface2, tagallowed string) error {
 	var xmlBody string
@@ -846,7 +846,7 @@ func (p *PaloAlto) DeleteVwire(name string) error {
 }
 
 // ARPTable will gather all of the ARP entires on the device. Without any parameters, it will return all ARP entries.
-// You can specify an interface name for the 'option' parameter if you choose to only view the ARP entries for that specific
+// You can specify an interface name for the option parameter if you choose to only view the ARP entries for that specific
 // interface (i.e. "ethernet1/1.200" or "ethernet1/21"). Status codes are as follows: s - static, c - complete, e - expiring, i - incomplete.
 func (p *PaloAlto) ARPTable(option ...string) (*ARPTable, error) {
 	var arpTable ARPTable

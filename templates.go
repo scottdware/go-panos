@@ -96,7 +96,7 @@ func (p *PaloAlto) TemplateStacks() (*TemplateStacks, error) {
 }
 
 // CreateTemplate adds a new template to Panorama. If you wish to associate devices, then
-// separate their serial numbers with a comma, i.e.: "0101010101, 0202020202".
+// separate their serial numbers with a comma, i.e.: "0101010101, 0202020202."
 func (p *PaloAlto) CreateTemplate(name, description string, devices ...string) error {
 	var reqError requestError
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='%s']", name)
@@ -135,7 +135,7 @@ func (p *PaloAlto) CreateTemplate(name, description string, devices ...string) e
 }
 
 // CreateTemplateStack adds a new template stack to Panorama. If you are assigning multiple templates to the stack,
-// the values for the 'templates' parameter must be separated by a comma, i.e.: "user_template, object_template".
+// the values for the templates parameter must be separated by a comma, i.e.: "user_template, object_template".
 // If you wish to associate devices, then separate their serial numbers with a comma, just like you would template names.
 // This is ONLY available on Panorama version 7.0.0 and higher.
 func (p *PaloAlto) CreateTemplateStack(name, description, templates string, devices ...string) error {
@@ -185,7 +185,7 @@ func (p *PaloAlto) CreateTemplateStack(name, description, templates string, devi
 }
 
 // AssignTemplate will assign devices to the given template. Devices must be serial numbers,
-// and each serial must be separated by a comma, i.e.: "010101010101, 020202020202". If you are assigning
+// and each serial must be separated by a comma, i.e.: "010101010101, 020202020202." If you are assigning
 // devices to a template stack, then specify "true" for the stack parameter, otherwise specifying "false"
 // will only assign devices to a single template. Template stacks are ONLY
 // available on Panorama version 7.0.0 and higher.

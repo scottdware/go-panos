@@ -97,7 +97,7 @@ func (p *PaloAlto) DeviceGroups() (*DeviceGroups, error) {
 }
 
 // CreateDeviceGroup will create a new device-group on a Panorama device. You can add devices as well by
-// specifying the serial numbers in a string slice ([]string). Use 'nil' if you do not wish to add any.
+// specifying the serial numbers in a string slice ([]string). Specify "nil" if you do not wish to add any.
 func (p *PaloAlto) CreateDeviceGroup(name, description string, devices []string) error {
 	var xmlBody string
 	var xpath string
@@ -171,7 +171,7 @@ func (p *PaloAlto) DeleteDeviceGroup(name string) error {
 	return nil
 }
 
-// AddDevice will add a new device to a Panorama. If you specify the optional 'devicegroup' parameter,
+// AddDevice will add a new device to a Panorama. If you specify the optional devicegroup parameter,
 // it will also add the device to the given device-group.
 func (p *PaloAlto) AddDevice(serial string, devicegroup ...string) error {
 	var reqError requestError
@@ -267,7 +267,7 @@ func (p *PaloAlto) SetPanoramaServer(primary string, secondary ...string) error 
 	return nil
 }
 
-// RemoveDevice will remove a device from Panorama. If you specify the optional 'devicegroup' parameter,
+// RemoveDevice will remove a device from Panorama. If you specify the optional devicegroup parameter,
 // it will only remove the device from the given device-group.
 func (p *PaloAlto) RemoveDevice(serial string, devicegroup ...string) error {
 	var xpath string

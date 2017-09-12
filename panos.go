@@ -262,7 +262,7 @@ func (p *PaloAlto) Commit() error {
 	return nil
 }
 
-// CommitAll issues a commit to a Panorama device, with the given 'devicegroup.' You can (optionally) specify
+// CommitAll issues a commit to a Panorama device, with the given devicegroup. You can (optionally) specify
 // individual devices within that device group by adding each serial number as an additional parameter.
 func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 	var reqError requestError
@@ -358,7 +358,7 @@ func (p *PaloAlto) TestURL(url string) ([]string, error) {
 	return results, nil
 }
 
-// TestRouteLookup will lookup the given destination IP in the virtual-router 'vr' and check the routing (fib) table and display the results.
+// TestRouteLookup will lookup the given destination IP in the virtual-router "vr" and check the routing (fib) table and display the results.
 func (p *PaloAlto) TestRouteLookup(vr, destination string) (string, error) {
 	var routeLookup testRoute
 	command := fmt.Sprintf("<test><routing><fib-lookup><virtual-router>%s</virtual-router><ip>%s</ip></fib-lookup></routing></test>", vr, destination)
@@ -385,8 +385,8 @@ func (p *PaloAlto) TestRouteLookup(vr, destination string) (string, error) {
 	return result, nil
 }
 
-// Jobs returns information about every job on the device. "status" can be one of: "all," "pending," or "processed." If you want
-// information about a specific job, specify the id instead of one of the other options.
+// Jobs returns information about every job on the device. Status can be one of: all, pending, or processed. If you want
+// information about a specific job, specify the job ID instead of one of the other options.
 func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
 	var jobs Jobs
 	var cmd string
@@ -422,11 +422,11 @@ func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
 }
 
 // XpathConfig allows you to configure the device using an Xpath expression for the given xpath parameter.
-// The 'element' parameter can either be an XML file or an XML string when configuring the device. The 'action' parameter can be one of:
+// The element parameter can either be an XML file or an XML string when configuring the device. The action parameter can be one of:
 // set, edit, rename, override or delete. Set actions add, update, or merge configuration nodes, while edit
-// actions replace configuration nodes - use the 'edit' action with caution!
-// If you are renaming an object, specify the new name for the object in the 'element' parameter.
-// If you are deleting a part of the configuration, you do not need the 'element' parameter. For
+// actions replace configuration nodes - use the edit action with caution!
+// If you are renaming an object, specify the new name for the object in the element parameter.
+// If you are deleting a part of the configuration, you do not need the element parameter. For
 // all other actions you will need to provide it.
 func (p *PaloAlto) XpathConfig(action, xpath string, element ...string) error {
 	var reqError requestError
@@ -528,10 +528,10 @@ func (p *PaloAlto) XpathMove(xpath, where string, destination ...string) error {
 	return nil
 }
 
-// XpathMulti allows you to move and clone addresses across device groups and virtual systems. The 'element' parameter
-// can be either an XML file or XML string. The 'action' parameter must be one of: clone or move.
+// XpathMulti allows you to move and clone addresses across device groups and virtual systems. The element parameter
+// can be either an XML file or XML string. The action parameter must be one of: clone or move.
 // The xpath parameter is for the destination where the addresses
-// will be moved to. The 'element' parameter must include in the XML the xpath for the source and the list of objects
+// will be moved to. The element parameter must include in the XML the xpath for the source and the list of objects
 // within the specified source.
 func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 	var reqError requestError
@@ -566,7 +566,7 @@ func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 }
 
 // XpathGetConfig allows you to view the active or candidate configuration at the location specified in the
-// 'xpath' parameter.
+// xpath parameter.
 func (p *PaloAlto) XpathGetConfig(configtype, xpath string) (string, error) {
 	var reqError requestError
 	var query string

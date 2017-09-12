@@ -117,7 +117,8 @@ func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) 
 	return &groups, nil
 }
 
-// CreateService adds a new service object to the device. Port can be a single port #, range (1-65535), or comma separated (80, 8080, 443).
+// CreateService adds a new service object to the device. Port can be a single port number, range (1-65535),
+// or comma separated (80, 8080, 443).
 // If creating a service on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateService(name, protocol, port, description string, devicegroup ...string) error {
 	var xmlBody string

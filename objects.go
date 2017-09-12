@@ -23,10 +23,10 @@ type CustomURL struct {
 	Members     []string `xml:"list>member,omitempty"`
 }
 
-// Recurrance contains the information for external dynamic lists when it comes to how often they are downloaded. "Method"
-// must be one of: five-minute, hourly, daily, weekly, monthly. "DayOfWeek" is the name of the day, such as "tuesday." "DayOfMonth"
-// is specified as a number, ranging from 1-31. "Hour" must be in 23-hour format, such as "03" for 3 am. The "hourly" and "five-minute"
-// methods do not require any additional fields. "DayOfWeek" and "DayOfMonth" both require the "Hour" field as well.
+// Recurrance contains the information for external dynamic lists when it comes to how often they are downloaded. Method
+// must be one of: five-minute, hourly, daily, weekly, monthly. DayOfWeek is the name of the day, such as "tuesday." DayOfMonth
+// is specified as a number, ranging from 1-31. Hour must be in 23-hour format, such as "03" for 3 am. The hourly and five-minute
+// methods do not require any additional fields. DayOfWeek and DayOfMonth both require the Hour field as well.
 type Recurrance struct {
 	Method     string
 	DayOfWeek  string
@@ -181,7 +181,7 @@ func (p *PaloAlto) CreateURLCategory(name string, urls []string, description str
 	return nil
 }
 
-// EditURLCategory adds or removes URL's from the given custom URL category. Action must be "add" or "remove". If editing
+// EditURLCategory adds or removes URL's from the given custom URL category. Action must be "add" or "remove." If editing
 // a URL category on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) EditURLCategory(action, url, name string, devicegroup ...string) error {
 	var xpath string
@@ -294,7 +294,7 @@ func (p *PaloAlto) DeleteURLCategory(name string, devicegroup ...string) error {
 }
 
 // EditGroup will add or remove objects from the specified group type (i.e., "address" or "service"). Action must be
-// "add" or "remove". If editing a group on a Panorama device, specify the device-group as the last parameter.
+// "add" or "remove." If editing a group on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -385,7 +385,7 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 	return nil
 }
 
-// RenameObject will rename the given object from it's 'oldname' to the 'newname.' You can rename the following
+// RenameObject will rename the given object from oldname to the newname. You can rename the following
 // object types: address, address-groups, service, service-groups, tags. If renaming objects on a
 // Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) error {
@@ -725,7 +725,7 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 	return nil
 }
 
-// CreateExternalDynamicList will create an external dynamic list on the device. "listtype" must be one of: ip, domain, or url. Configuring the
+// CreateExternalDynamicList will create an external dynamic list on the device. Listtype must be one of: ip, domain, or url. Configuring the
 // recurrance requires you to use the Recurrance struct when passing the configuration for this parameter - please see the documentation for that struct.
 // If creating an EDL on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url string, recurrance *Recurrance, devicegroup ...string) error {
@@ -1670,7 +1670,7 @@ func (p *PaloAlto) ApplyLogForwardingProfile(logprofile, devicegroup string, rul
 // ApplySecurityProfile will apply the following security profiles: URL Filtering, File-Blocking, Antivirus, Anti-Spyware, Vulnerability, Wildfire
 // to every rule in the policy for the given device-group. If you wish to apply it to a single rule, instead of every
 // rule in the policy, you can optionally specify the rule name as the last parameter. You can also specify a security group profile instead of individual profiles.
-// This is done by ONLY specifying the "Group" field in the SecurityProfiles struct. For policies with a large number of rules,
+// This is done by ONLY populating the "Group" field in the SecurityProfiles struct. For policies with a large number of rules,
 // this process may take a few minutes to complete.
 func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegroup string, rule ...string) error {
 	if p.DeviceType != "panorama" {
