@@ -73,6 +73,9 @@ The above actions are used in the following `go-panos` functions:
 
 `XpathConfig(), XpathGetConfig(), XpathClone(), XpathMove(), XpathMulti()`
 
+> *NOTE*: These functions are more suited for "power users," as there is a lot more that you have to know in regards to
+Xpath and XML.
+
 ### Handling Shared objects on Panorama
 
 By default, when you establish a session to a Panorama server, all object creation will be in the 
