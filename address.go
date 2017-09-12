@@ -149,7 +149,7 @@ func (p *PaloAlto) AddressGroups(devicegroup ...string) (*AddressGroups, error) 
 	return &groups, nil
 }
 
-// CreateAddress will add a new address object to the device. addrtype should be one of: ip, range, or fqdn. If creating an address
+// CreateAddress will add a new address object to the device. Addrtype should be one of: ip, range, or fqdn. If creating an address
 // object on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, devicegroup ...string) error {
 	var xmlBody string
@@ -383,29 +383,110 @@ func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error 
 // 'name' is what you want the address object to be called. 'type' is one of: ip, range, or fqdn.
 // 'address' is the address of the object. 'description' is optional, just leave the field blank if you do not want one.
 // If creating addresses on a Panorama device, specify the device-group as the last parameter.
-func (p *PaloAlto) CreateAddressFromCsv(file string, devicegroup ...string) error {
+// func (p *PaloAlto) CreateAddressFromCsv(file string, devicegroup ...string) error {
+// 	var xpath string
+// 	var reqError requestError
+// 	var addrXMLBody string
+
+// 	if p.Shared == true {
+// 		xpath = "/config/shared/address"
+// 	}
+
+// 	if p.Shared == false && len(devicegroup) <= 0 {
+// 		if p.DeviceType == "panorama" {
+// 			return errors.New("you must specify a device-group when creating address objects on a Panorama device")
+// 		}
+
+// 		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address"
+// 	}
+
+// 	if len(devicegroup) > 0 {
+// 		if p.DeviceType == "panos" {
+// 			return errors.New("you can only specify a device-group on a Panorama device")
+// 		}
+
+// 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address", devicegroup[0])
+// 	}
+
+// 	fn, err := os.Open(file)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	defer fn.Close()
+
+// 	reader := csv.NewReader(fn)
+// 	fields, err := reader.ReadAll()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+
+// 	for _, line := range fields {
+// 		// var addrgroup string
+// 		linelen := len(line)
+// 		name := line[0]
+// 		addrtype := line[1]
+// 		address := line[2]
+// 		description := ""
+
+// 		if linelen == 4 && len(line[3]) > 0 {
+// 			description = line[3]
+// 		}
+
+// 		// if linelen == 5 && len(line[4]) > 0 {
+// 		// 	addrgroup = line[4]
+// 		// }
+
+// 		entry := fmt.Sprintf("<entry name=\"%s\">", name)
+
+// 		switch addrtype {
+// 		case "ip":
+// 			entry += fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
+// 		case "range":
+// 			entry += fmt.Sprintf("<ip-range>%s</ip-range>", address)
+// 		case "fqdn":
+// 			entry += fmt.Sprintf("<fqdn>%s</fqdn>", address)
+// 		}
+
+// 		if len(description) > 0 {
+// 			entry += fmt.Sprintf("<description>%s</description>", description)
+// 		}
+
+// 		entry += "</entry>"
+// 		addrXMLBody += entry
+// 	}
+
+// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, addrXMLBody, p.Key)).End()
+// 	if errs != nil {
+// 		return errs[0]
+// 	}
+
+// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+// 		return err
+// 	}
+
+// 	if reqError.Status != "success" {
+// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+// 	}
+
+// 	return nil
+// }
+
+// CreateAddressFromCsv takes a CSV file with the following format: name,type,address,description,device-group.
+// Name is what you want the address object to be called. Type is one of: ip, range, or fqdn.
+// Address is the IP address of the object. Description is optional, just leave the field blank if you do not want one.
+// Device-group is the name of the device-group where you want the address object created under. If you are creating
+// shared objects in Panorama, or you are creating objects on a local device, then you can leave the device-group field blank.
+func (p *PaloAlto) CreateAddressFromCsv(file string) error {
 	var xpath string
 	var reqError requestError
-	var addrXMLBody string
 
-	if p.Shared == true {
+	if p.DeviceType == "panorama" && p.Shared == true {
 		xpath = "/config/shared/address"
 	}
 
-	if p.Shared == false && len(devicegroup) <= 0 {
-		if p.DeviceType == "panorama" {
-			return errors.New("you must specify a device-group when creating address objects on a Panorama device")
-		}
-
+	if p.DeviceType == "panos" {
 		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address"
-	}
-
-	if len(devicegroup) > 0 {
-		if p.DeviceType == "panos" {
-			return errors.New("you can only specify a device-group on a Panorama device")
-		}
-
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address", devicegroup[0])
 	}
 
 	fn, err := os.Open(file)
@@ -422,20 +503,24 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, devicegroup ...string) erro
 	}
 
 	for _, line := range fields {
-		// var addrgroup string
 		linelen := len(line)
 		name := line[0]
 		addrtype := line[1]
 		address := line[2]
 		description := ""
+		dg := ""
 
-		if linelen == 4 && len(line[3]) > 0 {
+		if linelen >= 4 && len(line[3]) > 0 {
 			description = line[3]
 		}
 
-		// if linelen == 5 && len(line[4]) > 0 {
-		// 	addrgroup = line[4]
-		// }
+		if linelen >= 4 && len(line[4]) > 0 {
+			dg = line[4]
+		}
+
+		if p.DeviceType == "panorama" && p.Shared == false {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address", dg)
+		}
 
 		entry := fmt.Sprintf("<entry name=\"%s\">", name)
 
@@ -453,20 +538,19 @@ func (p *PaloAlto) CreateAddressFromCsv(file string, devicegroup ...string) erro
 		}
 
 		entry += "</entry>"
-		addrXMLBody += entry
-	}
 
-	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, addrXMLBody, p.Key)).End()
-	if errs != nil {
-		return errs[0]
-	}
+		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, entry, p.Key)).End()
+		if errs != nil {
+			return errs[0]
+		}
 
-	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-		return err
-	}
+		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+			return err
+		}
 
-	if reqError.Status != "success" {
-		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		if reqError.Status != "success" {
+			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		}
 	}
 
 	return nil
