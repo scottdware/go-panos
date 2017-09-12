@@ -8,7 +8,8 @@ This API allows you to do the following:
 
 * List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, managed devices (Panorama), etc..
 * Create, rename, and delete objects
-* Create multiple address objects at once by using a .csv file.
+* Create multiple address objects at once by using a CSV file.
+    * You can also specify which device-group you want the object to be created under.
 * Create, apply, and remove tags from objects
 * Edit/modify address, service groups and custom-url-categories
 * Create templates, template stacks and assign devices and templates to them (Panorama)
@@ -95,9 +96,6 @@ pan.SetShared(true)
 // Create an address object
 pan.CreateAddress("test-ipv4-obj", "ip", "1.1.1.2/32", "A test object")
 
-// Create multiple objects from a CSV file
-pan.CreateAddressFromCsv("addresses.csv")
-
 // Turn off shared object creation
 pan.SetShared(false)
 ```
@@ -122,8 +120,9 @@ pan.AddDevice("00102345678")
 // Create a device-group on Panorama, and add the device from above.
 pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
 
-// Create address objects from a csv file within our device-group we added above.
-pan.CreateAddressFromCsv("addresses.csv", "Some-DeviceGroup")
+// Create address objects from a CSV file. In the CSV file you can specify which device-group
+// you want the addresses created under.
+pan.CreateAddressFromCsv("addresses.csv")
 ```
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
