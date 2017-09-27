@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 // AddressObjects contains a slice of all address objects.
@@ -472,11 +473,12 @@ func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error 
 // 	return nil
 // }
 
-// CreateAddressFromCsv takes a CSV file with the following format: name,type,address,description,device-group.
+// CreateAddressFromCsv takes a CSV file with the following format: name,type,address,description,device-group,tag.
 // Name is what you want the address object to be called. Type is one of: ip, range, or fqdn.
 // Address is the IP address of the object. Description is optional, just leave the field blank if you do not want one.
-// Device-group is the name of the device-group where you want the address object created under. If you are creating
-// shared objects in Panorama, or you are creating objects on a local device, then you can leave the device-group field blank.
+// Device-group is the name of the device-group where you want the address object created under. Tag is the name of the
+// tag that you wish to apply to the object. If you are creating shared objects in Panorama, or you are creating objects
+// on a local device, then you can leave the device-group field blank.
 func (p *PaloAlto) CreateAddressFromCsv(file string) error {
 	var xpath string
 	var reqError requestError
@@ -503,12 +505,14 @@ func (p *PaloAlto) CreateAddressFromCsv(file string) error {
 	}
 
 	for _, line := range fields {
+		var tagged bool
 		linelen := len(line)
 		name := line[0]
 		addrtype := line[1]
 		address := line[2]
 		description := ""
 		dg := ""
+		tag := ""
 
 		if linelen >= 4 && len(line[3]) > 0 {
 			description = line[3]
@@ -516,6 +520,11 @@ func (p *PaloAlto) CreateAddressFromCsv(file string) error {
 
 		if linelen >= 4 && len(line[4]) > 0 {
 			dg = line[4]
+		}
+
+		if linelen >= 4 && len(line[5]) > 0 {
+			tag = line[5]
+			tagged = true
 		}
 
 		if p.DeviceType == "panorama" && p.Shared == false {
@@ -550,6 +559,22 @@ func (p *PaloAlto) CreateAddressFromCsv(file string) error {
 
 		if reqError.Status != "success" {
 			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		if tagged && dg != "" {
+			err = p.TagObject(tag, name, dg)
+			if err != nil {
+				return err
+			}
+		}
+
+		if tagged && dg == "" {
+			err = p.TagObject(tag, name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
