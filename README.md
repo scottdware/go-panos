@@ -9,7 +9,7 @@ This API allows you to do the following:
 * List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, managed devices (Panorama), etc..
 * Create, rename, and delete objects
 * Create multiple address objects at once by using a CSV file.
-    * You can also specify which device-group you want the object to be created under.
+    * You can also specify which device-group you want the object to be created under, as well as tag them.
 * Create, apply, and remove tags from objects
 * Edit/modify address, service groups and custom-url-categories
 * Create templates, template stacks and assign devices and templates to them (Panorama)
@@ -105,7 +105,7 @@ pan.SetShared(false)
 
 ### Examples
 
-Establish a session to a Panorama device
+**Establish a session to a Panorama device**
 
 ```Go
 creds := panos.AuthMethod{
@@ -122,11 +122,41 @@ pan.AddDevice("00102345678")
 
 // Create a device-group on Panorama, and add the device from above.
 pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
-
-// Create address objects from a CSV file. In the CSV file you can specify which device-group
-// you want the addresses created under.
-pan.CreateAddressFromCsv("addresses.csv")
 ```
+
+**Create address objects via CSV**
+
+This example shows you how to create multiple address objects using a CSV file. You can also do object overrides
+by creating an object in a parent device-group, then creating the same object in a child device-group. Tagging
+objects upon creating is supported as well.
+
+The CSV file should be organized with the following columns: `name,type,address,description,device-group,tag`. The `type` field
+must be one of the following values: ip, range, or fqdn. the `description` field is optional, as is the `tag` field.
+
+Let's assume we have a CSV file called `web-servers.csv` that looks like the following:
+
+```
+web-server,ip,10.1.1.1,,Corporate,web-servers
+web-server,ip,10.5.5.10,,Branch-Office
+```
+
+Whereas the `Corporate` device-group is a parent of `Branch-Office`.
+
+```Go
+// Connect to Panorama
+creds := panos.AuthMethod{
+    Credentials: []string{"admin", "password"},
+}
+
+pan, err := panos.NewSession("panorama.company.com", &creds)
+if err != nil {
+    fmt.Println(err)
+}
+
+pan.CreateAddressFromCsv("web-servers.csv")
+```
+
+This will create the `web-server` object (10.1.1.1) on the `Corporate` device-group, and the same `web-server` object (but with 10.5.5.10) on the `Branch-Office` device-group.
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
