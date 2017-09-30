@@ -156,7 +156,7 @@ if err != nil {
 pan.CreateAddressFromCsv("web-servers.csv")
 ```
 
-This will create the `web-server` object (10.1.1.1) on the `Corporate` device-group, and the same `web-server` object (but with 10.5.5.10) on the `Branch-Office` device-group.
+This will create the `web-server` object (10.1.1.1) on the `Corporate` device-group, and the same `web-server` object with an object-override IP of 10.5.5.10 on the `Branch-Office` device-group.
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
