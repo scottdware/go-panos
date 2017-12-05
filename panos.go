@@ -594,41 +594,41 @@ func (p *PaloAlto) XpathGetConfig(configtype, xpath string) (string, error) {
 	return resp, nil
 }
 
-// Command lets you run any operational mode command against the given device, and it returns the output.
-// func (p *PaloAlto) Command(command string) (string, error) {
-// 	var output commandOutput
-// 	var cmd string
-//
-// 	if len(command) > 0 {
-// 		secs := strings.Split(command, " ")
-// 		nSecs := len(secs)
-//
-// 		if nSecs >= 0 {
-// 			for i := 0; i < nSecs; i++ {
-// 				cmd += fmt.Sprintf("<%s>", secs[i])
-// 			}
-// 			// cmd += fmt.Sprintf("<%s/>", secs[nSecs])
-//
-// 			for j := nSecs - 1; j >= 0; j-- {
-// 				cmd += fmt.Sprintf("</%s>", secs[j])
-// 			}
-// 			// command += fmt.Sprint("</configuration></get-configuration>")
-// 		}
-// 	}
-//
-// 	fmt.Println(cmd)
-//
-// 	_, res, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, cmd)).End()
-// 	if errs != nil {
-// 		return "", errs[0]
-// 	}
-//
-// 	fmt.Println(res)
-//
-// 	err := xml.Unmarshal([]byte(res), &output)
-// 	if err != nil {
-// 		return "", err
-// 	}
-//
-// 	return output.Data, nil
-// }
+// Command lets you run any operational mode command against the given device, and it returns the output. You
+// must use the XML-formatted version of the command string as if you were calling the API yourself, i.e.
+// "<show><running><ippool></ippool></running></show>"
+func (p *PaloAlto) Command(command string) (string, error) {
+	var output commandOutput
+	// var cmd string
+
+	// if len(command) > 0 {
+	// 	secs := strings.Split(command, " ")
+	// 	nSecs := len(secs)
+
+	// 	if nSecs >= 0 {
+	// 		for i := 0; i < nSecs; i++ {
+	// 			cmd += fmt.Sprintf("<%s>", secs[i])
+	// 		}
+	// 		// cmd += fmt.Sprintf("<%s/>", secs[nSecs])
+
+	// 		for j := nSecs - 1; j >= 0; j-- {
+	// 			cmd += fmt.Sprintf("</%s>", secs[j])
+	// 		}
+	// 		// command += fmt.Sprint("</configuration></get-configuration>")
+	// 	}
+	// }
+
+	// fmt.Println(cmd)
+
+	_, res, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, command)).End()
+	if errs != nil {
+		return "", errs[0]
+	}
+
+	err := xml.Unmarshal([]byte(res), &output)
+	if err != nil {
+		return "", err
+	}
+
+	return output.Data, nil
+}
