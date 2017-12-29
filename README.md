@@ -40,21 +40,21 @@ example of both methods.
 
 ```Go
 // Username and password
-creds := panos.AuthMethod{
+creds := &panos.AuthMethod{
     Credentials: []string{"admin", "password"},
 }
 
-pan, err := panos.NewSession("pan-firewall.company.com", &creds)
+pan, err := panos.NewSession("pan-firewall.company.com", creds)
 if err != nil {
     fmt.Println(err)
 }
 
 // API key
-creds := panos.AuthMethod{
+creds := &panos.AuthMethod{
     APIKey: "Awholemessofrandomcharactersandnumbers1234567890=",
 }
 
-pan, err := panos.NewSession("panorama.company.com", &creds)
+pan, err := panos.NewSession("panorama.company.com", creds)
 if err != nil {
     fmt.Println(err)
 }
@@ -84,11 +84,11 @@ that shared objects will be preferred by doing the following:
 
 ```Go
 // Establish a session
-creds := panos.AuthMethod{
+creds := &panos.AuthMethod{
     Credentials: []string{"admin", "password"},
 }
 
-pan, err := panos.NewSession("panorama.company.com", &creds)
+pan, err := panos.NewSession("panorama.company.com", creds)
 if err != nil {
     fmt.Println(err)
 }
@@ -108,11 +108,11 @@ pan.SetShared(false)
 **Establish a session to a Panorama device**
 
 ```Go
-creds := panos.AuthMethod{
+creds := &panos.AuthMethod{
     Credentials: []string{"admin", "password"},
 }
 
-pan, err := panos.NewSession("panorama.company.com", &creds)
+pan, err := panos.NewSession("panorama.company.com", creds)
 if err != nil {
     fmt.Println(err)
 }
@@ -144,11 +144,11 @@ Whereas the `Corporate` device-group is a parent of `Branch-Office`.
 
 ```Go
 // Connect to Panorama
-creds := panos.AuthMethod{
+creds := &panos.AuthMethod{
     Credentials: []string{"admin", "password"},
 }
 
-pan, err := panos.NewSession("panorama.company.com", &creds)
+pan, err := panos.NewSession("panorama.company.com", creds)
 if err != nil {
     fmt.Println(err)
 }
