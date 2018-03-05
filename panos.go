@@ -528,11 +528,10 @@ func (p *PaloAlto) XpathMove(xpath, where string, destination ...string) error {
 	return nil
 }
 
-// XpathMulti allows you to move and clone addresses across device groups and virtual systems. The element parameter
+// XpathMulti allows you to move and clone multiple objects across device groups and virtual systems. The element parameter
 // can be either an XML file or XML string. The action parameter must be one of: clone or move.
-// The xpath parameter is for the destination where the addresses
-// will be moved to. The element parameter must include in the XML the xpath for the source and the list of objects
-// within the specified source.
+// The xpath parameter is for the destination where the addresses will be moved to. The element parameter must
+// include in the XML the xpath for the source and the list of objects within the specified source.
 func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 	var reqError requestError
 	var query string
@@ -544,9 +543,9 @@ func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 		}
 
 		xmlcontents := string(c)
-		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
+		query = fmt.Sprintf("type=config&action=multi-%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
 	} else {
-		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
+		query = fmt.Sprintf("type=config&action=multi-%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(query).End()
