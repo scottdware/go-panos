@@ -5,21 +5,20 @@ A Go package that interacts with Palo Alto devices using their XML API. For offi
 
 This API allows you to do the following:
 
-* List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, managed devices (Panorama), etc..
-* Create, rename, and delete objects
-* Create multiple address objects at once by using a CSV file.
-    * You can also specify which device-group you want the object to be created under, as well as tag them.
+* List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, log forwarding profiles, security profile groups, managed devices (Panorama), etc..
+* Create, rename, and delete objects.
+* View the jobs on a device.
+* Create multiple address objects (including groups) at once by using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
 * Create, apply, and remove tags from objects
 * Edit/modify address, service groups and custom-url-categories
 * Create templates, template stacks and assign devices and templates to them (Panorama)
 * Commit configurations and commit to device-groups (Panorama)
 * Apply a log forwarding or security profile to an entire policy or individual rules.
-* Manipulate the configuration using Xpath functions.
+* Manipulate any part the configuration using Xpath functions (advanced).
 
 The following features are currently available only on the local firewall:
 
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
-    * Delete operation on the above as well.
 * Add and remove interfaces to zones, vlans and virtual-routers.
 * Test URL's to see what they are being categorized under.
 * Test route lookup.
@@ -70,10 +69,12 @@ allow you to modify any part of the configuration using Xpath. The following con
 
 The above actions are used in the following `go-panos` functions:
 
-`XpathConfig(), XpathGetConfig(), XpathClone(), XpathMove(), XpathMulti()`
+`XpathConfig()` | `XpathGetConfig()` | `XpathClone()` | `XpathMove()` | `XpathMulti()`
+:---: | :---: | :---: | :---: | :---:
+`set`, `edit`, `delete`, `rename`, `override` | `show`, `get` | `clone` | `move` | `multi-move`, `multi-clone`
 
 > *NOTE*: These functions are more suited for "power users," as there is a lot more that you have to know in regards to
-Xpath and XML.
+Xpath and XML, as well as knowing how the PANOS XML is structured.
 
 ### Handling Shared objects on Panorama
 
@@ -123,23 +124,41 @@ pan.AddDevice("00102345678")
 pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
 ```
 
-**Create address objects via CSV**
+**Creating Address Objects via CSV**
 
-This example shows you how to create multiple address objects using a CSV file. You can also do object overrides
+This example shows you how to create multiple address and address group objects using a CSV file. You can also do object overrides
 by creating an object in a parent device-group, then creating the same object in a child device-group. Tagging
-objects upon creating is supported as well.
+objects upon creation is supported as well.
 
-The CSV file should be organized with the following columns: `name,type,address,description,device-group,tag`. The `type` field
-must be one of the following values: ip, range, or fqdn. the `description` field is optional, as is the `tag` field.
+The CSV file should be organized with the following columns: `name, type, address, description (optional), tag (optional), device-group`.
 
-Let's assume we have a CSV file called `web-servers.csv` that looks like the following:
+If you are tagging an object upon creation, please make sure that the tags exist prior to creating the objects.
 
-```
-web-server,ip,10.1.1.1,,Corporate,web-servers
-web-server,ip,10.5.5.10,,Branch-Office
-```
+If you are creating address objects, the `type` field can be one of: `ip`, `range`, or `fqdn`. When creating address groups, the `type` field
+must be either `static` or `dynamic`. The `address` field differs for either of those options as well.
 
-Whereas the `Corporate` device-group is a parent of `Branch-Office`.
+For a static address group, `address` must contain a list of members to add to the group, separated by a space, i.e.: `ip-host1 ip-net1 fqdn-example.com`.
+For a dynamic address group, `address` must contain the criteria (tags) to match on, i.e.: `web-servers or db-servers and linux`
+
+Let's assume we have a CSV file called `objects.csv` that looks like the following:
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/csv.PNG "objects.csv")
+
+<!-- ```
+web-server,ip,10.255.255.1,,,Vader
+file-server-shared,ip,1.1.1.1,,,shared
+server-net-shared,ip,2.2.2.0/24,,,shared
+vm-host,fqdn,server.company.com,,jedi,Vader
+pc-net-range-shared,range,1.1.1.10-1.1.1.20,,,shared
+db-server,ip,10.1.1.1,,,Vader
+web-server,ip,5.5.5.5,,,Luke
+server-network,ip,3.3.3.0/24,,,Vader
+internet-access-group,static,web-server vm-host,,,Vader
+block-bad-hosts,dynamic,bad-host or bad-site,,,Vader
+data-centers,static,file-server-shared server-net-shared pc-net-range-shared,,,shared
+``` -->
+
+Running the below code against a Panorama device will create the objects above.
 
 ```Go
 // Connect to Panorama
@@ -152,10 +171,22 @@ if err != nil {
     fmt.Println(err)
 }
 
-pan.CreateAddressFromCsv("web-servers.csv")
+pan.CreateObjectsFromCsv("objects.csv")
 ```
 
-This will create the `web-server` object (10.1.1.1) on the `Corporate` device-group, and the same `web-server` object with an object-override IP of 10.5.5.10 on the `Branch-Office` device-group.
+If we take a look at Panorama, and view the `Vader` device-group address objects, we can see all of our objects:
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/addresses.PNG "Vader device-group")
+
+And here are our address group objects:
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/address-groups.PNG "Vader device-group")
+
+We specified a `web-server` address object in the `Vader` device-group, as well as a `web-server` address object in the `Luke` device-group. This is an example of how you do object overrides. The `Luke` device-group
+is a child of the `Vader` device-group, but needs to have a different IP address assigned to the `web-serve` object. This is visible by the override green/yellow icon next to the `web-server` object name.
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/override.PNG "Vader device-group")
+
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
