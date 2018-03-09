@@ -130,15 +130,22 @@ This example shows you how to create multiple address and address group objects 
 by creating an object in a parent device-group, then creating the same object in a child device-group. Tagging
 objects upon creation is supported as well.
 
-The CSV file should be organized with the following columns: `name, type, address, description (optional), tag (optional), device-group`.
+The CSV file should be organized with the following columns:
 
-If you are tagging an object upon creation, please make sure that the tags exist prior to creating the objects.
+`name, type, address, description (optional), tag (optional), device-group`.
+
+> **NOTE:** If you are tagging an object upon creation, please make sure that the tags exist prior to creating the objects.
 
 If you are creating address objects, the `type` field can be one of: `ip`, `range`, or `fqdn`. When creating address groups, the `type` field
 must be either `static` or `dynamic`. The `address` field differs for either of those options as well.
 
-For a static address group, `address` must contain a list of members to add to the group, separated by a space, i.e.: `ip-host1 ip-net1 fqdn-example.com`.
-For a dynamic address group, `address` must contain the criteria (tags) to match on, i.e.: `web-servers or db-servers and linux`
+For a static address group, `address` must contain a list of members to add to the group, separated by a space, i.e.:
+
+`ip-host1 ip-net1 fqdn-example.com`
+
+For a dynamic address group, `address` must contain the criteria (tags) to match on, i.e.:
+
+`web-servers or db-servers and linux`
 
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
 
