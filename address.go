@@ -398,7 +398,7 @@ func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error 
 	return nil
 }
 
-// CreateAddressFromCsv takes a CSV file and creates the given address objects and address groups defined within.
+// CreateObjectsFromCsv takes a CSV file and creates the given address objects and address groups defined within.
 // The format of the CSV file must follow this layout:
 //
 // name, type, address, description (optional), tag (optional), device-group
