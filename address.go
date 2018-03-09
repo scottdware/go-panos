@@ -1,13 +1,13 @@
 package panos
 
 import (
-	"encoding/csv"
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
+
+	"github.com/scottdware/go-easycsv"
 )
 
 // AddressObjects contains a slice of all address objects.
@@ -174,16 +174,22 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, de
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && p.Shared == true {
-		xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", name)
-	}
+	if p.DeviceType == "panorama" {
+		if p.Shared == true {
+			xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], name)
-	}
+		if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+			xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-		return errors.New("you must specify a device-group when creating address objects on a Panorama device")
+		if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], name)
+		}
+
+		if p.Shared == false && len(devicegroup) <= 0 {
+			return errors.New("you must specify a device-group when creating address objects on a Panorama device")
+		}
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -228,16 +234,22 @@ func (p *PaloAlto) CreateAddressGroup(name string, members []string, description
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && p.Shared == true {
-		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
-	}
+	if p.DeviceType == "panorama" {
+		if p.Shared == true {
+			xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
-	}
+		if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+			xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-		return errors.New("you must specify a device-group when creating address groups on a Panorama device")
+		if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
+		}
+
+		if p.Shared == false && len(devicegroup) <= 0 {
+			return errors.New("you must specify a device-group when creating address groups on a Panorama device")
+		}
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -256,7 +268,7 @@ func (p *PaloAlto) CreateAddressGroup(name string, members []string, description
 	return nil
 }
 
-// CreateDynamicAddressGroup will create a new dynamic address group on the device. The filter must be written like so:
+// CreateDynamicAddressGroup will create a new dynamic address group on the device. The criteria must be written like so:
 // 'vm-servers' and 'some tag' or 'pcs' - using the tags as the match criteria. If creating dynamic address group on a
 // Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string, devicegroup ...string) error {
@@ -276,16 +288,22 @@ func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string,
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && p.Shared == true {
-		xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
-	}
+	if p.DeviceType == "panorama" {
+		if p.Shared == true {
+			xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
-	}
+		if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+			xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-		return errors.New("you must specify a device-group when creating address groups on a Panorama device")
+		if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
+		}
+
+		if p.Shared == false && len(devicegroup) <= 0 {
+			return errors.New("you must specify a device-group when creating address groups on a Panorama device")
+		}
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -380,185 +398,126 @@ func (p *PaloAlto) DeleteAddressGroup(name string, devicegroup ...string) error 
 	return nil
 }
 
-// CreateAddressFromCsv takes a .csv file with the following format: name,type,address,description.
-// 'name' is what you want the address object to be called. 'type' is one of: ip, range, or fqdn.
-// 'address' is the address of the object. 'description' is optional, just leave the field blank if you do not want one.
-// If creating addresses on a Panorama device, specify the device-group as the last parameter.
-// func (p *PaloAlto) CreateAddressFromCsv(file string, devicegroup ...string) error {
-// 	var xpath string
-// 	var reqError requestError
-// 	var addrXMLBody string
-
-// 	if p.Shared == true {
-// 		xpath = "/config/shared/address"
-// 	}
-
-// 	if p.Shared == false && len(devicegroup) <= 0 {
-// 		if p.DeviceType == "panorama" {
-// 			return errors.New("you must specify a device-group when creating address objects on a Panorama device")
-// 		}
-
-// 		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address"
-// 	}
-
-// 	if len(devicegroup) > 0 {
-// 		if p.DeviceType == "panos" {
-// 			return errors.New("you can only specify a device-group on a Panorama device")
-// 		}
-
-// 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address", devicegroup[0])
-// 	}
-
-// 	fn, err := os.Open(file)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	defer fn.Close()
-
-// 	reader := csv.NewReader(fn)
-// 	fields, err := reader.ReadAll()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-
-// 	for _, line := range fields {
-// 		// var addrgroup string
-// 		linelen := len(line)
-// 		name := line[0]
-// 		addrtype := line[1]
-// 		address := line[2]
-// 		description := ""
-
-// 		if linelen == 4 && len(line[3]) > 0 {
-// 			description = line[3]
-// 		}
-
-// 		// if linelen == 5 && len(line[4]) > 0 {
-// 		// 	addrgroup = line[4]
-// 		// }
-
-// 		entry := fmt.Sprintf("<entry name=\"%s\">", name)
-
-// 		switch addrtype {
-// 		case "ip":
-// 			entry += fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
-// 		case "range":
-// 			entry += fmt.Sprintf("<ip-range>%s</ip-range>", address)
-// 		case "fqdn":
-// 			entry += fmt.Sprintf("<fqdn>%s</fqdn>", address)
-// 		}
-
-// 		if len(description) > 0 {
-// 			entry += fmt.Sprintf("<description>%s</description>", description)
-// 		}
-
-// 		entry += "</entry>"
-// 		addrXMLBody += entry
-// 	}
-
-// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, addrXMLBody, p.Key)).End()
-// 	if errs != nil {
-// 		return errs[0]
-// 	}
-
-// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-// 		return err
-// 	}
-
-// 	if reqError.Status != "success" {
-// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-// 	}
-
-// 	return nil
-// }
-
-// CreateAddressFromCsv takes a CSV file with the following format: name,type,address,description,device-group,tag.
-// Name is what you want the address object to be called. Type is one of: ip, range, or fqdn.
-// Address is the IP address of the object. Description is optional, just leave the field blank if you do not want one.
-// Device-group is the name of the device-group where you want the address object created under. Tag is the name of the
-// tag that you wish to apply to the object. If you are creating shared objects in Panorama, or you are creating objects
-// on a local device, then you can leave the device-group field blank.
-func (p *PaloAlto) CreateAddressFromCsv(file string) error {
-	var xpath string
-	var reqError requestError
-
-	if p.DeviceType == "panorama" && p.Shared == true {
-		xpath = "/config/shared/address"
-	}
-
-	if p.DeviceType == "panos" {
-		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address"
-	}
-
-	fn, err := os.Open(file)
+// CreateAddressFromCsv takes a CSV file and creates the given address objects and address groups defined within.
+// The format of the CSV file must follow this layout:
+//
+// name, type, address, description (optional), tag (optional), device-group
+//
+// For the type column, you can specify: ip, range, fqdn for address objects. For group objects, you must specify
+// either static or dynamic. The description and tag columns are optional, so just leave them blank if you do not
+// need them.
+//
+// If you are creating an address group, then the address field must contain the following:
+//
+// For a static address group: list of members to add separated by a space, i.e.: ip-host1 ip-net1 fqdn-example.com
+// For a dynamic address group: the criteria (tags) to match on, i.e.: web-servers or db-servers and linux
+//
+// If any of the objects you are creating need to be shared objects, then specify the word "shared" in the device-group (last)
+// column.
+func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
+	c, err := easycsv.Open(file)
 	if err != nil {
 		return err
 	}
 
-	defer fn.Close()
-
-	reader := csv.NewReader(fn)
-	fields, err := reader.ReadAll()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	for _, line := range fields {
+	for _, line := range c {
 		var tagged bool
+		var description, tag, dg string
 		linelen := len(line)
 		name := line[0]
 		addrtype := line[1]
 		address := line[2]
-		description := ""
-		dg := ""
-		tag := ""
 
-		if linelen >= 4 && len(line[3]) > 0 {
+		if linelen > 3 && len(line[3]) > 0 {
 			description = line[3]
 		}
 
-		if linelen >= 4 && len(line[4]) > 0 {
-			dg = line[4]
-		}
-
-		if linelen >= 4 && len(line[5]) > 0 {
-			tag = line[5]
+		if linelen > 4 && len(line[4]) > 0 {
+			tag = line[4]
 			tagged = true
 		}
 
-		if p.DeviceType == "panorama" && p.Shared == false {
-			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address", dg)
+		if linelen > 5 && len(line[5]) > 0 {
+			dg = line[5]
 		}
-
-		entry := fmt.Sprintf("<entry name=\"%s\">", name)
 
 		switch addrtype {
-		case "ip":
-			entry += fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
-		case "range":
-			entry += fmt.Sprintf("<ip-range>%s</ip-range>", address)
-		case "fqdn":
-			entry += fmt.Sprintf("<fqdn>%s</fqdn>", address)
-		}
+		case "ip", "range", "fqdn":
+			if len(description) > 0 && len(dg) > 0 {
+				err = p.CreateAddress(name, addrtype, address, description, dg); if err != nil {
+					return err
+				}
+			}
 
-		if len(description) > 0 {
-			entry += fmt.Sprintf("<description>%s</description>", description)
-		}
+			if len(description) == 0 && len(dg) == 0 {
+				err = p.CreateAddress(name, addrtype, address, ""); if err != nil {
+					return err
+				}
+			}
 
-		entry += "</entry>"
+			if len(description) > 0 && len(dg) == 0 {
+				err = p.CreateAddress(name, addrtype, address, description); if err != nil {
+					return err
+				}
+			}
 
-		_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, entry, p.Key)).End()
-		if errs != nil {
-			return errs[0]
-		}
+			if len(description) == 0 && len(dg) > 0 {
+				err = p.CreateAddress(name, addrtype, address, "", dg); if err != nil {
+					return err
+				}
+			}
+		case "static":
+			groupMembers := strings.Split(address, " ")
+			
+			if len(description) > 0 && len(dg) > 0 {
+				err = p.CreateAddressGroup(name, groupMembers, description, dg); if err != nil {
+					return err
+				}
+			}
 
-		if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-			return err
-		}
+			if len(description) == 0 && len(dg) == 0 {
+				err = p.CreateAddressGroup(name, groupMembers, ""); if err != nil {
+					return err
+				}
+			}
 
-		if reqError.Status != "success" {
-			return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+			if len(description) > 0 && len(dg) == 0 {
+				err = p.CreateAddressGroup(name, groupMembers, description); if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) > 0 {
+				err = p.CreateAddressGroup(name, groupMembers, "", dg); if err != nil {
+					return err
+				}
+			}
+		case "dynamic":
+			criteria := fmt.Sprintf("%s", address)
+
+			if len(description) > 0 && len(dg) > 0 {
+				err = p.CreateDynamicAddressGroup(name, criteria, description, dg); if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) == 0 {
+				err = p.CreateDynamicAddressGroup(name, criteria, ""); if err != nil {
+					return err
+				}
+			}
+
+			if len(description) > 0 && len(dg) == 0 {
+				err = p.CreateDynamicAddressGroup(name, criteria, description); if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) > 0 {
+				err = p.CreateDynamicAddressGroup(name, criteria, "", dg); if err != nil {
+					return err
+				}
+			}
 		}
 
 		time.Sleep(10 * time.Millisecond)
