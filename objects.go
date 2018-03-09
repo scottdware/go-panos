@@ -73,6 +73,48 @@ type SecurityProfiles struct {
 	Group         string
 }
 
+// LogForwarding contains a list of all log forwarding profiles on the device.
+type LogForwarding struct {
+	XMLName xml.Name    `xml:"response"`
+	Status  string      `xml:"status,attr"`
+	Code    string      `xml:"code,attr"`
+	Profiles []LogForwardingProfile `xml:"result>profiles>entry"`
+}
+
+// LogForwardingProfile contains information about each individual log forwarding profile.
+type LogForwardingProfile struct {
+	Name string `xml:"name,attr"`
+	MatchList []LogForwardingMatchList `xml:"match-list>entry"`
+}
+
+// LogForwardingMatchList contains all of the match criteria in a log forwarding profile.
+type LogForwardingMatchList struct {
+	Name string `xml:"name,attr"`
+	SendToPanorama string `xml:"send-to-panorama"`
+	LogType string `xml:"log-type"`
+	Filter string `xml:"filter"`
+}
+
+// SecurityGroups contains a list of all security profile groups on the device.
+type SecurityGroups struct {
+	XMLName xml.Name    `xml:"response"`
+	Status  string      `xml:"status,attr"`
+	Code    string      `xml:"code,attr"`
+	Profiles []SecurityProfileGroup `xml:"result>profile-group>entry"`
+}
+
+// SecurityProfileGroup contains information about each individual security profile group.
+type SecurityProfileGroup struct {
+	Name string `xml:"name,attr"`
+	URLFiltering  string `xml:"url-filtering>member"`
+	FileBlocking  string `xml:"file-blocking>member"`
+	AntiVirus     string `xml:"virus>member"`
+	AntiSpyware   string `xml:"spyware>member"`
+	Vulnerability string `xml:"vulnerability>member"`
+	DataFiltering string `xml:"data-filtering>member"`
+	Wildfire      string `xml:"wildfire-analysis>member"`
+}
+
 var (
 	tagColors = map[string]string{
 		"Red":         "color1",
@@ -1513,6 +1555,51 @@ func (p *PaloAlto) RemoveTag(tag, object string, devicegroup ...string) error {
 
 	return nil
 }
+
+// LogForwardingProfiles returns a list of all of the log forwarding profiles on the device.
+func (p *PaloAlto) LogForwardingProfiles() (*LogForwarding, error) {
+	var profiles LogForwarding
+
+	xpath := "/config//log-settings/profiles"
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &profiles); err != nil {
+		return nil, err
+	}
+
+	if profiles.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", profiles.Code, errorCodes[profiles.Code])
+	}
+
+	return &profiles, nil
+}
+
+// SecurityProfileGroups returns a list of all of the security profile groups on the device.
+func (p *PaloAlto) SecurityProfileGroups() (*SecurityGroups, error) {
+	var profiles SecurityGroups
+
+	xpath := "/config//profile-group"
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &profiles); err != nil {
+		return nil, err
+	}
+
+	if profiles.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", profiles.Code, errorCodes[profiles.Code])
+	}
+
+	return &profiles, nil
+}
+
 
 // ApplyLogForwardingProfile will apply a Log Forwarding profile to every rule in the policy for the given device-group.
 // If you wish to apply it to a single rule, instead of every rule in the policy, you can optionally specify the rule name as the last parameter.
