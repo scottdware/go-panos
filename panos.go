@@ -598,26 +598,6 @@ func (p *PaloAlto) XpathGetConfig(configtype, xpath string) (string, error) {
 // "<show><running><ippool></ippool></running></show>"
 func (p *PaloAlto) Command(command string) (string, error) {
 	var output commandOutput
-	// var cmd string
-
-	// if len(command) > 0 {
-	// 	secs := strings.Split(command, " ")
-	// 	nSecs := len(secs)
-
-	// 	if nSecs >= 0 {
-	// 		for i := 0; i < nSecs; i++ {
-	// 			cmd += fmt.Sprintf("<%s>", secs[i])
-	// 		}
-	// 		// cmd += fmt.Sprintf("<%s/>", secs[nSecs])
-
-	// 		for j := nSecs - 1; j >= 0; j-- {
-	// 			cmd += fmt.Sprintf("</%s>", secs[j])
-	// 		}
-	// 		// command += fmt.Sprint("</configuration></get-configuration>")
-	// 	}
-	// }
-
-	// fmt.Println(cmd)
 
 	_, res, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, command)).End()
 	if errs != nil {
