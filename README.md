@@ -147,6 +147,8 @@ For a dynamic address group, `address` must contain the criteria (tags) to match
 
 `web-servers or db-servers and linux`
 
+If you need to create shared objects, you must specify the word `shared` in the device-group column.
+
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/csv.PNG "objects.csv")
