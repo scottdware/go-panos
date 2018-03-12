@@ -136,6 +136,8 @@ The CSV file should be organized with the following columns:
 
 > **NOTE:** If you are tagging an object upon creation, please make sure that the tags exist prior to creating the objects.
 
+> **NOTE:** If you are creating address groups, I would recommend placing them at the bottom of the CSV file, that way you don't risk adding a member that doesn't exist.
+
 If you are creating address objects, the `type` field can be one of: `ip`, `range`, or `fqdn`. When creating address groups, the `type` field
 must be either `static` or `dynamic`. The `address` field differs for either of those options as well.
 
