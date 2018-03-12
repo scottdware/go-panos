@@ -75,37 +75,37 @@ type SecurityProfiles struct {
 
 // LogForwarding contains a list of all log forwarding profiles on the device.
 type LogForwarding struct {
-	XMLName xml.Name    `xml:"response"`
-	Status  string      `xml:"status,attr"`
-	Code    string      `xml:"code,attr"`
+	XMLName  xml.Name               `xml:"response"`
+	Status   string                 `xml:"status,attr"`
+	Code     string                 `xml:"code,attr"`
 	Profiles []LogForwardingProfile `xml:"result>profiles>entry"`
 }
 
 // LogForwardingProfile contains information about each individual log forwarding profile.
 type LogForwardingProfile struct {
-	Name string `xml:"name,attr"`
+	Name      string                   `xml:"name,attr"`
 	MatchList []LogForwardingMatchList `xml:"match-list>entry"`
 }
 
 // LogForwardingMatchList contains all of the match criteria in a log forwarding profile.
 type LogForwardingMatchList struct {
-	Name string `xml:"name,attr"`
+	Name           string `xml:"name,attr"`
 	SendToPanorama string `xml:"send-to-panorama"`
-	LogType string `xml:"log-type"`
-	Filter string `xml:"filter"`
+	LogType        string `xml:"log-type"`
+	Filter         string `xml:"filter"`
 }
 
 // SecurityGroups contains a list of all security profile groups on the device.
 type SecurityGroups struct {
-	XMLName xml.Name    `xml:"response"`
-	Status  string      `xml:"status,attr"`
-	Code    string      `xml:"code,attr"`
+	XMLName  xml.Name               `xml:"response"`
+	Status   string                 `xml:"status,attr"`
+	Code     string                 `xml:"code,attr"`
 	Profiles []SecurityProfileGroup `xml:"result>profile-group>entry"`
 }
 
 // SecurityProfileGroup contains information about each individual security profile group.
 type SecurityProfileGroup struct {
-	Name string `xml:"name,attr"`
+	Name          string `xml:"name,attr"`
 	URLFiltering  string `xml:"url-filtering>member"`
 	FileBlocking  string `xml:"file-blocking>member"`
 	AntiVirus     string `xml:"virus>member"`
@@ -1599,7 +1599,6 @@ func (p *PaloAlto) SecurityProfileGroups() (*SecurityGroups, error) {
 
 	return &profiles, nil
 }
-
 
 // ApplyLogForwardingProfile will apply a Log Forwarding profile to every rule in the policy for the given device-group.
 // If you wish to apply it to a single rule, instead of every rule in the policy, you can optionally specify the rule name as the last parameter.
