@@ -444,51 +444,59 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 		switch addrtype {
 		case "ip", "range", "fqdn":
 			if len(description) > 0 && len(dg) > 0 {
-				err = p.CreateAddress(name, addrtype, address, description, dg); if err != nil {
+				err = p.CreateAddress(name, addrtype, address, description, dg)
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) == 0 {
-				err = p.CreateAddress(name, addrtype, address, ""); if err != nil {
+				err = p.CreateAddress(name, addrtype, address, "")
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) > 0 && len(dg) == 0 {
-				err = p.CreateAddress(name, addrtype, address, description); if err != nil {
+				err = p.CreateAddress(name, addrtype, address, description)
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) > 0 {
-				err = p.CreateAddress(name, addrtype, address, "", dg); if err != nil {
+				err = p.CreateAddress(name, addrtype, address, "", dg)
+				if err != nil {
 					return err
 				}
 			}
 		case "static":
 			groupMembers := strings.Split(address, " ")
-			
+
 			if len(description) > 0 && len(dg) > 0 {
-				err = p.CreateAddressGroup(name, groupMembers, description, dg); if err != nil {
+				err = p.CreateAddressGroup(name, groupMembers, description, dg)
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) == 0 {
-				err = p.CreateAddressGroup(name, groupMembers, ""); if err != nil {
+				err = p.CreateAddressGroup(name, groupMembers, "")
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) > 0 && len(dg) == 0 {
-				err = p.CreateAddressGroup(name, groupMembers, description); if err != nil {
+				err = p.CreateAddressGroup(name, groupMembers, description)
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) > 0 {
-				err = p.CreateAddressGroup(name, groupMembers, "", dg); if err != nil {
+				err = p.CreateAddressGroup(name, groupMembers, "", dg)
+				if err != nil {
 					return err
 				}
 			}
@@ -496,25 +504,29 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 			criteria := fmt.Sprintf("%s", address)
 
 			if len(description) > 0 && len(dg) > 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, description, dg); if err != nil {
+				err = p.CreateDynamicAddressGroup(name, criteria, description, dg)
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) == 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, ""); if err != nil {
+				err = p.CreateDynamicAddressGroup(name, criteria, "")
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) > 0 && len(dg) == 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, description); if err != nil {
+				err = p.CreateDynamicAddressGroup(name, criteria, description)
+				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) > 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, "", dg); if err != nil {
+				err = p.CreateDynamicAddressGroup(name, criteria, "", dg)
+				if err != nil {
 					return err
 				}
 			}
