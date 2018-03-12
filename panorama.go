@@ -30,9 +30,47 @@ type DeviceGroup struct {
 	Devices []Serial `xml:"devices>entry"`
 }
 
-// Serial contains the serial number of each device in the device-group.
+// Serial contains the information of each device managed by Panorama.
 type Serial struct {
-	Serial string `xml:"name,attr"`
+	Serial                            string      `xml:"name,attr"`
+	Connected                         string      `xml:"connected"`
+	UnsupportedVersion                string      `xml:"unsupported-version"`
+	Hostname                          string      `xml:"hostname"`
+	IPAddress                         string      `xml:"ip-address"`
+	MacAddress                        string      `xml:"mac-addr"`
+	Uptime                            string      `xml:"uptime"`
+	Family                            string      `xml"family"`
+	Model                             string      `xml:"model"`
+	SoftwareVersion                   string      `xml:"sw-version"`
+	AppVersion                        string      `xml:"app-version"`
+	AntiVirusVersion                  string      `xml:"av-version"`
+	WildfireVersion                   string      `xml:"wildfire-version"`
+	ThreatVersion                     string      `xml:"threat-version"`
+	UrlDB                             string      `xml:"url-db"`
+	UrlFilteringVersion               string      `xml:"url-filtering-version"`
+	LogDBVersion                      string      `xml:"logdb-version"`
+	VpnClientPackageVersion           string      `xml:"vpnclient-package-version"`
+	GlobalProtectClientPackageVersion string      `xml:"global-protect-client-package-version"`
+	Domain                            string      `xml:"domain"`
+	HAState                           string      `xml:"ha>state"`
+	HAPeer                            string      `xml:"ha>peer>serial"`
+	VpnDisableMode                    string      `xml:"vpn-disable-mode"`
+	OperationalMode                   string      `xml:"operational-mode"`
+	CertificateStatus                 string      `xml:"certificate-status"`
+	CertificateSubjectName            string      `xml:"certificate-subject-name"`
+	CertificateExpiry                 string      `xml:"certificate-expiry"`
+	ConnectedAt                       string      `xml:"connected-at"`
+	CustomCertificateUsage            string      `xml:"custom-certificate-usage"`
+	MultiVsys                         string      `xml:"multi-vsys"`
+	Vsys                              []VsysEntry `xml:"vsys>entry"`
+}
+
+// VsysEntry contains information about each vsys.
+type VsysEntry struct {
+	Name               string `xml:"name,attr"`
+	DisplayName        string `xml:"display-name"`
+	SharedPolicyStatus string `xml:"shared-policy-status"`
+	SharedPolicyMD5Sum string `xml:"shared-policy-md5sum"`
 }
 
 // SetShared will set Panorama's device-group to shared for all subsequent configuration changes. For example, if you set this
@@ -48,13 +86,12 @@ func (p *PaloAlto) SetShared(shared bool) {
 // Devices returns information about all of the devices that are managed by Panorama.
 func (p *PaloAlto) Devices() (*Devices, error) {
 	var devices Devices
-	xpath := "/config/mgt-config/devices"
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("devices can only be listed from a Panorama device")
 	}
 
-	_, devData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	_, devData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=op&cmd=<show><devices><all></all></devices></show>&key=%s", p.Key)).End()
 	if errs != nil {
 		return nil, errs[0]
 	}
