@@ -27,25 +27,25 @@ type ARPEntry struct {
 }
 
 // Tunnels contains information of all the IPsec tunnels configured on a device.
-// type Tunnels struct {
-// 	XMLName xml.Name `xml:"response"`
-// 	Status  string   `xml:"status,attr"`
-// 	Code    string   `xml:"code,attr"`
-// 	Tunnels []Tunnel `xml:"result>ipsec>entry"`
-// }
+type Tunnels struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Tunnels []Tunnel `xml:"result>ipsec>entry"`
+}
 
 // Tunnel contains information for each individual tunnel.
-// type Tunnel struct {
-// 	Name     string    `xml:"name,attr"`
-// 	ProxyIDs []ProxyID `xml:"auto-key>proxy-id>entry"`
-// }
+type Tunnel struct {
+	Name     string    `xml:"name,attr"`
+	ProxyIDs []ProxyID `xml:"auto-key>proxy-id>entry"`
+}
 
 // ProxyID contains information for each individual proxy-id.
-// type ProxyID struct {
-// 	Name     string `xml:"name,attr"`
-// 	LocalIP  string `xml:"local"`
-// 	RemoteIP string `xml:"remote"`
-// }
+type ProxyID struct {
+	Name   string `xml:"name,attr"`
+	Local  string `xml:"local"`
+	Remote string `xml:"remote"`
+}
 
 // CreateLayer3Interface adds a new layer-3 interface or sub-interface to the device. If adding a sub-interface,
 // be sure to append the VLAN tag to the interface name like so: ethernet1/1.700. You must specify the subnet mask in
@@ -873,81 +873,81 @@ func (p *PaloAlto) ARPTable(option ...string) (*ARPTable, error) {
 	return &arpTable, nil
 }
 
-// ListTunnels will return a list of all configured IPsec tunnels on the device.
-// func (p *PaloAlto) ListTunnels() (*Tunnels, error) {
-// 	var tunnels Tunnels
-// 	xpath := "/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec"
-//
-// 	if p.DeviceType != "panos" {
-// 		return nil, errors.New("tunnels can only be listed from a local device")
-// 	}
-//
-// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
-// 	if errs != nil {
-// 		return nil, errs[0]
-// 	}
-//
-// 	if err := xml.Unmarshal([]byte(resp), &tunnels); err != nil {
-// 		return nil, err
-// 	}
-//
-// 	if tunnels.Status != "success" {
-// 		return nil, fmt.Errorf("error code %s: %s", tunnels.Code, errorCodes[tunnels.Code])
-// 	}
-//
-// 	return &tunnels, nil
-// }
+// IPSecTunnels will return a list of all configured IPsec tunnels on the device.
+func (p *PaloAlto) IPSecTunnels() (*Tunnels, error) {
+	var tunnels Tunnels
+	xpath := "/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec"
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("tunnels can only be listed from a local device")
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &tunnels); err != nil {
+		return nil, err
+	}
+
+	if tunnels.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", tunnels.Code, errorCodes[tunnels.Code])
+	}
+
+	return &tunnels, nil
+}
 
 // AddProxyID will add a new proxy-id to the given IPsec tunnel.
-// func (p *PaloAlto) AddProxyID(tunnel, name, localip, remoteip string) error {
-// 	var xmlBody string
-// 	var reqError requestError
-//
-// 	if p.DeviceType == "panorama" {
-// 		return errors.New("you cannot add a proxy-id on a Panorama device")
-// 	}
-//
-// 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec/entry[@name='%s']/auto-key/proxy-id/entry[@name='%s']", tunnel, name)
-// 	xmlBody = fmt.Sprintf("<protocol><any/></protocol><local>%s</local><remote>%s</remote>", localip, remoteip)
-//
-// 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
-// 	if errs != nil {
-// 		return errs[0]
-// 	}
-//
-// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-// 		return err
-// 	}
-//
-// 	if reqError.Status != "success" {
-// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-// 	}
-//
-// 	return nil
-// }
+func (p *PaloAlto) AddProxyID(tunnel, name, localip, remoteip string) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot add a proxy-id on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec/entry[@name='%s']/auto-key/proxy-id/entry[@name='%s']", tunnel, name)
+	xmlBody = fmt.Sprintf("<protocol><any/></protocol><local>%s</local><remote>%s</remote>", localip, remoteip)
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
 
 // DeleteProxyID will remove a proxy-id from the given IPsec tunnel.
-// func (p *PaloAlto) DeleteProxyID(tunnel, name string) error {
-// 	var reqError requestError
-//
-// 	if p.DeviceType == "panorama" {
-// 		return errors.New("you cannot delete a proxy-id on a Panorama device")
-// 	}
-//
-// 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec/entry[@name='%s']/auto-key/proxy-id/entry[@name='%s']", tunnel, name)
-//
-// 	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
-// 	if errs != nil {
-// 		return errs[0]
-// 	}
-//
-// 	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-// 		return err
-// 	}
-//
-// 	if reqError.Status != "success" {
-// 		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-// 	}
-//
-// 	return nil
-// }
+func (p *PaloAlto) DeleteProxyID(tunnel, name string) error {
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot delete a proxy-id on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec/entry[@name='%s']/auto-key/proxy-id/entry[@name='%s']", tunnel, name)
+
+	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
