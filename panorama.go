@@ -39,15 +39,15 @@ type Serial struct {
 	IPAddress                         string      `xml:"ip-address"`
 	MacAddress                        string      `xml:"mac-addr"`
 	Uptime                            string      `xml:"uptime"`
-	Family                            string      `xml"family"`
+	Family                            string      `xml:"family"`
 	Model                             string      `xml:"model"`
 	SoftwareVersion                   string      `xml:"sw-version"`
 	AppVersion                        string      `xml:"app-version"`
 	AntiVirusVersion                  string      `xml:"av-version"`
 	WildfireVersion                   string      `xml:"wildfire-version"`
 	ThreatVersion                     string      `xml:"threat-version"`
-	UrlDB                             string      `xml:"url-db"`
-	UrlFilteringVersion               string      `xml:"url-filtering-version"`
+	URLDB                             string      `xml:"url-db"`
+	URLFilteringVersion               string      `xml:"url-filtering-version"`
 	LogDBVersion                      string      `xml:"logdb-version"`
 	VpnClientPackageVersion           string      `xml:"vpnclient-package-version"`
 	GlobalProtectClientPackageVersion string      `xml:"global-protect-client-package-version"`
