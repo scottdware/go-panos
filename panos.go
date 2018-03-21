@@ -478,6 +478,8 @@ func (p *PaloAlto) XpathConfig(action, xpath string, element ...string) error {
 // XpathClone allows you to clone an existing part of the devices configuration. Use the xpath parameter
 // to specify the location of the object to be cloned. Use the from parameter to specify the source object,
 // and the newname parameter to provide a name for the cloned object.
+//
+// See https://goo.gl/ZfmBB6 for details.
 func (p *PaloAlto) XpathClone(xpath, from, newname string) error {
 	var reqError requestError
 
@@ -502,6 +504,8 @@ func (p *PaloAlto) XpathClone(xpath, from, newname string) error {
 // XpathMove allows you to move the location of an existing configuration object. Use the xpath parameter to specify
 // the location of the object to be moved, and the where parameter to specify type of move. You can optionally use the
 // destination parameter to specify the destination path.
+//
+// See https://goo.gl/LbkQDG for details.
 func (p *PaloAlto) XpathMove(xpath, where string, destination ...string) error {
 	var reqError requestError
 	var query string
@@ -532,6 +536,8 @@ func (p *PaloAlto) XpathMove(xpath, where string, destination ...string) error {
 // can be either an XML file or XML string. The action parameter must be one of: clone or move.
 // The xpath parameter is for the destination where the addresses will be moved to. The element parameter must
 // include in the XML the xpath for the source and the list of objects within the specified source.
+//
+// See https://goo.gl/oeufnu for details.
 func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 	var reqError requestError
 	var query string
@@ -543,9 +549,9 @@ func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 		}
 
 		xmlcontents := string(c)
-		query = fmt.Sprintf("type=config&action=multi-%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
+		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
 	} else {
-		query = fmt.Sprintf("type=config&action=multi-%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
+		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(query).End()
