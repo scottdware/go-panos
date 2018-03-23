@@ -192,25 +192,25 @@ type Log struct {
 	Description                string `xml:"opaque,omitempty"`
 }
 
-// LogParameters specifies additional parameters that can be used when retrieving logs.
+// LogParameters specifies additional parameters that can be used when retrieving logs. These are all optional.
 type LogParameters struct {
-	// (Optional) Specify the match criteria for the logs. This is similar to the query provided in the web interface under the Monitor
+	// Query specifies the match criteria for the logs. This is similar to the query provided in the web interface under the Monitor
 	// tab when viewing the logs. The query must be URL encoded.
 	Query string
 
-	// (Optional) Specify the number of logs to retrieve. The default is 20 when the parameter is not specified. The maximum is 5000.
+	// NLogs specifies the number of logs to retrieve. The default is 20 when the parameter is not specified. The maximum is 5000.
 	NLogs int
 
-	// (Optional) Specify the number of logs to skip when doing a log retrieval. The default is 0. This is useful when retrieving
+	// Skip specifies the number of logs to skip when doing a log retrieval. The default is 0. This is useful when retrieving
 	// logs in batches where you can skip the previously retrieved logs.
 	Skip int
 
-	// (Optional) Specify whether logs are shown oldest first (forward) or newest first (backward). Default is backward.
+	// Direction specifies whether logs are shown oldest first (forward) or newest first (backward). Default is backward.
 	Direction string
 
-	// (Optional) Log data sizes can be large so the API uses an asynchronous job scheduling approach to retrieve log data. The initial
-	// query returns a Job ID (job-id) that you can then use for future queries with the action parameter: action=get will check status
-	// of an active job or retrieve the log data when the status is FIN (finished).
+	// Action is not used at the moment. Log data sizes can be large so the API uses an asynchronous job scheduling approach to retrieve
+	// log data. The initial query returns a Job ID (job-id) that you can then use for future queries with the action parameter: action=get
+	// will check status of an active job or retrieve the log data when the status is FIN (finished).
 	Action string
 }
 
