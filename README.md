@@ -109,7 +109,7 @@ pan.SetShared(false)
 ### Retrieving Logs
 
 You can retrieve logs from any Palo Alto device using the `QueryLogs()` and `RetrieveLogs()` functions. The `QueryLogs()` function is used to first
-specify what type of log you want to retrieve, as well as any optional parameters such as a query (`(addr.src in 10.1.1.1) and (port.dst eq 443)`). These
+specify what type of log you want to retrieve, as well as any optional parameters such as a query: `(addr.src in 10.1.1.1) and (port.dst eq 443)`. These
 optional parameters are defined using the `LogParameters` struct.
 
 When you run the `QueryLogs()` function, it will return a job ID. This job ID is then used by `RetrieveLogs()` to query the system to see if the job has
