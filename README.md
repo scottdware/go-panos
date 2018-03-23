@@ -8,11 +8,12 @@ This API allows you to do the following:
 * List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, log forwarding profiles, security profile groups, managed devices (Panorama), etc..
 * Create, rename, and delete objects.
 * View the jobs on a device.
-* Create multiple address objects (including groups) at once by using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
-* Create, apply, and remove tags from objects
-* Edit/modify address, service groups and custom-url-categories
-* Create templates, template stacks and assign devices and templates to them (Panorama)
-* Commit configurations and commit to device-groups (Panorama)
+* Query and retrieve the following log-types: `config`, `system`, `traffic`, `threat`, `wildfire`, `url`, `data`.
+* Create multiple address objects (including static/dynamic groups) at once using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
+* Create, apply, and remove tags from objects.
+* Edit/modify address, service groups and custom-url-categories.
+* Create templates, template stacks and assign devices and templates to them (Panorama).
+* Commit configurations and commit to device-groups (Panorama).
 * Apply a log forwarding or security profile to an entire policy or individual rules.
 * Manipulate any part the configuration using Xpath functions (advanced).
 
@@ -105,11 +106,24 @@ pan.CreateAddress("test-ipv4-obj", "ip", "1.1.1.2/32", "A test object")
 pan.SetShared(false)
 ```
 
-### Examples
+### Retrieving Logs
 
-**Establish a session to a Panorama device**
+You can retrieve logs from any Palo Alto device using the `QueryLogs()` and `RetrieveLogs()` functions. The `QueryLogs()` function is used to first
+specify what type of log you want to retrieve, as well as any optional parameters such as a query (`(addr.src in 10.1.1.1) and (port.dst eq 443)`). These
+optional parameters are defined using the `LogParameters` struct.
+
+When you run the `QueryLogs()` function, it will return a job ID. This job ID is then used by `RetrieveLogs()` to query the system to see if the job has
+completed, and the data is ready to be exported. If the job status is not `FIN` then you will need to run `RetrieveLogs()` again until it has finished.
+
+View the documentation for the [LogParameters][log-parameters-struct] struct.
+
+When iterating over the returned logs, there are many fields you can choose to display. View the documentation for the [Log][log-struct] struct fields for
+a complete list.
+
+Below is an example of how to retrieve traffic logs.
 
 ```Go
+// Establish a session
 creds := &panos.AuthMethod{
     Credentials: []string{"admin", "password"},
 }
@@ -119,14 +133,34 @@ if err != nil {
     fmt.Println(err)
 }
 
-// Add a device to Panorama.
-pan.AddDevice("00102345678")
+// Query traffic logs for a specific source address, and return 20 logs.
+params := &panos.LogParameters{
+    Query: "(addr.src in 10.1.1.1) and (app eq ssl)",
+    NLogs: 20,
+}
 
-// Create a device-group on Panorama, and add the device from above.
-pan.CreateDeviceGroup("Some-DeviceGroup", "", "00102345678")
+jobID, err := pan.QueryLogs("traffic", params)
+if err != nil {
+    fmt.Println(err)
+}
+
+// Wait 5 seconds before retrieving the logs. If the job still has not finished, then you will have to 
+// run this same function again until it does.
+time.Sleep(5 * time.Second)
+
+logs, err := pan.RetrieveLogs(jobID)
+if err != nil {
+    fmt.Println(err)
+}
+
+// Here, we are looping over every log returned, and just printing out the data. You can manipulate the data and
+// choose to display any field that you want.
+for _, log := range log.Logs {
+    fmt.Printf("%+v\n", log)
+}
 ```
 
-**Creating Address Objects via CSV**
+### Creating Address Objects via CSV
 
 This example shows you how to create multiple address and address group objects using a CSV file. You can also do object overrides
 by creating an object in a parent device-group, then creating the same object in a child device-group. Tagging
@@ -204,3 +238,5 @@ is a child of the `Vader` device-group, but needs to have a different IP address
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
 [pan-xml-api-config]: https://www.paloaltonetworks.com/documentation/80/pan-os/xml-api/pan-os-xml-api-request-types/configuration-api
+[log-parameters-struct]: http://godoc.org/github.com/scottdware/go-panos#LogParameters
+[log-struct]: http://godoc.org/github.com/scottdware/go-panos#Log
