@@ -208,76 +208,38 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, de
 	return nil
 }
 
-// CreateAddressGroup will create a new static address group on the device. You can specify members to add
-// by using a []string variable (i.e. members := []string{"server1", "server2"}). If creating an address group on a
-// Panorama device, specify the device-group as the last parameter.
-func (p *PaloAlto) CreateAddressGroup(name string, members []string, description string, devicegroup ...string) error {
+// CreateAddressGroup will create a new static or dynamic address group on the device, as specified by the grouptype
+// parameter. If you are creating a static address group, you must add pre-existing members to the group by specifying them using a
+// []string type, for the members parameter. You can specify this as a variable like so:
+//
+// hosts := []string{"web-server", "db-server", "mail-server"}
+//
+// When creating a dynamic address group, the match criteria (tags) must be a string type, specified for the members parameter like so:
+//
+// match := "'web-servers' and 'dmz-servers'"
+//
+// If you do not want to include a description, just leave the parameter blank using double-quotes (""). If creating an address group on
+// a Panorama device, specify the device-group as the last parameter.
+func (p *PaloAlto) CreateAddressGroup(name, grouptype string, members interface{}, description string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
 	var reqError requestError
 
-	if len(members) <= 0 {
-		return errors.New("you cannot create a static address group without any members")
-	}
-
-	xmlBody = "<static>"
-	for _, member := range members {
-		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(member))
-	}
-	xmlBody += "</static>"
-
-	if description != "" {
-		xmlBody += fmt.Sprintf("<description>%s</description>", description)
-	}
-
-	if p.DeviceType == "panos" {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/address-group/entry[@name='%s']", name)
-	}
-
-	if p.DeviceType == "panorama" {
-		if p.Shared == true {
-			xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
+	switch grouptype {
+	case "static":
+		staticMembers := members.([]string)
+		if len(staticMembers) <= 0 {
+			return errors.New("you cannot create a static address group without any members")
 		}
 
-		if len(devicegroup) > 0 && devicegroup[0] == "shared" {
-			xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", name)
+		xmlBody = "<static>"
+		for _, member := range staticMembers {
+			xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(member))
 		}
-
-		if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
-			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], name)
-		}
-
-		if p.Shared == false && len(devicegroup) <= 0 {
-			return errors.New("you must specify a device-group when creating address groups on a Panorama device")
-		}
-	}
-
-	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
-	if errs != nil {
-		return errs[0]
-	}
-
-	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-		return err
-	}
-
-	if reqError.Status != "success" {
-		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-	}
-
-	return nil
-}
-
-// CreateDynamicAddressGroup will create a new dynamic address group on the device. The criteria must be written like so:
-// 'vm-servers' and 'some tag' or 'pcs' - using the tags as the match criteria. If creating dynamic address group on a
-// Panorama device, specify the device-group as the last parameter.
-func (p *PaloAlto) CreateDynamicAddressGroup(name, criteria, description string, devicegroup ...string) error {
-	xmlBody := fmt.Sprintf("<dynamic><filter>%s</filter></dynamic>", criteria)
-	var xpath string
-	var reqError requestError
-
-	if criteria == "" {
-		return errors.New("you cannot create a dynamic address group without any filter")
+		xmlBody += "</static>"
+	case "dynamic":
+		criteria := members.(string)
+		xmlBody = fmt.Sprintf("<dynamic><filter>%s</filter></dynamic>", criteria)
 	}
 
 	if description != "" {
@@ -474,28 +436,28 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 			groupMembers := strings.Split(address, " ")
 
 			if len(description) > 0 && len(dg) > 0 {
-				err = p.CreateAddressGroup(name, groupMembers, description, dg)
+				err = p.CreateAddressGroup(name, "static", groupMembers, description, dg)
 				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) == 0 {
-				err = p.CreateAddressGroup(name, groupMembers, "")
+				err = p.CreateAddressGroup(name, "static", groupMembers, "")
 				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) > 0 && len(dg) == 0 {
-				err = p.CreateAddressGroup(name, groupMembers, description)
+				err = p.CreateAddressGroup(name, "static", groupMembers, description)
 				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) > 0 {
-				err = p.CreateAddressGroup(name, groupMembers, "", dg)
+				err = p.CreateAddressGroup(name, "static", groupMembers, "", dg)
 				if err != nil {
 					return err
 				}
@@ -504,28 +466,28 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 			criteria := fmt.Sprintf("%s", address)
 
 			if len(description) > 0 && len(dg) > 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, description, dg)
+				err = p.CreateAddressGroup(name, "dynamic", criteria, description, dg)
 				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) == 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, "")
+				err = p.CreateAddressGroup(name, "dynamic", criteria, "")
 				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) > 0 && len(dg) == 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, description)
+				err = p.CreateAddressGroup(name, "dynamic", criteria, description)
 				if err != nil {
 					return err
 				}
 			}
 
 			if len(description) == 0 && len(dg) > 0 {
-				err = p.CreateDynamicAddressGroup(name, criteria, "", dg)
+				err = p.CreateAddressGroup(name, "dynamic", criteria, "", dg)
 				if err != nil {
 					return err
 				}
