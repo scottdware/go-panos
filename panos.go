@@ -63,6 +63,157 @@ type Job struct {
 	EndTime       string   `xml:"tfin"`
 }
 
+// Logs holds all of the log data retrieved from querying the system.
+type Logs struct {
+	XMLName   xml.Name `xml:"response"`
+	Status    string   `xml:"status,attr"`
+	Code      string   `xml:"code,attr"`
+	StartTime string   `xml:"job>tdeq"`
+	EndTime   string   `xml:"job>tfin"`
+	JobStatus string   `xml:"job>status"`
+	JobID     int      `xml:"job>id"`
+	Logs      []Log    `xml:"result>log>logs>entry"`
+}
+
+// Log holds information about each individual log retrieved for the following log-types: config, system, traffic, threat, wildfire, url, data.
+// Certain fields are omitted or populated based on the log type that is specified when querying the system. See https://goo.gl/PPLjVZ for the
+// fields assigned for the different log types.
+type Log struct {
+	ID                         int    `xml:"logid,attr"`
+	Domain                     int    `xml:"domain,omitempty"`
+	ReceiveTime                string `xml:"receive_time,omitempty"`
+	Serial                     string `xml:"serial,omitempty"`
+	SequenceNumber             string `xml:"seqno,omitempty"`
+	ActionFlags                string `xml:"actionflags,omitempty"`
+	Type                       string `xml:"type,omitempty"`
+	Subtype                    string `xml:"subtype,omitempty"`
+	ConfigVersion              int    `xml:"config_ver,omitempty"`
+	TimeGenerated              string `xml:"time_generated,omitempty"`
+	Source                     string `xml:"src,omitempty"`
+	Destination                string `xml:"dst,omitempty"`
+	NATSourceIP                string `xml:"natsrc,omitempty"`
+	NATDestinationIP           string `xml:"natdst,omitempty"`
+	Rule                       string `xml:"rule,omitempty"`
+	SourceUser                 string `xml:"srcuser,omitempty"`
+	SourceCountry              string `xml:"srcloc,omitempty"`
+	DestinationCountry         string `xml:"dstloc,omitempty"`
+	Application                string `xml:"app,omitempty"`
+	Vsys                       string `xml:"vsys,omitempty"`
+	From                       string `xml:"from,omitempty"`
+	To                         string `xml:"to,omitempty"`
+	InboundInterface           string `xml:"inbound_if,omitempty"`
+	OutboundInterface          string `xml:"outbound_if,omitempty"`
+	Logset                     string `xml:"logset,omitempty"`
+	TimeReceived               string `xml:"time_received,omitempty"`
+	SessionID                  int    `xml:"sessionid,omitempty"`
+	RepeatCount                int    `xml:"repeatcnt,omitempty"`
+	SourcePort                 int    `xml:"sport,omitempty"`
+	DestinationPort            int    `xml:"dport,omitempty"`
+	NATSourcePort              int    `xml:"natsport,omitempty"`
+	NATDestinationPort         int    `xml:"natdport,omitempty"`
+	Flags                      string `xml:"flags,omitempty"`
+	Pcap                       string `xml:"flag-pcap,omitempty"`
+	PcapID                     int    `xml:"pcap_id,omitempty"`
+	Flagged                    string `xml:"flag-flagged,omitempty"`
+	Proxy                      string `xml:"flag-proxy,omitempty"`
+	URLDenied                  string `xml:"flag-url-denied,omitempty"`
+	NAT                        string `xml:"flag-nat,omitempty"`
+	CaptivePortal              string `xml:"captive-portal"`
+	NonStandardDestinationPort string `xml:"non-std-dport"`
+	Transaction                string `xml:"transaction,omitempty"`
+	PBFClient2Server           string `xml:"pbf-c2s,omitempty"`
+	PBFServer2Client           string `xml:"pbf-s2c,omitempty"`
+	TemporaryMatch             string `xml:"temporary-match,omitempty"`
+	SymmetricReturn            string `xml:"sym-return,omitempty"`
+	SSLDecryptMirror           string `xml:"decrypt-mirror,omitempty"`
+	CredentialDetected         string `xml:"credential-detected,omitempty"`
+	MPTCP                      string `xml:"flag-mptcp-set,omitempty"`
+	TunnelInspected            string `xml:"flag-tunnel-inspected,omitempty"`
+	ReconExcluded              string `xml:"flag-recon-excluded,omitempty"`
+	Protocol                   string `xml:"proto,omitempty"`
+	Action                     string `xml:"action,omitempty"`
+	TunnelType                 string `xml:"tunnel,omitempty"`
+	TPadding                   int    `xml:"tpadding,omitempty"`
+	CPadding                   int    `xml:"cpadding,omitempty"`
+	TunnelIMSI                 int    `xml:"tunnelid_imsi,omitempty"`
+	DeviceName                 string `xml:"device_name,omitempty"`
+	VsysID                     int    `xml:"vsys_id,omitempty"`
+	ParentSessionID            int    `xml:"parent_session_id,omitempty"`
+	ReportID                   int    `xml:"reportid,omitempty"`
+	Bytes                      int    `xml:"bytes,omitempty"`
+	BytesSent                  int    `xml:"bytes_sent,omitempty"`
+	BytesReceived              int    `xml:"bytes_received,omitempty"`
+	Packets                    int    `xml:"packets,omitempty"`
+	Start                      string `xml:"start,omitempty"`
+	Elapsed                    string `xml:"elapsed,omitempty"`
+	Category                   string `xml:"category,omitempty"`
+	Severity                   string `xml:"severity,omitempty"`
+	Direction                  string `xml:"direction,omitempty"`
+	URLIndex                   int    `xml:"url_idx,omitempty"`
+	HTTPMethod                 string `xml:"http_method,omitempty"`
+	XForwardedFor              string `xml:"xff,omitempty"`
+	Referer                    string `xml:"referer,omitempty"`
+	UserAgent                  string `xml:"user_agent,omitempty"`
+	SignatureFlags             string `xml:"sig_flags,omitempty"`
+	ContentVersion             string `xml:"contentver,omitempty"`
+	ThreatCategory             string `xml:"thr_category,omitempty"`
+	ThreatID                   string `xml:"threatid,omitempty"`
+	FileDigest                 string `xml:"filedigest,omitempty"`
+	Filetype                   string `xml:"filetype,omitempty"`
+	Sender                     string `xml:"sender,omitempty"`
+	Recipient                  string `xml:"recipient,omitempty"`
+	Subject                    string `xml:"subject,omitempty"`
+	Cloud                      string `xml:"cloud,omitempty"`
+	Misc                       string `xml:"misc,omitempty"`
+	Padding                    int    `xml:"padding,omitempty"`
+	PacketsSent                int    `xml:"pkts_sent,omitempty"`
+	PacketsReceived            int    `xml:"pkts_received,omitempty"`
+	SessionEndReason           string `xml:"session_end_reason,omitempty"`
+	ActionSource               string `xml:"action_source,omitempty"`
+	TunnelID                   int    `xml:"tunnelid,omitempty"`
+	IMSI                       string `xml:"imsi,omitempty"`
+	MonitorTag                 string `xml:"monitortag,omitempty"`
+	IMEI                       string `xml:"imei,omitempty"`
+	DeviceGroupHierarchy1      int    `xml:"dg_hier_level_1,omitempty"`
+	DeviceGroupHierarchy2      int    `xml:"dg_hier_level_2,omitempty"`
+	DeviceGroupHierarchy3      int    `xml:"dg_hier_level_3,omitempty"`
+	DeviceGroupHierarchy4      int    `xml:"dg_hier_level_4,omitempty"`
+	Host                       string `xml:"host,omitempty"`
+	Command                    string `xml:"cmd,omitempty"`
+	Admin                      string `xml:"admin,omitempty"`
+	Client                     string `xml:"client,omitempty"`
+	Result                     string `xml:"result,omitempty"`
+	Path                       string `xml:"path,omitempty"`
+	BeforeChangePreview        string `xml:"before-change-preview,omitempty"`
+	AfterChangePreview         string `xml:"after-change-preview,omitempty"`
+	FullPath                   string `xml:"full-path,omitempty"`
+	EventID                    string `xml:"eventid,omitempty"`
+	Module                     string `xml:"module,omitempty"`
+	Description                string `xml:"opaque,omitempty"`
+}
+
+// LogParameters specifies additional parameters that can be used when retrieving logs.
+type LogParameters struct {
+	// (Optional) Specify the match criteria for the logs. This is similar to the query provided in the web interface under the Monitor
+	// tab when viewing the logs. The query must be URL encoded.
+	Query string
+
+	// (Optional) Specify the number of logs to retrieve. The default is 20 when the parameter is not specified. The maximum is 5000.
+	NLogs int
+
+	// (Optional) Specify the number of logs to skip when doing a log retrieval. The default is 0. This is useful when retrieving
+	// logs in batches where you can skip the previously retrieved logs.
+	Skip int
+
+	// (Optional) Specify whether logs are shown oldest first (forward) or newest first (backward). Default is backward.
+	Direction string
+
+	// (Optional) Log data sizes can be large so the API uses an asynchronous job scheduling approach to retrieve log data. The initial
+	// query returns a Job ID (job-id) that you can then use for future queries with the action parameter: action=get will check status
+	// of an active job or retrieve the log data when the status is FIN (finished).
+	Action string
+}
+
 // authKey holds our API key.
 type authKey struct {
 	XMLName xml.Name `xml:"response"`
@@ -104,6 +255,14 @@ type testURL struct {
 	Status  string   `xml:"status,attr"`
 	Code    string   `xml:"code,attr"`
 	Result  string   `xml:"result"`
+}
+
+// logID contains the job ID when querying the device for log retrieval.
+type logID struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	ID      int      `xml:"result>job"`
 }
 
 // testRoute contains the results of the operational command test routing fib-lookup.
@@ -419,6 +578,68 @@ func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
 	}
 
 	return &jobs, nil
+}
+
+// QueryLogs allows you to pull logs from the system, given a specific log-type. Currently, the
+// supported log types are as follows:
+//
+// config, system, traffic, threat, wildfire, url, data.
+//
+// The LogParameters struct lists optional parameters you can use in your query. See the documentation for a full
+// description of options. If you do not wish to use any of the optional parameters, just specify nil. The job ID is
+// returned from the query, and should be passed to RetrieveLogs().
+func (p *PaloAlto) QueryLogs(logtype string, parameters *LogParameters) (int, error) {
+	var id logID
+	req := fmt.Sprintf("%s&key=%s&type=log&log-type=%s", p.URI, p.Key, logtype)
+
+	if parameters != nil {
+		if parameters.Query != "" {
+			req += fmt.Sprintf("&query=%s", parameters.Query)
+		}
+
+		if parameters.NLogs > 0 {
+			req += fmt.Sprintf("&nlogs=%d", parameters.NLogs)
+		}
+
+		if parameters.Direction != "" {
+			req += fmt.Sprintf("&dir=%s", parameters.Direction)
+		}
+
+		if parameters.Skip > 0 {
+			req += fmt.Sprintf("&skip=%d", parameters.Skip)
+		}
+	}
+
+	_, res, errs := r.Get(req).End()
+	if errs != nil {
+		return 0, errs[0]
+	}
+
+	err := xml.Unmarshal([]byte(res), &id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id.ID, nil
+}
+
+// RetrieveLogs will return the log data as specified in the QueryLogs() function, given the job ID. If the job
+// status is not FIN, then you will have to query the job ID until it has finished and then it will return the
+// results.
+func (p *PaloAlto) RetrieveLogs(id int) (*Logs, error) {
+	var logs Logs
+
+	_, res, errs := r.Get(fmt.Sprintf("%s&key=%s&type=log&action=get&job-id=%d", p.URI, p.Key, id)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	err := xml.Unmarshal([]byte(res), &logs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &logs, nil
 }
 
 // XpathConfig allows you to configure the device using an Xpath expression for the given xpath parameter.
