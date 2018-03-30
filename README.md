@@ -116,6 +116,9 @@ optional parameters are defined using the `LogParameters` struct.
 When you run the `QueryLogs()` function, it will return a job ID. This job ID is then used by `RetrieveLogs()` to query the system to see if the job has
 completed, and the data is ready to be exported. If the job status is not `FIN` then you will need to run `RetrieveLogs()` again until it has finished.
 
+> In regards to how long you should wait to run `RetrieveLogs()`, I have tested a query against a lot of data, both on Panorama and a local firewall,
+and waited up to 2 minutes before retrieving them. Most times, you will get results within 5-10 seconds depending on your query.
+
 View the documentation for the [LogParameters][log-parameters-struct] struct.
 
 When iterating over the returned logs, there are many fields you can choose to display. View the documentation for the [Log][log-struct] struct fields for
