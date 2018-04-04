@@ -10,7 +10,7 @@ This API allows you to do the following:
 * View the jobs on a device.
 * Query and retrieve the following log-types: `config`, `system`, `traffic`, `threat`, `wildfire`, `url`, `data`.
 * Create multiple address objects (including static/dynamic groups) at once using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
-* Create, apply, and remove tags from objects.
+* Create, apply, and remove tags from objects and rules.
 * Create EDL's (External Dynamic List).
 * Edit/modify address, service groups and custom-url-categories.
 * Create templates, template stacks and assign devices and templates to them (Panorama).
