@@ -649,6 +649,8 @@ func (p *PaloAlto) RetrieveLogs(id int) (*Logs, error) {
 // If you are renaming an object, specify the new name for the object in the element parameter.
 // If you are deleting a part of the configuration, you do not need the element parameter. For
 // all other actions you will need to provide it.
+//
+// See https://goo.gl/G1vzJT for details regarding all of the actions available.
 func (p *PaloAlto) XpathConfig(action, xpath string, element ...string) error {
 	var reqError requestError
 	var query string
