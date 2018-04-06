@@ -75,7 +75,7 @@ The above actions are used in the following `go-panos` functions:
 
 `XpathConfig()` | `XpathGetConfig()` | `XpathClone()` | `XpathMove()` | `XpathMulti()`
 :---: | :---: | :---: | :---: | :---:
-`set`, `edit`, `delete`, `rename`, `override` | `show`, `get` | `clone` | `move` | `multi-move`, `multi-clone`
+`set`, `edit`, `delete`, `rename`, `override` | `show/get` active or candidate configuration | `clone` | `move` | `multi-move`, `multi-clone`
 
 > *NOTE*: These functions are more suited for "power users," as there is a lot more that you have to know in regards to
 Xpath and XML, as well as knowing how the PANOS XML is structured.
