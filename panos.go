@@ -772,9 +772,9 @@ func (p *PaloAlto) XpathMulti(action, xpath, element string) error {
 		}
 
 		xmlcontents := string(c)
-		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
+		query = fmt.Sprintf("type=config&action=multi-%s&xpath=%s&element=%s&key=%s", action, xpath, xmlcontents, p.Key)
 	} else {
-		query = fmt.Sprintf("type=config&action=multi%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
+		query = fmt.Sprintf("type=config&action=multi-%s&xpath=%s&element=%s&key=%s", action, xpath, element, p.Key)
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(query).End()
