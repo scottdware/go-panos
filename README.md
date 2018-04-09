@@ -191,6 +191,8 @@ For a dynamic address group, `address` must contain the criteria (tags) to match
 
 If you need to create shared objects, you must specify the word `shared` in the device-group column.
 
+> **NOTE:** If you are creating objects on a local firewall, and not Panorama, you can leave the device-group column blank.
+
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/csv.PNG "objects.csv")
