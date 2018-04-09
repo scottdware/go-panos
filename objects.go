@@ -869,19 +869,29 @@ func (p *PaloAlto) DeleteExternalDynamicList(name string, devicegroup ...string)
 	return nil
 }
 
-// Tags returns information about all tags on the system.
-func (p *PaloAlto) Tags() (*Tags, error) {
+// Tags returns information about all tags on the system. You can (optionally) specify a device-group
+// when ran against a Panorama device. If no device-group is specified, then all tags are returned, including
+// shared objects if run against a Panorama device.
+func (p *PaloAlto) Tags(devicegroup ...string) (*Tags, error) {
 	var parsedTags xmlTags
 	var tags Tags
 	var tcolor string
 	xpath := "/config//tag"
 
+	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+	}
+
 	if p.DeviceType == "panos" && p.Panorama == true {
 		xpath = "/config//tag"
 	}
 
-	if p.DeviceType == "panorama" {
-		xpath = "/config//tag"
+	if p.DeviceType == "panos" && p.Panorama == false {
+		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag"
+	}
+
+	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag", devicegroup[0])
 	}
 
 	_, tData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
