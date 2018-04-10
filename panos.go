@@ -14,7 +14,8 @@ import (
 	"github.com/parnurzeal/gorequest"
 )
 
-// PaloAlto is a container for our session state.
+// PaloAlto is a container for our session state. It also holds information about the device
+// that is gathered upon a successful connection to it.
 type PaloAlto struct {
 	Host                       string
 	Key                        string
