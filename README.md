@@ -62,6 +62,18 @@ if err != nil {
 }
 ```
 
+The moment you establish a successful connection to the device, various information and statistics are gathered. They are
+assigned to a field in the [Palo Alto][paloalto-struct] struct (click the link for the list of fields), and can then be iterated over.
+
+```Go
+// View the device's uptime
+fmt.Println(pan.Uptime)
+
+// View the device's application and threat version, as well as when they were released
+fmt.Printf("App Version: %s (Released: %s)\n", pan.AppVersion, pan.AppReleaseDate)
+fmt.Printf("Threat Version: %s (Released: %s)\n", pan.ThreatVersion, pan.ThreatReleaseDate)
+```
+
 ### Configuration Using Xpath
 
 Outside of the built in functions that make working with the configuration simpler, there are also functions that
@@ -246,3 +258,4 @@ is a child of the `Vader` device-group, but needs to have a different IP address
 [pan-xml-api-config]: https://www.paloaltonetworks.com/documentation/80/pan-os/xml-api/pan-os-xml-api-request-types/configuration-api
 [log-parameters-struct]: http://godoc.org/github.com/scottdware/go-panos#LogParameters
 [log-struct]: http://godoc.org/github.com/scottdware/go-panos#Log
+[paloalto-struct]: http://godoc.org/github.com/scottdware/go-panos#PaloAlto
