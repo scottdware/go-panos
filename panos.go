@@ -16,16 +16,40 @@ import (
 
 // PaloAlto is a container for our session state.
 type PaloAlto struct {
-	Host            string
-	Key             string
-	URI             string
-	Platform        string
-	Model           string
-	Serial          string
-	SoftwareVersion string
-	DeviceType      string
-	Panorama        bool
-	Shared          bool
+	Host                       string
+	Key                        string
+	URI                        string
+	Platform                   string
+	Model                      string
+	Serial                     string
+	SoftwareVersion            string
+	DeviceType                 string
+	Panorama                   bool
+	Shared                     bool
+	IPAddress                  string
+	Netmask                    string
+	DefaultGateway             string
+	MACAddress                 string
+	Time                       string
+	Uptime                     string
+	GPClientPackageVersion     string
+	GPDatafileVersion          string
+	GPDatafileReleaseDate      string
+	GPClientlessVPNVersion     string
+	GPClientlessVPNReleaseDate string
+	AppVersion                 string
+	AppReleaseDate             string
+	AntiVirusVersion           string
+	AntiVirusReleaseDate       string
+	ThreatVersion              string
+	ThreatReleaseDate          string
+	WildfireVersion            string
+	WildfireReleaseDate        string
+	URLDB                      string
+	URLFilteringVersion        string
+	LogDBVersion               string
+	MultiVsys                  string
+	OperationalMode            string
 }
 
 // AuthMethod defines how we want to authenticate to the device. If using a
@@ -224,13 +248,37 @@ type authKey struct {
 
 // systemInfo holds basic system information.
 type systemInfo struct {
-	XMLName         xml.Name `xml:"response"`
-	Status          string   `xml:"status,attr"`
-	Code            string   `xml:"code,attr"`
-	Platform        string   `xml:"result>system>platform-family"`
-	Model           string   `xml:"result>system>model"`
-	Serial          string   `xml:"result>system>serial"`
-	SoftwareVersion string   `xml:"result>system>sw-version"`
+	XMLName                    xml.Name `xml:"response"`
+	Status                     string   `xml:"status,attr"`
+	Code                       string   `xml:"code,attr"`
+	Platform                   string   `xml:"result>system>platform-family"`
+	Model                      string   `xml:"result>system>model"`
+	Serial                     string   `xml:"result>system>serial"`
+	SoftwareVersion            string   `xml:"result>system>sw-version"`
+	IPAddress                  string   `xml:"result>system>ip-address"`
+	Netmask                    string   `xml:"result>system>netmask"`
+	DefaultGateway             string   `xml:"result>system>default-gateway"`
+	MACAddress                 string   `xml:"result>system>mac-address"`
+	Time                       string   `xml:"result>system>time"`
+	Uptime                     string   `xml:"result>system>uptime"`
+	GPClientPackageVersion     string   `xml:"result>system>global-protect-client-package-version"`
+	GPDatafileVersion          string   `xml:"result>system>global-protect-datafile-version"`
+	GPDatafileReleaseDate      string   `xml:"result>system>global-protect-datafile-release-date"`
+	GPClientlessVPNVersion     string   `xml:"result>system>global-protect-clientless-vpn-version"`
+	GPClientlessVPNReleaseDate string   `xml:"result>system>global-protect-clientless-vpn-release-date"`
+	AppVersion                 string   `xml:"result>system>app-version"`
+	AppReleaseDate             string   `xml:"result>system>app-release-date"`
+	AntiVirusVersion           string   `xml:"result>system>av-version"`
+	AntiVirusReleaseDate       string   `xml:"result>system>av-release-date"`
+	ThreatVersion              string   `xml:"result>system>threat-version"`
+	ThreatReleaseDate          string   `xml:"result>system>threat-release-date"`
+	WildfireVersion            string   `xml:"result>system>wildfire-version"`
+	WildfireReleaseDate        string   `xml:"result>system>wildfire-release-date"`
+	URLDB                      string   `xml:"result>system>url-db"`
+	URLFilteringVersion        string   `xml:"result>system>url-filtering-version"`
+	LogDBVersion               string   `xml:"result>system>logdb-version"`
+	MultiVsys                  string   `xml:"result>system>multi-vsys"`
+	OperationalMode            string   `xml:"result>system>operational-mode"`
 }
 
 // commandOutput holds the results of our operational mode commands that were issued.
@@ -387,16 +435,40 @@ func NewSession(host string, authmethod *AuthMethod) (*PaloAlto, error) {
 	}
 
 	return &PaloAlto{
-		Host:            host,
-		Key:             key,
-		URI:             fmt.Sprintf("https://%s/api/?", host),
-		Platform:        info.Platform,
-		Model:           info.Model,
-		Serial:          info.Serial,
-		SoftwareVersion: info.SoftwareVersion,
-		DeviceType:      deviceType,
-		Panorama:        status,
-		Shared:          false,
+		Host:                       host,
+		Key:                        key,
+		URI:                        fmt.Sprintf("https://%s/api/?", host),
+		Platform:                   info.Platform,
+		Model:                      info.Model,
+		Serial:                     info.Serial,
+		SoftwareVersion:            info.SoftwareVersion,
+		DeviceType:                 deviceType,
+		Panorama:                   status,
+		Shared:                     false,
+		IPAddress:                  info.IPAddress,
+		Netmask:                    info.Netmask,
+		DefaultGateway:             info.DefaultGateway,
+		MACAddress:                 info.MACAddress,
+		Time:                       strings.Trim(info.Time, "[\r\n]"),
+		Uptime:                     info.Uptime,
+		GPClientPackageVersion:     info.GPClientPackageVersion,
+		GPDatafileVersion:          info.GPDatafileVersion,
+		GPDatafileReleaseDate:      info.GPDatafileReleaseDate,
+		GPClientlessVPNVersion:     info.GPClientlessVPNVersion,
+		GPClientlessVPNReleaseDate: info.GPClientlessVPNReleaseDate,
+		AppVersion:                 info.AppVersion,
+		AppReleaseDate:             info.AppReleaseDate,
+		AntiVirusVersion:           info.AntiVirusVersion,
+		AntiVirusReleaseDate:       info.AntiVirusReleaseDate,
+		ThreatVersion:              info.ThreatVersion,
+		ThreatReleaseDate:          info.ThreatReleaseDate,
+		WildfireVersion:            info.WildfireVersion,
+		WildfireReleaseDate:        info.WildfireReleaseDate,
+		URLDB:                      info.URLDB,
+		URLFilteringVersion:        info.URLFilteringVersion,
+		LogDBVersion:               info.LogDBVersion,
+		MultiVsys:                  info.MultiVsys,
+		OperationalMode:            info.OperationalMode,
 	}, nil
 }
 
