@@ -176,7 +176,7 @@ for _, log := range log.Logs {
 }
 ```
 
-### Creating Address Objects via CSV
+### Creating Objects via CSV
 
 This example shows you how to create multiple address and address group objects using a CSV file. You can also do object overrides
 by creating an object in a parent device-group, then creating the same object in a child device-group. Tagging
