@@ -248,7 +248,7 @@ And here are our address group objects:
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/address-groups.PNG "Vader device-group")
 
 We specified a `web-server` address object in the `Vader` device-group, as well as a `web-server` address object in the `Luke` device-group. This is an example of how you do object overrides. The `Luke` device-group
-is a child of the `Vader` device-group, but needs to have a different IP address assigned to the `web-serve` object. This is visible by the override green/yellow icon next to the `web-server` object name.
+is a child of the `Vader` device-group, but needs to have a different IP address assigned to the `web-server` object. This is visible by the override green/yellow icon next to the `web-server` object name.
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/override.PNG "Vader device-group")
 
