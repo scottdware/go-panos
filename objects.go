@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	easycsv "github.com/scottdware/go-easycsv"
 )
 
 // URLCategory contains a slice of all custom URL category objects.
@@ -2243,6 +2245,209 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 		// }
 
 		// time.Sleep(10 * time.Millisecond)
+	}
+
+	return nil
+}
+
+// CreateObjectsFromCsv takes a CSV file and creates the given address or service objects, and
+// address or service groups defined within. See for more detailed examples.
+//
+//The format of the CSV file must follow this layout:
+//
+// name,type,value,description (optional),tag (optional),device-group
+//
+// For the type column, you can specify: 'ip', 'range', 'fqdn' for address objects, and 'tcp' or 'udp' for service
+// objects. For address group objects, you must specify either 'static' or 'dynamic'. And for service groups,
+// you must specify 'service'. The description and tag columns are optional, so just leave them blank if you do not
+// need them.
+//
+// If you are creating an address group, then the value field must contain the following:
+//
+// For a static address group: list of members to add separated by a space, i.e.: ip-host1 ip-net1 fqdn-example.com
+// For a dynamic address group: the criteria (tags) to match on, i.e.: web-servers or db-servers and linux
+//
+// If you are creating a service group, then the value field must contain a list of service objects to add, separated by a space.
+//
+// If any of the objects you are creating need to be shared objects, then specify the word "shared" in the device-group (last)
+// column.
+func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
+	c, err := easycsv.Open(file)
+	if err != nil {
+		return err
+	}
+
+	for _, line := range c {
+		var tagged bool
+		var description, tag, dg string
+		linelen := len(line)
+		name := line[0]
+		objtype := line[1]
+		value := line[2]
+
+		if linelen > 3 && len(line[3]) > 0 {
+			description = line[3]
+		}
+
+		if linelen > 4 && len(line[4]) > 0 {
+			tag = line[4]
+			tagged = true
+		}
+
+		if linelen > 5 && len(line[5]) > 0 {
+			dg = line[5]
+		}
+
+		switch objtype {
+		case "ip", "range", "fqdn":
+			if len(description) > 0 && len(dg) > 0 {
+				err = p.CreateAddress(name, objtype, value, description, dg)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) == 0 {
+				err = p.CreateAddress(name, objtype, value, "")
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) > 0 && len(dg) == 0 {
+				err = p.CreateAddress(name, objtype, value, description)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) > 0 {
+				err = p.CreateAddress(name, objtype, value, "", dg)
+				if err != nil {
+					return err
+				}
+			}
+		case "tcp", "udp":
+			if len(description) > 0 && len(dg) > 0 {
+				err = p.CreateService(name, objtype, value, description, dg)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) == 0 {
+				err = p.CreateService(name, objtype, value, "")
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) > 0 && len(dg) == 0 {
+				err = p.CreateService(name, objtype, value, description)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) > 0 {
+				err = p.CreateService(name, objtype, value, "", dg)
+				if err != nil {
+					return err
+				}
+			}
+		case "service":
+			groupMembers := strings.Split(value, " ")
+
+			if len(dg) > 0 {
+				err = p.CreateServiceGroup(name, groupMembers, dg)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(dg) == 0 {
+				err = p.CreateServiceGroup(name, groupMembers)
+				if err != nil {
+					return err
+				}
+			}
+		case "static":
+			groupMembers := strings.Split(value, " ")
+
+			if len(description) > 0 && len(dg) > 0 {
+				err = p.CreateAddressGroup(name, "static", groupMembers, description, dg)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) == 0 {
+				err = p.CreateAddressGroup(name, "static", groupMembers, "")
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) > 0 && len(dg) == 0 {
+				err = p.CreateAddressGroup(name, "static", groupMembers, description)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) > 0 {
+				err = p.CreateAddressGroup(name, "static", groupMembers, "", dg)
+				if err != nil {
+					return err
+				}
+			}
+		case "dynamic":
+			criteria := fmt.Sprintf("%s", value)
+
+			if len(description) > 0 && len(dg) > 0 {
+				err = p.CreateAddressGroup(name, "dynamic", criteria, description, dg)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) == 0 {
+				err = p.CreateAddressGroup(name, "dynamic", criteria, "")
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) > 0 && len(dg) == 0 {
+				err = p.CreateAddressGroup(name, "dynamic", criteria, description)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(description) == 0 && len(dg) > 0 {
+				err = p.CreateAddressGroup(name, "dynamic", criteria, "", dg)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		if tagged && dg != "" {
+			err = p.TagObject(tag, name, dg)
+			if err != nil {
+				return err
+			}
+		}
+
+		if tagged && dg == "" {
+			err = p.TagObject(tag, name)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
