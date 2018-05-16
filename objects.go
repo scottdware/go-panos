@@ -2251,7 +2251,8 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 }
 
 // CreateObjectsFromCsv takes a CSV file and creates the given address or service objects, and
-// address or service groups defined within. See for more detailed examples.
+// address or service groups defined within. See https://github.com/scottdware/go-panos#creating-objects-from-a-csv-file
+// for more detailed examples.
 //
 //The format of the CSV file must follow this layout:
 //
