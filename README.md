@@ -227,6 +227,7 @@ If you need to create shared objects, you must specify the word `shared` in the 
 
 ##### Example
 *__Address Object Creation__*
+
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/csv.PNG "objects.csv")
