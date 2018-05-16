@@ -9,7 +9,7 @@ This API allows you to do the following:
 * Create, rename, and delete objects.
 * View the jobs on a device.
 * Query and retrieve the following log-types: `config`, `system`, `traffic`, `threat`, `wildfire`, `url`, `data`.
-* Create multiple address objects (including static/dynamic groups) at once using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
+* Create multiple objects (address, service, static/dynamic groups, service groups) at once using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
 * Create, apply, and remove tags from objects and rules.
 * Create EDL's (External Dynamic List).
 * Edit/modify address, service groups and custom-url-categories.
@@ -176,35 +176,57 @@ for _, log := range log.Logs {
 }
 ```
 
-### Creating Objects via CSV
+### Creating Objects from a CSV File
 
-This example shows you how to create multiple address and address group objects using a CSV file. You can also do object overrides
-by creating an object in a parent device-group, then creating the same object in a child device-group. Tagging
-objects upon creation is supported as well.
+This example shows you how to create multiple address and service objects, as well as address and service groups using a CSV file. You can also do object overrides by creating an object in a parent device-group, then creating the same object in a child device-group with a different value. Tagging objects upon creation is supported as well.
 
 The CSV file should be organized with the following columns:
 
-`name, type, address, description (optional), tag (optional), device-group`.
+`name,type,value,description (optional),tag (optional),device-group`.
 
-> **NOTE:** If you are tagging an object upon creation, please make sure that the tags exist prior to creating the objects.
+> **IMPORTANT:** Here are a few things to note when creating objects:
+> * For the name of the object, it cannot be longer than 63 characters, and must only include letters, numbers, spaces, hyphens, and underscores.
+> * If you are tagging an object upon creation, please make sure that the tags exist prior to creating the objects.
+> * When creating service groups, you DO NOT need to specify a description, as they do not have that capability.
+> * When you create address or service groups, I would place them at the bottom of the CSV file, that way you don't risk adding a member that doesn't exist.
+> * When creating objects on a local firewall, and not Panorama, you can leave the device-group column blank.
 
-> **NOTE:** If you are creating address groups, I would recommend placing them at the bottom of the CSV file, that way you don't risk adding a member that doesn't exist.
+##### Creating Address Objects
+When specifying address objects for creation, the `type` field must be one of:
 
-If you are creating address objects, the `type` field can be one of: `ip`, `range`, or `fqdn`. When creating address groups, the `type` field
-must be either `static` or `dynamic`. The `address` field differs for either of those options as well.
+`ip`, `range`, or `fqdn`
 
-For a static address group, `address` must contain a list of members to add to the group, separated by a space, i.e.:
+The `value` field must contain either the IP address, FQDN, or the IP range.
+
+When creating address groups, the `type` field must be either `static` or `dynamic`. The `value` field differs for either of those options as well.
+
+For a static address group, `value` must contain a list of members to add to the group, separated by a space, i.e.:
 
 `ip-host1 ip-net1 fqdn-example.com`
 
-For a dynamic address group, `address` must contain the criteria (tags) to match on, i.e.:
+For a dynamic address group, `value` must contain the criteria (tags) to match on, i.e.:
 
 `web-servers or db-servers and linux`
 
 If you need to create shared objects, you must specify the word `shared` in the device-group column.
 
-> **NOTE:** If you are creating objects on a local firewall, and not Panorama, you can leave the device-group column blank.
+##### Creating Service Objects
+When specifying service objects for creation, the `type` field must be one of:
 
+`tcp` or `udp`
+
+The `value` field must contain a single port number, a range (1023-3000), or a comma-separated list, i.e.:
+
+`80, 443, 2000`
+
+When creating service groups, the `type` field must be `service`. The `value` field must contain a list of service objects to add to the group, separated by a space, i.e.:
+
+`tcp_8080 udp_666 tcp_9000`
+
+If you need to create shared objects, you must specify the word `shared` in the device-group column.
+
+##### Example
+*__Address Object Creation__*
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/csv.PNG "objects.csv")
