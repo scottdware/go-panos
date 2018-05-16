@@ -226,7 +226,7 @@ When creating service groups, the `type` field must be `service`. The `value` fi
 If you need to create shared objects, you must specify the word `shared` in the device-group column.
 
 ##### Example
-*__Address Object Creation__*
+*__Address Object Creation on Panorama__*
 
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
 
