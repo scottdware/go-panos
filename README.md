@@ -20,6 +20,7 @@ This API allows you to do the following:
 
 The following features are currently available only on the local firewall:
 
+* View the entire routing table and it's entries.
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
 * Add and remove interfaces to zones, vlans and virtual-routers.
 * List all configured IPSec VPN tunnels.
