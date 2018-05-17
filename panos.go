@@ -334,8 +334,8 @@ type logID struct {
 	ID      int      `xml:"result>job"`
 }
 
-// testRoute contains the results of the operational command test routing fib-lookup.
-type testRoute struct {
+// routeLookupResults contains the results of testing a route lookup.
+type routeLookupResults struct {
 	XMLName   xml.Name `xml:"response"`
 	Status    string   `xml:"status,attr"`
 	Code      string   `xml:"code,attr"`
@@ -344,6 +344,17 @@ type testRoute struct {
 	IP        string   `xml:"result>ip"`
 	Metric    int      `xml:"result>metric"`
 	Interface string   `xml:"result>interface"`
+	DataPlane string   `xml:"result>dp"`
+}
+
+// RouteLookup contains the results of the operational command: test routing fib-lookup <ip> <virtual-router>.
+type RouteLookup struct {
+	NextHop   string
+	Source    string
+	IP        string
+	Metric    int
+	Interface string
+	DataPlane string
 }
 
 var (
@@ -610,31 +621,36 @@ func (p *PaloAlto) TestURL(url string) ([]string, error) {
 	return results, nil
 }
 
-// TestRouteLookup will lookup the given destination IP in the virtual-router "vr" and check the routing (fib) table and display the results.
-func (p *PaloAlto) TestRouteLookup(vr, destination string) (string, error) {
-	var routeLookup testRoute
+// TestRouteLookup will lookup the given destination IP in the virtual-router "vr" and return the results.
+func (p *PaloAlto) TestRouteLookup(vr, destination string) (*RouteLookup, error) {
+	var testRouteLookup routeLookupResults
 	command := fmt.Sprintf("<test><routing><fib-lookup><virtual-router>%s</virtual-router><ip>%s</ip></fib-lookup></routing></test>", vr, destination)
 
 	if p.DeviceType == "panorama" {
-		return "", errors.New("you can only test route lookups from a local device")
+		return nil, errors.New("you can only test route lookups from a local device")
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
 	if errs != nil {
-		return "", errs[0]
+		return nil, errs[0]
 	}
 
-	if err := xml.Unmarshal([]byte(resp), &routeLookup); err != nil {
-		return "", err
+	if err := xml.Unmarshal([]byte(resp), &testRouteLookup); err != nil {
+		return nil, err
 	}
 
-	if routeLookup.Status != "success" {
-		return "", fmt.Errorf("error code %s: %s", routeLookup.Code, errorCodes[routeLookup.Code])
+	if testRouteLookup.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", testRouteLookup.Code, errorCodes[testRouteLookup.Code])
 	}
 
-	result := fmt.Sprintf("Destination %s via %s interface %s, source %s, metric %d (%s)\n", destination, routeLookup.IP, routeLookup.Interface, routeLookup.Source, routeLookup.Metric, vr)
-
-	return result, nil
+	return &RouteLookup{
+		NextHop:   testRouteLookup.NextHop,
+		Source:    testRouteLookup.Source,
+		IP:        testRouteLookup.IP,
+		Metric:    testRouteLookup.Metric,
+		Interface: testRouteLookup.Interface,
+		DataPlane: testRouteLookup.DataPlane,
+	}, nil
 }
 
 // Jobs returns information about every job on the device. Status can be one of: all, pending, or processed. If you want
