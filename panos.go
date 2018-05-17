@@ -239,6 +239,26 @@ type LogParameters struct {
 	Action string
 }
 
+// RoutingTable contains all of the routes in the devices routing table.
+type RoutingTable struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	Flags   string   `xml:"result>flags"`
+	Routes  []Route  `xml:"result>entry"`
+}
+
+// Route contains information about each individual route in the devices routing table.
+type Route struct {
+	VirtualRouter string `xml:"virtual-router"`
+	Destination   string `xml:"destination"`
+	NextHop       string `xml:"nexthop"`
+	Metric        int    `xml:"metric"`
+	Flags         string `xml:"flags"`
+	Age           int64  `xml:"age"`
+	Interface     string `xml:"interface"`
+}
+
 // authKey holds our API key.
 type authKey struct {
 	XMLName xml.Name `xml:"response"`
@@ -912,4 +932,34 @@ func (p *PaloAlto) Command(command string) (string, error) {
 	}
 
 	return output.Data, nil
+}
+
+// Routes will retrieve information about each route in the devices routing table(s). You can optionally specify
+// a specific virtual router to retrieve routes from.
+func (p *PaloAlto) Routes(vr ...string) (*RoutingTable, error) {
+	var rt RoutingTable
+	query := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><routing><route></route></routing></show>", p.URI, p.Key)
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("you can only retrieve the routing table on a local firewall")
+	}
+
+	if len(vr) > 0 {
+		query = fmt.Sprintf("%s&key=%s&type=op&cmd=<show><routing><route><virtual-router>%s</virtual-router></route></routing></show>", p.URI, p.Key, vr[0])
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &rt); err != nil {
+		return nil, err
+	}
+
+	if rt.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", rt.Code, errorCodes[rt.Code])
+	}
+
+	return &rt, nil
 }
