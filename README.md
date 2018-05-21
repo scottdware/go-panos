@@ -10,6 +10,7 @@ This API allows you to do the following:
 * View the jobs on a device.
 * Query and retrieve the following log-types: `config`, `system`, `traffic`, `threat`, `wildfire`, `url`, `data`.
 * Create multiple objects (address, service, static/dynamic groups, service groups) at once using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
+* Modify address and service groups using a CSV file.
 * Create, apply, and remove tags from objects and rules.
 * Create EDL's (External Dynamic List).
 * Edit/modify address, service groups and custom-url-categories.
@@ -195,11 +196,11 @@ The CSV file should be organized with the following columns:
 ##### Creating Address Objects
 When specifying address objects for creation, the `type` field must be one of:
 
-`ip`, `range`, or `fqdn`
+**ip**, **range**, or **fqdn**
 
 The `value` field must contain either the IP address, FQDN, or the IP range.
 
-When creating address groups, the `type` field must be either `static` or `dynamic`. The `value` field differs for either of those options as well.
+When creating address groups, the `type` field must be either **static** or **dynamic**. The `value` field differs for either of those options as well.
 
 For a static address group, `value` must contain a list of members to add to the group, separated by a space, i.e.:
 
@@ -209,22 +210,22 @@ For a dynamic address group, `value` must contain the criteria (tags) to match o
 
 `web-servers or db-servers and linux`
 
-If you need to create shared objects, you must specify the word `shared` in the device-group column.
+If you need to create shared objects, you must specify the word **shared** in the `device-group` (last) column.
 
 ##### Creating Service Objects
 When specifying service objects for creation, the `type` field must be one of:
 
-`tcp` or `udp`
+**tcp** or **udp**
 
 The `value` field must contain a single port number, a range (1023-3000), or a comma-separated list, i.e.:
 
 `80, 443, 2000`
 
-When creating service groups, the `type` field must be `service`. The `value` field must contain a list of service objects to add to the group, separated by a space, i.e.:
+When creating service groups, the `type` field must be **service**. The `value` field must contain a list of service objects to add to the group, separated by a space, i.e.:
 
 `tcp_8080 udp_666 tcp_9000`
 
-If you need to create shared objects, you must specify the word `shared` in the device-group column.
+If you need to create shared objects, you must specify the word **shared** in the `device-group` (last) column.
 
 ##### Example
 *__Address Object Creation on Panorama__*
@@ -232,20 +233,6 @@ If you need to create shared objects, you must specify the word `shared` in the 
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/csv.PNG "objects.csv")
-
-<!-- ```
-web-server,ip,10.255.255.1,,,Vader
-file-server-shared,ip,1.1.1.1,,,shared
-server-net-shared,ip,2.2.2.0/24,,,shared
-vm-host,fqdn,server.company.com,,jedi,Vader
-pc-net-range-shared,range,1.1.1.10-1.1.1.20,,,shared
-db-server,ip,10.1.1.1,,,Vader
-web-server,ip,5.5.5.5,,,Luke
-server-network,ip,3.3.3.0/24,,,Vader
-internet-access-group,static,web-server vm-host,,,Vader
-block-bad-hosts,dynamic,bad-host or bad-site,,,Vader
-data-centers,static,file-server-shared server-net-shared pc-net-range-shared,,,shared
-``` -->
 
 Running the below code against a Panorama device will create the objects above.
 
@@ -276,6 +263,52 @@ is a child of the `Vader` device-group, but needs to have a different IP address
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/override.PNG "Vader device-group")
 
+### Modifying Object Groups from a CSV File
+
+This example shows you how to modify address and service group objects using a CSV file.
+
+The CSV file should be organized with the following columns:
+
+`grouptype,action,object-name,group-name,device-group`.
+
+For the `grouptype` column, you must specify **address** or **service**. `action` must be either **add** or **remove**.
+
+If you are modifying groups on a Panorama device, specify the name of the device-group in the last column in the CSV file.
+
+##### Example
+*__Group Modification on a Local Firewall__*
+
+Let's assume we have a CSV file called `modify.csv` that looks like the following:
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/modify_csv.PNG "modify.csv")
+
+Running the below code against a firewall will modify the groups either adding or removing objects that you specified.
+
+```Go
+// Connect to Panorama
+creds := &panos.AuthMethod{
+    Credentials: []string{"admin", "password"},
+}
+
+pan, err := panos.NewSession("firewall.company.com", creds)
+if err != nil {
+    fmt.Println(err)
+}
+
+pan.ModifyGroupsFromCsv("modify.csv")
+```
+
+Here is what the address group `home_lab_group` looks like before and after running the above script.
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/address_group.PNG "Address group prior to change")
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/modified_address_group.PNG "Address group after change")
+
+Here is what the service group `tcp_services` looks like before and after running the above script.
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/service_group.PNG "Service group prior to change")
+
+![alt-text](https://raw.githubusercontent.com/scottdware/images/master/modified_service_group.PNG "Service group after change")
 
 [godoc-go-panos]: http://godoc.org/github.com/scottdware/go-panos
 [license]: https://github.com/scottdware/go-panos/blob/master/LICENSE
