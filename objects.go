@@ -2254,7 +2254,7 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 // address or service groups defined within. See https://github.com/scottdware/go-panos#creating-objects-from-a-csv-file
 // for more detailed examples.
 //
-//The format of the CSV file must follow this layout:
+// The format of the CSV file must follow this layout:
 //
 // name,type,value,description (optional),tag (optional),device-group
 //
@@ -2449,6 +2449,72 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+// ModifyGroupsFromCsv takes a CSV file and modifies the given address or service groups with the
+// specified action. See https://github.com/scottdware/go-panos#modifying-object-groups-from-a-csv-file
+// for more detailed examples.
+//
+// The format of the CSV file must follow this layout:
+//
+// grouptype,action,object-name,group-name,device-group
+//
+// For the grouptype column, you must specify 'address' or 'service'. Action must be either 'add' or 'remove'.
+//
+// If modifying groups on a Panorama device, specify the device-group column in the CSV file.
+func (p *PaloAlto) ModifyGroupsFromCsv(file string) error {
+	c, err := easycsv.Open(file)
+	if err != nil {
+		return err
+	}
+
+	for _, line := range c {
+		var dg string
+		linelen := len(line)
+		grouptype := line[0]
+		action := line[1]
+		object := line[2]
+		group := line[3]
+
+		if linelen > 4 && len(line[4]) > 0 {
+			dg = line[4]
+		}
+
+		switch grouptype {
+		case "address":
+			if len(dg) == 0 {
+				err = p.EditGroup("address", action, object, group)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(dg) > 0 {
+				err = p.EditGroup("address", action, object, group, dg)
+				if err != nil {
+					return err
+				}
+			}
+		case "service":
+			if len(dg) == 0 {
+				err = p.EditGroup("service", action, object, group)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(dg) > 0 {
+				err = p.EditGroup("service", action, object, group, dg)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	return nil
