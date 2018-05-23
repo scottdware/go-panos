@@ -11,17 +11,19 @@ A Go package that interacts with Palo Alto devices using their XML API. For offi
 * [Creating objects from a CSV file](https://github.com/scottdware/go-panos#creating-objects-from-a-csv-file)
 * [Modifying groups from a CSV file](https://github.com/scottdware/go-panos#modifying-object-groups-from-a-csv-file)
 
+---
+
 This API allows you to do the following:
 
-* List various types of objects: address, service, custom-url-category, device-groups, policies, tags, templates, log forwarding profiles, security profile groups, managed devices (Panorama), etc..
+* List objects on devices: address, service, custom-url-category, device-groups (Panorama), policies, tags, templates, log forwarding profiles, security profile groups, managed devices (Panorama), etc..
 * Create, rename, and delete objects.
-* View the jobs on a device.
+* View jobs on a device.
 * Query and retrieve the following log-types: `config`, `system`, `traffic`, `threat`, `wildfire`, `url`, `data`.
-* Create multiple objects (address, service, static/dynamic groups, service groups) at once using a CSV file. You can also specify different device-groups you want the object to be created under, as well as tag them.
+* Create multiple objects at once from a CSV file. You can also specify different device-groups you want the object to be created under (object overrides), as well as tag them.
 * Modify address and service groups using a CSV file.
 * Create, apply, and remove tags from objects and rules.
 * Create EDL's (External Dynamic List).
-* Edit/modify address, service groups and custom-url-categories.
+* Add/remove objects from address/service groups and custom-url-categories.
 * Create templates, template stacks and assign devices and templates to them (Panorama).
 * Commit configurations and commit to device-groups (Panorama).
 * Apply a log forwarding or security profile to an entire policy or individual rules.
@@ -29,7 +31,7 @@ This API allows you to do the following:
 
 The following features are currently available only on the local firewall:
 
-* View the entire routing table and it's entries.
+* View the entire routing table and details about each route.
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
 * Add and remove interfaces to zones, vlans and virtual-routers.
 * List all configured IPSec VPN tunnels.
@@ -99,7 +101,7 @@ The above actions are used in the following `go-panos` functions:
 :---: | :---: | :---: | :---: | :---:
 `set`, `edit`, `delete`, `rename`, `override` | `show/get` active or candidate configuration | `clone` | `move` | `multi-move`, `multi-clone`
 
-> *NOTE*: These functions are more suited for "power users," as there is a lot more that you have to know in regards to
+> **_<span style="color:red">NOTE</span>_**: These functions are more suited for "power users," as there is a lot more that you have to know in regards to
 Xpath and XML, as well as knowing how the PANOS XML is structured.
 
 ### Handling Shared objects on Panorama
@@ -138,7 +140,7 @@ optional parameters are defined using the `LogParameters` struct.
 When you run the `QueryLogs()` function, it will return a job ID. This job ID is then used by `RetrieveLogs()` to query the system to see if the job has
 completed, and the data is ready to be exported. If the job status is not `FIN` then you will need to run `RetrieveLogs()` again until it has finished.
 
-> In regards to how long you should wait to run `RetrieveLogs()`, I have tested a query against a lot of data, both on Panorama and a local firewall,
+> **_<span style="color:red">NOTE</span>_**: In regards to how long you should wait to run `RetrieveLogs()`, I have tested a query against a lot of data, both on Panorama and a local firewall,
 and waited up to 2 minutes before retrieving them. Most times, you will get results within 5-10 seconds depending on your query.
 
 View the documentation for the [LogParameters][log-parameters-struct] struct.
@@ -194,7 +196,7 @@ The CSV file should be organized with the following columns:
 
 `name,type,value,description (optional),tag (optional),device-group`.
 
-> **IMPORTANT:** Here are a few things to note when creating objects:
+> **_<span style="color:red">NOTE</span>_**: Here are a few things to keep in mind when creating objects:
 > * For the name of the object, it cannot be longer than 63 characters, and must only include letters, numbers, spaces, hyphens, and underscores.
 > * If you are tagging an object upon creation, please make sure that the tags exist prior to creating the objects.
 > * When creating service groups, you DO NOT need to specify a description, as they do not have that capability.
@@ -202,36 +204,58 @@ The CSV file should be organized with the following columns:
 > * When creating objects on a local firewall, and not Panorama, you can leave the device-group column blank.
 
 ##### Creating Address Objects
-When specifying address objects for creation, the `type` field must be one of:
+When creating address objects:
 
-**ip**, **range**, or **fqdn**
+Column | Description
+:--- | :---
+`name` | Name of the object you wish to create.
+`type` | **ip**, **range**, or **fqdn**
+`value` | Must contain the IP address, FQDN, or IP range of the object.
+`description` | (Optional) A description of the object.
+`tag` | (Optional) Name of a pre-existing tag on the device to apply.
+`device-group` | Name of the device-group, or **shared** if creating a shared object.
 
-The `value` field must contain either the IP address, FQDN, or the IP range.
+When creating address groups:
 
-When creating address groups, the `type` field must be either **static** or **dynamic**. The `value` field differs for either of those options as well.
+Column | Description
+:--- | :---
+`name` | Name of the address group you wish to create.
+`type` | **static** or **dynamic**
+`value` | * See below explanation
+`description` | (Optional) A description of the object.
+`tag` | (Optional) Name of a pre-existing tag on the device to apply.
+`device-group` | Name of the device-group, or **shared** if creating a shared object.
 
-For a static address group, `value` must contain a list of members to add to the group, separated by a space, i.e.:
+For a **_static_** address group, `value` must contain a list of members to add to the group, separated by a space, i.e.:
 
 `ip-host1 ip-net1 fqdn-example.com`
 
-For a dynamic address group, `value` must contain the criteria (tags) to match on, i.e.:
+For a **_dynamic_** address group, `value` must contain the criteria (tags) to match on, i.e.:
 
 `web-servers or db-servers and linux`
 
-If you need to create shared objects, you must specify the word **shared** in the `device-group` (last) column.
-
 ##### Creating Service Objects
-When specifying service objects for creation, the `type` field must be one of:
+When creating service objects:
 
-**tcp** or **udp**
+Column | Description
+:--- | :---
+`name` | Name of the object you wish to create.
+`type` | **tcp** or **udp**
+`value` | Must contain a single port number, a range (1023-3000), or a comma-separated list, i.e.: `80, 443, 2000`.
+`description` | (Optional) A description of the object.
+`tag` | (Optional) Name of a pre-existing tag on the device to apply.
+`device-group` | Name of the device-group, or **shared** if creating a shared object.
 
-The `value` field must contain a single port number, a range (1023-3000), or a comma-separated list, i.e.:
+When creating service groups:
 
-`80, 443, 2000`
-
-When creating service groups, the `type` field must be **service**. The `value` field must contain a list of service objects to add to the group, separated by a space, i.e.:
-
-`tcp_8080 udp_666 tcp_9000`
+Column | Description
+:--- | :---
+`name` | Name of the object you wish to create.
+`type` | **service**
+`value` | Must contain a list of service objects to add to the group, separated by a space, i.e.: `tcp_8080 udp_666 tcp_range`.
+`description` | Not available on service groups.
+`tag` | (Optional) Name of a pre-existing tag on the device to apply.
+`device-group` | Name of the device-group, or **shared** if creating a shared object.
 
 If you need to create shared objects, you must specify the word **shared** in the `device-group` (last) column.
 
@@ -279,9 +303,13 @@ The CSV file should be organized with the following columns:
 
 `grouptype,action,object-name,group-name,device-group`.
 
-For the `grouptype` column, you must specify **address** or **service**. `action` must be either **add** or **remove**.
-
-If you are modifying groups on a Panorama device, specify the name of the device-group in the last column in the CSV file.
+Column | Description
+:--- | :---
+`grouptype` | **address** or **service**
+`action` | **add** or **remove**
+`object-name` | Name of the object to add or remove from group.
+`group-name` | Name of the group to modify.
+`device-group` | Name of the device-group, or **shared** if creating a shared object.
 
 ##### Example
 *__Group Modification on a Local Firewall__*
