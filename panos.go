@@ -525,8 +525,9 @@ func (p *PaloAlto) Commit() error {
 	return nil
 }
 
-// CommitAll issues a commit to a Panorama device, with the given devicegroup. You can (optionally) specify
-// individual devices within that device group by adding each serial number as an additional parameter.
+// CommitAll issues a commit to a Panorama device, for the given devicegroup. If you wish to push to specific
+// firewalls within the specified device group only, add each firewalls serial number as an additional parameter,
+// i.e.: CommitAll("Some-DeviceGroup", "000000000001", "000000000002")
 func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 	var reqError requestError
 	var cmd string
@@ -536,13 +537,13 @@ func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 	}
 
 	if p.DeviceType == "panorama" && len(devices) > 0 {
-		cmd = fmt.Sprintf("<commit-all><shared-policy><device-group><name>%s</name><devices>", devicegroup)
+		cmd = fmt.Sprintf("<commit-all><shared-policy><device-group><entry name=\"%s\"/>><devices>", devicegroup)
 
 		for _, d := range devices {
 			cmd += fmt.Sprintf("<entry name=\"%s\"/>", d)
 		}
 
-		cmd += "</devices></device-group></shared-policy></commit-all>"
+		cmd += "</devices></entry></device-group></shared-policy></commit-all>"
 	}
 
 	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=commit&action=all&cmd=%s&key=%s", cmd, p.Key)).End()
