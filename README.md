@@ -39,7 +39,7 @@ The following features are currently available only on the local firewall:
 * Test URL's to see what they are being categorized under.
 * Test route lookup.
 
-### Installation
+## Installation
 
 `go get -u github.com/scottdware/go-panos`
 
@@ -47,7 +47,7 @@ The following features are currently available only on the local firewall:
 
 `import "github.com/scottdware/go-panos"`
 
-### Establishing A Session
+## Establishing A Session
 
 There are two ways you can authenticate to a device: username and password, or using the API key. Here is an
 example of both methods.
@@ -86,7 +86,7 @@ fmt.Printf("App Version: %s (Released: %s)\n", pan.AppVersion, pan.AppReleaseDat
 fmt.Printf("Threat Version: %s (Released: %s)\n", pan.ThreatVersion, pan.ThreatReleaseDate)
 ```
 
-### Configuration Using Xpath
+## Configuration Using Xpath
 
 Outside of the built in functions that make working with the configuration simpler, there are also functions that
 allow you to modify any part of the configuration using Xpath. The following configuration actions are supported:
@@ -104,7 +104,7 @@ The above actions are used in the following `go-panos` functions:
 > **_<span style="color:red">NOTE</span>_**: These functions are more suited for "power users," as there is a lot more that you have to know in regards to
 Xpath and XML, as well as knowing how the PANOS XML is structured.
 
-### Handling Shared objects on Panorama
+## Handling Shared objects on Panorama
 
 By default, when you establish a session to a Panorama server, all object creation will be in the 
 device-group you specify. If you want to create them as shared, you need to first tell your session
@@ -131,7 +131,7 @@ pan.CreateAddress("test-ipv4-obj", "ip", "1.1.1.2/32", "A test object")
 pan.SetShared(false)
 ```
 
-### Retrieving Logs
+## Retrieving Logs
 
 You can retrieve logs from any Palo Alto device using the `QueryLogs()` and `RetrieveLogs()` functions. The `QueryLogs()` function is used to first
 specify what type of log you want to retrieve, as well as any optional parameters such as a query: `(addr.src in 10.1.1.1) and (port.dst eq 443)`. These
@@ -188,7 +188,7 @@ for _, log := range log.Logs {
 }
 ```
 
-### Creating Objects from a CSV File
+## Creating Objects from a CSV File
 
 This example shows you how to create multiple address and service objects, as well as address and service groups using a CSV file. You can also do object overrides by creating an object in a parent device-group, then creating the same object in a child device-group with a different value. Tagging objects upon creation is supported as well.
 
@@ -203,7 +203,7 @@ The CSV file should be organized with the following columns:
 > * When you create address or service groups, I would place them at the bottom of the CSV file, that way you don't risk adding a member that doesn't exist.
 > * When creating objects on a local firewall, and not Panorama, you can leave the device-group column blank.
 
-##### Creating Address Objects
+#### Creating Address Objects
 When creating address objects:
 
 Column | Description
@@ -234,7 +234,7 @@ For a **_dynamic_** address group, `value` must contain the criteria (tags) to m
 
 `web-servers or db-servers and linux`
 
-##### Creating Service Objects
+#### Creating Service Objects
 When creating service objects:
 
 Column | Description
@@ -261,7 +261,7 @@ Column | Description
 
 * `value` must contain a list of service objects to add to the group, separated by a space, i.e.: `tcp_8080 udp_666 tcp_range`.
 
-##### Example
+#### Example
 *__Address Object Creation on Panorama__*
 
 Let's assume we have a CSV file called `objects.csv` that looks like the following:
@@ -297,7 +297,7 @@ is a child of the `Vader` device-group, but needs to have a different IP address
 
 ![alt-text](https://raw.githubusercontent.com/scottdware/images/master/override.PNG "Vader device-group")
 
-### Modifying Object Groups from a CSV File
+## Modifying Object Groups from a CSV File
 
 This example shows you how to modify address and service group objects using a CSV file.
 
@@ -313,7 +313,7 @@ Column | Description
 `group-name` | Name of the group to modify.
 `device-group` | Name of the device-group, or **shared** if creating a shared object.
 
-##### Example
+#### Example
 *__Group Modification on a Local Firewall__*
 
 Let's assume we have a CSV file called `modify.csv` that looks like the following:
