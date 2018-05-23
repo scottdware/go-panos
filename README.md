@@ -241,10 +241,12 @@ Column | Description
 :--- | :---
 `name` | Name of the object you wish to create.
 `type` | **tcp** or **udp**
-`value` | Must contain a single port number, a range (1023-3000), or a comma-separated list, i.e.: `80, 443, 2000`.
+`value` | * See below
 `description` | (Optional) A description of the object.
 `tag` | (Optional) Name of a pre-existing tag on the device to apply.
 `device-group` | Name of the device-group, or **shared** if creating a shared object.
+
+* `value` must contain a single port number, range (1023-3000), or comma-separated list of ports, i.e.: `80, 443, 2000`.
 
 When creating service groups:
 
@@ -252,12 +254,12 @@ Column | Description
 :--- | :---
 `name` | Name of the object you wish to create.
 `type` | **service**
-`value` | Must contain a list of service objects to add to the group, separated by a space, i.e.: `tcp_8080 udp_666 tcp_range`.
+`value` | * See below
 `description` | Not available on service groups.
 `tag` | (Optional) Name of a pre-existing tag on the device to apply.
 `device-group` | Name of the device-group, or **shared** if creating a shared object.
 
-If you need to create shared objects, you must specify the word **shared** in the `device-group` (last) column.
+* `value` must contain a list of service objects to add to the group, separated by a space, i.e.: `tcp_8080 udp_666 tcp_range`.
 
 ##### Example
 *__Address Object Creation on Panorama__*
