@@ -1,7 +1,15 @@
 ## go-panos
 [![GoDoc](https://godoc.org/github.com/scottdware/go-panos?status.svg)](https://godoc.org/github.com/scottdware/go-panos) [![Travis-CI](https://travis-ci.org/scottdware/go-panos.svg?branch=master)](https://travis-ci.org/scottdware/go-panos) [![Go Report Card](https://goreportcard.com/badge/github.com/scottdware/go-panos)](https://goreportcard.com/report/github.com/scottdware/go-panos)
 
-A Go package that interacts with Palo Alto devices using their XML API. For official package documentation, please visit the [Godoc][godoc-go-panos] page.
+A Go package that interacts with Palo Alto devices using their XML API. For official and detailed package documentation, please visit the [Godoc][godoc-go-panos] page.
+
+* [Installation](https://github.com/scottdware/go-panos#installation)
+* [Establishing a session](https://github.com/scottdware/go-panos#establishing-a-session)
+* [Configuring devices using Xpath](https://github.com/scottdware/go-panos#configuration-using-xpath)
+* [Handling shared objects on Panorama](https://github.com/scottdware/go-panos#handling-shared-objects-on-panorama)
+* [Retrieving logs](https://github.com/scottdware/go-panos#retrieving-logs)
+* [Creating objects from a CSV file](https://github.com/scottdware/go-panos#creating-objects-from-a-csv-file)
+* [Modifying groups from a CSV file](https://github.com/scottdware/go-panos#modifying-object-groups-from-a-csv-file)
 
 This API allows you to do the following:
 
@@ -33,7 +41,7 @@ The following features are currently available only on the local firewall:
 
 `go get -u github.com/scottdware/go-panos`
 
-### Usage
+##### Usage
 
 `import "github.com/scottdware/go-panos"`
 
