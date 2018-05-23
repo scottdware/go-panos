@@ -18,10 +18,10 @@ type Devices struct {
 
 // DeviceGroups lists all of the device-group's in Panorama.
 type DeviceGroups struct {
-	XMLName xml.Name      `xml:"response"`
-	Status  string        `xml:"status,attr"`
-	Code    string        `xml:"code,attr"`
-	Groups  []DeviceGroup `xml:"result>device-group>entry"`
+	XMLName     xml.Name      `xml:"response"`
+	Status      string        `xml:"status,attr"`
+	Code        string        `xml:"code,attr"`
+	DeviceGroup []DeviceGroup `xml:"result>devicegroups>entry"`
 }
 
 // DeviceGroup contains information about each individual device-group.
@@ -108,16 +108,23 @@ func (p *PaloAlto) Devices() (*Devices, error) {
 }
 
 // DeviceGroups returns information about all of the device-groups in Panorama, and what devices are
-// linked to them.
-func (p *PaloAlto) DeviceGroups() (*DeviceGroups, error) {
+// linked to them, along with their information. You can optionally specify a specific device-group
+// if you wish.
+func (p *PaloAlto) DeviceGroups(devicegroup ...string) (*DeviceGroups, error) {
 	var devices DeviceGroups
-	xpath := "/config/devices/entry//device-group"
+	// xpath := "/config/devices/entry//device-group"
+	command := "<show><devicegroups></devicegroups></show>"
 
 	if p.DeviceType != "panorama" {
 		return nil, errors.New("device-groups can only be listed from a Panorama device")
 	}
 
-	_, devData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if len(devicegroup) > 0 {
+		command = fmt.Sprintf("<show><devicegroups><name>%s</name></devicegroups></show>", devicegroup[0])
+	}
+
+	// _, devData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	_, devData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=op&cmd=%s&key=%s", command, p.Key)).End()
 	if errs != nil {
 		return nil, errs[0]
 	}
