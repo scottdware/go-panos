@@ -55,7 +55,7 @@ type PaloAlto struct {
 
 // AuthMethod defines how we want to authenticate to the device. If using a
 // username and password to authenticate, the Credentials field must contain the username and password
-//, respectively (i.e. []string{"admin", "password"}). If you are using the API key for
+//, respectively (e.g. []string{"admin", "password"}). If you are using the API key for
 // authentication, provide the entire key for the APIKey field.
 type AuthMethod struct {
 	Credentials []string
@@ -100,7 +100,10 @@ type Logs struct {
 	Logs      []Log    `xml:"result>log>logs>entry"`
 }
 
-// Log holds information about each individual log retrieved for the following log-types: config, system, traffic, threat, wildfire, url, data.
+// Log holds information about each individual log retrieved for the following log-types:
+//
+// config, system, traffic, threat, wildfire, url, data
+//
 // Certain fields are omitted or populated based on the log type that is specified when querying the system. See https://goo.gl/PPLjVZ for the
 // fields assigned for the different log types.
 type Log struct {
@@ -400,7 +403,7 @@ func splitSWVersion(version string) []int {
 }
 
 // NewSession sets up our connection to the Palo Alto firewall or Panorama device. The authmethod parameter
-// is used to define two ways of authenticating to the device. One is via username / password, the other is with
+// is used to define two ways of authenticating to the device. One is via username/password, the other is with
 // the API key if you already have generated it. Please see the documentation for the AuthMethod struct for further
 // details.
 func NewSession(host string, authmethod *AuthMethod) (*PaloAlto, error) {
@@ -527,7 +530,7 @@ func (p *PaloAlto) Commit() error {
 
 // CommitAll issues a commit to a Panorama device, for the given devicegroup. If you wish to push to specific
 // firewalls within the specified device group only, add each firewalls serial number as an additional parameter,
-// i.e.: CommitAll("Some-DeviceGroup", "000000000001", "000000000002")
+// (e.g. CommitAll("Some-DeviceGroup", "000000000001", "000000000002")).
 func (p *PaloAlto) CommitAll(devicegroup string, devices ...string) error {
 	var reqError requestError
 	var cmd string
@@ -693,7 +696,7 @@ func (p *PaloAlto) Jobs(status interface{}) (*Jobs, error) {
 // QueryLogs allows you to pull logs from the system, given a specific log-type. Currently, the
 // supported log types are as follows:
 //
-// config, system, traffic, threat, wildfire, url, data.
+// config, system, traffic, threat, wildfire, url, data
 //
 // The LogParameters struct lists optional parameters you can use in your query. See the documentation for a full
 // description of options. If you do not wish to use any of the optional parameters, just specify nil. The job ID is
@@ -933,8 +936,8 @@ func (p *PaloAlto) XpathGetConfig(configtype, xpath string) (string, error) {
 }
 
 // Command lets you run any operational mode command against the given device, and it returns the output. You
-// must use the XML-formatted version of the command string as if you were calling the API yourself, i.e.
-// "<show><running><ippool></ippool></running></show>"
+// must use the XML-formatted version of the command string as if you were calling the API yourself,
+// (e.g. "<show><running><ippool></ippool></running></show>")
 func (p *PaloAlto) Command(command string) (string, error) {
 	var output commandOutput
 
@@ -951,7 +954,7 @@ func (p *PaloAlto) Command(command string) (string, error) {
 	return output.Data, nil
 }
 
-// Routes will retrieve information about each route in the devices routing table(s). You can optionally specify
+// Routes will retrieve information about each route in the devices routing table(s). You can (optionally) specify
 // a specific virtual router to retrieve routes from.
 func (p *PaloAlto) Routes(vr ...string) (*RoutingTable, error) {
 	var rt RoutingTable

@@ -169,7 +169,7 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 }
 
 // CreateServiceGroup will create a new service group on the device. You can specify members to add
-// by using a []string variable (i.e. members := []string{"tcp-service1", "udp-service1"}). If creating a service group on a
+// by using a []string variable (e.g. members := []string{"tcp-service1", "udp-service1"}). If creating a service group on a
 // Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateServiceGroup(name string, members []string, devicegroup ...string) error {
 	var xmlBody string

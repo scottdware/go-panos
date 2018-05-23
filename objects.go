@@ -26,7 +26,7 @@ type CustomURL struct {
 }
 
 // Recurrance contains the information for external dynamic lists when it comes to how often they are downloaded. Method
-// must be one of: five-minute, hourly, daily, weekly, monthly. DayOfWeek is the name of the day, such as "tuesday." DayOfMonth
+// must be one of five-minute, hourly, daily, weekly, monthly. DayOfWeek is the name of the day, such as "tuesday." DayOfMonth
 // is specified as a number, ranging from 1-31. Hour must be in 23-hour format, such as "03" for 3 am. The hourly and five-minute
 // methods do not require any additional fields. DayOfWeek and DayOfMonth both require the Hour field as well.
 type Recurrance struct {
@@ -177,7 +177,7 @@ func (p *PaloAlto) URLCategory(devicegroup ...string) (*URLCategory, error) {
 }
 
 // CreateURLCategory creates a custom URL category to be used in a policy. When specifying multiple URL's, use a
-// []string variable for the url parameter (i.e. members := []string{"www.*.com", "*.somesite.net"}). If creating a
+// []string variable for the url parameter (e.g. members := []string{"www.*.com", "*.somesite.net"}). If creating a
 // URL category on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateURLCategory(name string, urls []string, description string, devicegroup ...string) error {
 	var xpath string
@@ -225,7 +225,7 @@ func (p *PaloAlto) CreateURLCategory(name string, urls []string, description str
 	return nil
 }
 
-// EditURLCategory adds or removes URL's from the given custom URL category. Action must be "add" or "remove." If editing
+// EditURLCategory adds or removes URL's from the given custom URL category. Action must be add or remove If editing
 // a URL category on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) EditURLCategory(action, url, name string, devicegroup ...string) error {
 	var xpath string
@@ -337,8 +337,8 @@ func (p *PaloAlto) DeleteURLCategory(name string, devicegroup ...string) error {
 	return nil
 }
 
-// EditGroup will add or remove objects from the specified group type (i.e., "address" or "service"). Action must be
-// "add" or "remove." If editing a group on a Panorama device, specify the device-group as the last parameter.
+// EditGroup will add or remove objects from the specified group type (e.g., "address" or "service"). Action must be
+// add or remove. If editing a group on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -430,8 +430,11 @@ func (p *PaloAlto) EditGroup(objecttype, action, object, group string, devicegro
 }
 
 // RenameObject will rename the given object from oldname to the newname. You can rename the following
-// object types: address, address-groups, service, service-groups, tags. If renaming objects on a
-// Panorama device, specify the device-group as the last parameter.
+// object types:
+//
+// address, address-groups, service, service-groups, tags.
+//
+// If renaming objects on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -769,9 +772,13 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 	return nil
 }
 
-// CreateExternalDynamicList will create an external dynamic list on the device. Listtype must be one of: ip, domain, or url. Configuring the
-// recurrance requires you to use the Recurrance struct when passing the configuration for this parameter - please see the documentation for that struct.
-// If creating an EDL on a Panorama device, specify the device-group as the last parameter.
+// CreateExternalDynamicList will create an external dynamic list on the device. Listtype must be one of:
+//
+// ip, domain, or url
+//
+// Configuring the recurrance requires you to use the `Recurrance` struct when passing the configuration for this
+// parameter - please see the documentation for that struct. If creating an EDL on a Panorama device, specify
+// the device-group as the last parameter.
 func (p *PaloAlto) CreateExternalDynamicList(listtype string, name string, url string, recurrance *Recurrance, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
@@ -925,9 +932,12 @@ func (p *PaloAlto) Tags(devicegroup ...string) (*Tags, error) {
 
 }
 
-// CreateTag will add a new tag to the device. You can use the following colors: Red, Green, Blue, Yellow, Copper,
-// Orange, Purple, Gray, Light Green, Cyan, Light Gray, Blue Gray, Lime, Black, Gold, Brown. If creating a tag on a
-// Panorama device, specify the device-group as the last parameter.
+// CreateTag will add a new tag to the device. You can use the following colors:
+//
+// Red, Green, Blue, Yellow, Copper, Orange, Purple, Gray, Light Green, Cyan, Light Gray,
+// Blue Gray, Lime, Black, Gold, Brown.
+//
+// If creating a tag on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateTag(name, color, comments string, devicegroup ...string) error {
 	var xmlBody string
 	var xpath string
@@ -1767,7 +1777,7 @@ func (p *PaloAlto) SecurityProfileGroups() (*SecurityGroups, error) {
 }
 
 // ApplyLogForwardingProfile will apply a Log Forwarding profile to every rule in the policy for the given device-group.
-// If you wish to apply it to a single rule, instead of every rule in the policy, you can optionally specify the rule name as the last parameter.
+// If you wish to apply it to a single rule, instead of every rule in the policy, you can (optionally) specify the rule name as the last parameter.
 // For policies with a large number of rules, this process may take a few minutes to complete.
 func (p *PaloAlto) ApplyLogForwardingProfile(logprofile, devicegroup string, rule ...string) error {
 	if p.DeviceType != "panorama" {
@@ -1919,10 +1929,14 @@ func (p *PaloAlto) ApplyLogForwardingProfile(logprofile, devicegroup string, rul
 	return nil
 }
 
-// ApplySecurityProfile will apply the following security profiles: URL Filtering, File-Blocking, Antivirus, Anti-Spyware, Vulnerability, Wildfire
-// to every rule in the policy for the given device-group. If you wish to apply it to a single rule, instead of every
-// rule in the policy, you can optionally specify the rule name as the last parameter. You can also specify a security group profile instead of individual profiles.
-// This is done by ONLY populating the "Group" field in the SecurityProfiles struct. For policies with a large number of rules,
+// ApplySecurityProfile will apply the following security profiles to every rule in teh policy for the given
+// device-group:
+//
+// URL Filtering, File-Blocking, Antivirus, Anti-Spyware, Vulnerability, Wildfire
+//
+// If you wish to apply it to a single rule, instead of every rule in the policy, you can (optionally) specify
+// the rule name as the last parameter. You can also specify a security group profile instead of individual profiles.
+// This is done by ONLY populating the Group field in the SecurityProfiles struct. For policies with a large number of rules,
 // this process may take a few minutes to complete.
 func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegroup string, rule ...string) error {
 	if p.DeviceType != "panorama" {
@@ -2251,27 +2265,12 @@ func (p *PaloAlto) ApplySecurityProfile(secprofiles *SecurityProfiles, devicegro
 }
 
 // CreateObjectsFromCsv takes a CSV file and creates the given address or service objects, and
-// address or service groups defined within. See https://github.com/scottdware/go-panos#creating-objects-from-a-csv-file
-// for more detailed examples.
-//
-// The format of the CSV file must follow this layout:
+// address or service groups defined within. The format of the CSV file must follow this layout:
 //
 // name,type,value,description (optional),tag (optional),device-group
 //
-// For the type column, you can specify: 'ip', 'range', 'fqdn' for address objects, and 'tcp' or 'udp' for service
-// objects. For address group objects, you must specify either 'static' or 'dynamic'. And for service groups,
-// you must specify 'service'. The description and tag columns are optional, so just leave them blank if you do not
-// need them.
-//
-// If you are creating an address group, then the value field must contain the following:
-//
-// For a static address group: list of members to add separated by a space, i.e.: ip-host1 ip-net1 fqdn-example.com
-// For a dynamic address group: the criteria (tags) to match on, i.e.: web-servers or db-servers and linux
-//
-// If you are creating a service group, then the value field must contain a list of service objects to add, separated by a space.
-//
-// If any of the objects you are creating need to be shared objects, then specify the word "shared" in the device-group (last)
-// column.
+// See https://github.com/scottdware/go-panos#creating-objects-from-a-csv-file
+// for complete documentation and examples.
 func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 	c, err := easycsv.Open(file)
 	if err != nil {
@@ -2455,16 +2454,12 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 }
 
 // ModifyGroupsFromCsv takes a CSV file and modifies the given address or service groups with the
-// specified action. See https://github.com/scottdware/go-panos#modifying-object-groups-from-a-csv-file
-// for more detailed examples.
-//
-// The format of the CSV file must follow this layout:
+// specified action. The format of the CSV file must follow this layout:
 //
 // grouptype,action,object-name,group-name,device-group
 //
-// For the grouptype column, you must specify 'address' or 'service'. Action must be either 'add' or 'remove'.
-//
-// If modifying groups on a Panorama device, specify the device-group column in the CSV file.
+// See https://github.com/scottdware/go-panos#modifying-object-groups-from-a-csv-file
+// for complete documentation and examples.
 func (p *PaloAlto) ModifyGroupsFromCsv(file string) error {
 	c, err := easycsv.Open(file)
 	if err != nil {

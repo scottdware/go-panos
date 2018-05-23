@@ -70,8 +70,8 @@ type Rule struct {
 
 // Policy returns information about the security policies for the given device-group. If no device-group is specified
 // then the local rules are returned when run against a firewall. If you have pre and/or post rules,
-// then both of them will be returned. They are separated under a "Pre" and "Post" field in the returned "Policy" struct.
-// Local rules are returned in the "Local" field.
+// then both of them will be returned. They are separated under a Pre and Post field in the returned Policy struct.
+// Local rules are returned in the Local field.
 func (p *PaloAlto) Policy(devicegroup ...string) (*Policy, error) {
 	var policy Policy
 	var prePolicy policyRules

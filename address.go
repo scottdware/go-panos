@@ -147,7 +147,7 @@ func (p *PaloAlto) AddressGroups(devicegroup ...string) (*AddressGroups, error) 
 	return &groups, nil
 }
 
-// CreateAddress will add a new address object to the device. Addrtype should be one of: ip, range, or fqdn. If creating an address
+// CreateAddress will add a new address object to the device. Addrtype should be one of ip, range, or fqdn. If creating an address
 // object on a Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, devicegroup ...string) error {
 	var xmlBody string

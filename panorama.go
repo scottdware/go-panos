@@ -108,7 +108,7 @@ func (p *PaloAlto) Devices() (*Devices, error) {
 }
 
 // DeviceGroups returns information about all of the device-groups in Panorama, and what devices are
-// linked to them, along with their information. You can optionally specify a specific device-group
+// linked to them, along with detailed information about each device. You can (optionally) specify a specific device-group
 // if you wish.
 func (p *PaloAlto) DeviceGroups(devicegroup ...string) (*DeviceGroups, error) {
 	var devices DeviceGroups
