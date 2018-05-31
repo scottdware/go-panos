@@ -1145,7 +1145,9 @@ func (p *PaloAlto) DeleteProxyID(tunnel, name string) error {
 // options that each parameter must contain at least one of (you can have multiple).
 //
 // Encryption: des, 3des, aes-128-cbc, aes-192-cbc, aes-256-cbc
+//
 // Authentication: md5, sha1, sha256, sha384, sha512
+//
 // Diffe-Hellman Group: 1, 2, 5, 14, 19, 20
 //
 // For lifetime, you must specify the value, followed by seconds, minutes, hours, or days,
@@ -1201,7 +1203,9 @@ func (p *PaloAlto) CreateIKEProfile(name, encryption, authentication, dhgroup st
 // options that each parameter must contain at least one of (you can have multiple).
 //
 // Encryption: des, 3des, aes-128-cbc, aes-192-cbc, aes-256-cbc, aes-128-ccm, aes-192-gcm, aes-256-gcm
+//
 // Authentication: md5, sha1, sha256, sha384, sha512
+//
 // Diffe-Hellman Group: 1, 2, 5, 14, 19, 20
 //
 // For lifetime, you must specify the value, followed by seconds, minutes, hours, or days,
