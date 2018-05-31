@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -93,10 +94,10 @@ type Logs struct {
 	XMLName   xml.Name `xml:"response"`
 	Status    string   `xml:"status,attr"`
 	Code      string   `xml:"code,attr"`
-	StartTime string   `xml:"job>tdeq"`
-	EndTime   string   `xml:"job>tfin"`
-	JobStatus string   `xml:"job>status"`
-	JobID     int      `xml:"job>id"`
+	StartTime string   `xml:"result>job>tdeq"`
+	EndTime   string   `xml:"result>job>tfin"`
+	JobStatus string   `xml:"result>job>status"`
+	JobID     int      `xml:"result>job>id"`
 	Logs      []Log    `xml:"result>log>logs>entry"`
 }
 
@@ -707,7 +708,7 @@ func (p *PaloAlto) QueryLogs(logtype string, parameters *LogParameters) (int, er
 
 	if parameters != nil {
 		if parameters.Query != "" {
-			req += fmt.Sprintf("&query=%s", parameters.Query)
+			req += fmt.Sprintf("&query=%s", url.QueryEscape(parameters.Query))
 		}
 
 		if parameters.NLogs > 0 {
