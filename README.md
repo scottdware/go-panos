@@ -34,7 +34,8 @@ The following features are currently available only on the local firewall:
 * View the entire routing table and details about each route.
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
 * Add and remove interfaces to zones, vlans and virtual-routers.
-* List all configured IPSec VPN tunnels.
+* List all configured IPSec VPN tunnels, gateways, and crypto profiles.
+* Create IPSec VPN tunnels, gateways, and crypto profiles.
 * Add/delete proxy-id's to IPSec VPN tunnels.
 * Test URL's to see what they are being categorized under.
 * Test route lookup.
