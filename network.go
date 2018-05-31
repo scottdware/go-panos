@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -45,6 +46,121 @@ type ProxyID struct {
 	Name   string `xml:"name,attr"`
 	Local  string `xml:"local"`
 	Remote string `xml:"remote"`
+}
+
+// Gateways contains information of all the IKE gateways configured on a device.
+type Gateways struct {
+	XMLName  xml.Name     `xml:"response"`
+	Status   string       `xml:"status,attr"`
+	Code     string       `xml:"code,attr"`
+	Gateways []IKEGateway `xml:"result>gateway>entry"`
+}
+
+// IKEGateway contains information about each individual IKE gateway.
+type IKEGateway struct {
+	Name                string `xml:"name,attr"`
+	PSK                 string `xml:"authentication>pre-shared-key>key"`
+	Version             string `xml:"protocol>version"`
+	V1DeadPeerDetection string `xml:"protocol>ikev1>dpd>enable"`
+	V1ExchangeMode      string `xml:"protocol>ikev1>exchange-mode"`
+	V2DeadPeerDetection string `xml:"protocol>ikev2>dpd>enable"`
+	V2CookieValidation  string `xml:"protocol>ikev2>require-cookie"`
+	LocalAddress        string `xml:"local-address>ip"`
+	LocalInterface      string `xml:"local-address>interface"`
+	PeerAddress         string `xml:"peer-address>ip"`
+	PeerDynamicAddress  string `xml:"peer-address>dynamic"`
+	LocalID             string `xml:"local-id>id"`
+	LocalIDType         string `xml:"local-id>type"`
+	PeerID              string `xml:"peer-id>id"`
+	PeerIDType          string `xml:"peer-id>type"`
+	NATTraversal        string `xml:"protocol-common>nat-traversal>enable"`
+	Fragmentation       string `xml:"protocol-common>fragmentation>enable"`
+	PassiveMode         string `xml:"protocol-common>passive-mode"`
+}
+
+// EncryptionProfiles contains information about all of the IKE and IPSec crypto profiles on a device.
+type EncryptionProfiles struct {
+	XMLName xml.Name `xml:"response"`
+	Status  string   `xml:"status,attr"`
+	Code    string   `xml:"code,attr"`
+	IKE     []IKEProfile
+	IPSec   []IPSecProfile
+}
+
+// ikeCryptoProfiles contains information about each individual IKE crypto profile.
+type ikeCryptoProfiles struct {
+	XMLName  xml.Name     `xml:"response"`
+	Status   string       `xml:"status,attr"`
+	Code     string       `xml:"code,attr"`
+	Profiles []IKEProfile `xml:"result>ike-crypto-profiles>entry"`
+}
+
+// ipsecCryptoProfiles contains information about each individual IPSec crypto profile.
+type ipsecCryptoProfiles struct {
+	XMLName  xml.Name       `xml:"response"`
+	Status   string         `xml:"status,attr"`
+	Code     string         `xml:"code,attr"`
+	Profiles []IPSecProfile `xml:"result>ipsec-crypto-profiles>entry"`
+}
+
+// IKEProfile contains information about each individual IKE crypto profile.
+type IKEProfile struct {
+	Name            string   `xml:"name,attr"`
+	Encryption      []string `xml:"encryption>member"`
+	Authentication  []string `xml:"hash>member"`
+	DHGroup         []string `xml:"dh-group>member"`
+	LifetimeHours   int      `xml:"lifetime>hours"`
+	LifetimeSeconds int64    `xml:"lifetime>seconds"`
+	LifetimeDays    int      `xml:"lifetime>days"`
+	LifetimeMinutes int64    `xml:"lifetime>minutes"`
+}
+
+// IPSecProfile contains information about each individual IPSec crypto profile.
+type IPSecProfile struct {
+	Name              string   `xml:"name,attr"`
+	ESPEncryption     []string `xml:"esp>encryption>member"`
+	ESPAuthentication []string `xml:"esp>authentication>member"`
+	AHAuthentication  []string `xml:"ah>authentication>member"`
+	DHGroup           string   `xml:"dh-group"`
+	LifetimeHours     int      `xml:"lifetime>hours"`
+	LifetimeSeconds   int64    `xml:"lifetime>seconds"`
+	LifetimeDays      int      `xml:"lifetime>days"`
+	LifetimeMinutes   int64    `xml:"lifetime>minutes"`
+}
+
+// IKEOptions ...
+type IKEOptions struct {
+	// PassiveMode decides whether or not to have the firewall only respond to IKE connections
+	// and never initiate them.
+	PassiveMode bool
+
+	// NATTraversal enables UDP encapsulation to be used on IKE and UDP protocols, enabling them
+	// to pass through intermediate NAT devices. Enable NAT Traversal if Network Address Translation (NAT)
+	// is configured on a device between the IPSec VPN terminating points.
+	NATTraversal bool
+
+	// LocalIDType must be one of: ipaddr, fqdn, ufqdn or keyid
+	LocalIDType string
+
+	// LocalID specifies either the IP address, FQDN, email address, or binary format
+	// ID string in HEX.
+	LocalID string
+
+	// PeerIDType must be one of: ipaddr, fqdn, ufqdn or keyid
+	PeerIDType string
+
+	// PeerID specifies either the IP address, FQDN, email address, or binary format
+	// ID string in HEX.
+	PeerID string
+
+	// DPDRetry defines the delay before retrying. The value must be between 2 and 100.
+	DPDRetry int
+
+	// DPDInterval defines the interval between tries. The value must be between 2 and 100.
+	DPDInterval int
+
+	// RequireCookie enables Strict Cookie Validation on the IKE gateway.
+	RequireCookie bool
 }
 
 // CreateLayer3Interface adds a new layer-3 interface or sub-interface to the device. If adding a sub-interface,
@@ -607,6 +723,8 @@ func (p *PaloAlto) RemoveInterfaceFromVirtualRouter(vr, ifname string) error {
 func (p *PaloAlto) CreateStaticRoute(vr, name, destination, nexthop string, metric ...int) error {
 	var xmlBody string
 	var reqError requestError
+	re := regexp.MustCompile("ethernet|tunnel|ae|loopback|vlan")
+	ints := re.FindAllString(nexthop, -1)
 
 	if p.DeviceType == "panorama" {
 		return errors.New("you cannot create static routes on a Panorama device")
@@ -615,7 +733,7 @@ func (p *PaloAlto) CreateStaticRoute(vr, name, destination, nexthop string, metr
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='%s']", vr)
 	xmlBody = fmt.Sprintf("<routing-table><ip><static-route><entry name=\"%s\">", name)
 
-	if strings.Contains(nexthop, "ethernet") {
+	if len(ints) > 0 {
 		xmlBody += fmt.Sprintf("<interface>%s</interface><destination>%s</destination>", nexthop, destination)
 	} else {
 		xmlBody += fmt.Sprintf("<nexthop><ip-address>%s</ip-address></nexthop><destination>%s</destination>", nexthop, destination)
@@ -900,6 +1018,75 @@ func (p *PaloAlto) IPSecTunnels() (*Tunnels, error) {
 	return &tunnels, nil
 }
 
+// IKEGateways will return a list of all configured IKE gateways on the device.
+func (p *PaloAlto) IKEGateways() (*Gateways, error) {
+	var gws Gateways
+	xpath := "/config/devices/entry[@name='localhost.localdomain']/network/ike/gateway"
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("IKE gateways can only be listed from a local device")
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &gws); err != nil {
+		return nil, err
+	}
+
+	if gws.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", gws.Code, errorCodes[gws.Code])
+	}
+
+	return &gws, nil
+}
+
+// CryptoProfiles will return a list of all configured IKE and IPSec crypto profiles on the device.
+func (p *PaloAlto) CryptoProfiles() (*EncryptionProfiles, error) {
+	var ike ikeCryptoProfiles
+	var ipsec ipsecCryptoProfiles
+	var profiles EncryptionProfiles
+	ikeXpath := "/config/devices/entry[@name='localhost.localdomain']/network/ike/crypto-profiles/ike-crypto-profiles"
+	ipsecXpath := "/config/devices/entry[@name='localhost.localdomain']/network/ike/crypto-profiles/ipsec-crypto-profiles"
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("IKE crypto profiles can only be listed from a local device")
+	}
+
+	_, ikeData, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", ikeXpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(ikeData), &ike); err != nil {
+		return nil, err
+	}
+
+	if ike.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", ike.Code, errorCodes[ike.Code])
+	}
+
+	_, ipsecData, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", ipsecXpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(ipsecData), &ipsec); err != nil {
+		return nil, err
+	}
+
+	if ipsec.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", ipsec.Code, errorCodes[ipsec.Code])
+	}
+
+	profiles.IKE = ike.Profiles
+	profiles.IPSec = ipsec.Profiles
+
+	return &profiles, nil
+}
+
 // AddProxyID will add a new proxy-id to the given IPsec tunnel.
 func (p *PaloAlto) AddProxyID(tunnel, name, localip, remoteip string) error {
 	var xmlBody string
@@ -939,6 +1126,246 @@ func (p *PaloAlto) DeleteProxyID(tunnel, name string) error {
 	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec/entry[@name='%s']/auto-key/proxy-id/entry[@name='%s']", tunnel, name)
 
 	_, resp, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=delete&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateIKEProfile creates a new IKE crypto profile on the device. Please see the below
+// options that each parameter must contain at least one of (you can have multiple).
+//
+// Encryption: des, 3des, aes-128-cbc, aes-192-cbc, aes-256-cbc
+// Authentication: md5, sha1, sha256, sha384, sha512
+// Diffe-Hellman Group: 1, 2, 5, 14, 19, 20
+//
+// For lifetime, you must specify the value, followed by seconds, minutes, hours, or days,
+// all surrounded in quotes (e.g. "8 hours" or "86400 seconds").
+func (p *PaloAlto) CreateIKEProfile(name, encryption, authentication, dhgroup string, lifetime string) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create IKE profiles on a Panorama device")
+	}
+
+	lt := strings.Split(lifetime, " ")
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/ike/crypto-profiles/ike-crypto-profiles/entry[@name='%s']", name)
+	xmlBody = fmt.Sprintf("<lifetime><%s>%s</%s></lifetime>", lt[1], lt[0], lt[1])
+
+	xmlBody += "<encryption>"
+	for _, encr := range strings.Split(encryption, ", ") {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(encr))
+	}
+	xmlBody += "</encryption>"
+
+	xmlBody += "<hash>"
+	for _, hash := range strings.Split(authentication, ", ") {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(hash))
+	}
+	xmlBody += "</hash>"
+
+	xmlBody += "<dh-group>"
+	for _, dh := range strings.Split(dhgroup, ", ") {
+		xmlBody += fmt.Sprintf("<member>group%s</member>", strings.TrimSpace(dh))
+	}
+	xmlBody += "</dh-group>"
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateIPSecProfile creates a new IPSec crypto profile on the device. Please see the below
+// options that each parameter must contain at least one of (you can have multiple).
+//
+// Encryption: des, 3des, aes-128-cbc, aes-192-cbc, aes-256-cbc, aes-128-ccm, aes-192-gcm, aes-256-gcm
+// Authentication: md5, sha1, sha256, sha384, sha512
+// Diffe-Hellman Group: 1, 2, 5, 14, 19, 20
+//
+// For lifetime, you must specify the value, followed by seconds, minutes, hours, or days,
+// all surrounded in quotes (e.g. "8 hours" or "86400 seconds").
+func (p *PaloAlto) CreateIPSecProfile(name, encryption, authentication, lifetime string, dhgroup ...string) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create IPSec profiles on a Panorama device")
+	}
+
+	lt := strings.Split(lifetime, " ")
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/ike/crypto-profiles/ipsec-crypto-profiles/entry[@name='%s']", name)
+	xmlBody = fmt.Sprintf("<lifetime><%s>%s</%s></lifetime>", lt[1], lt[0], lt[1])
+
+	xmlBody += "<esp><encryption>"
+	for _, encr := range strings.Split(encryption, ", ") {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(encr))
+	}
+	xmlBody += "</encryption>"
+
+	xmlBody += "<authentication>"
+	for _, hash := range strings.Split(authentication, ", ") {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(hash))
+	}
+	xmlBody += "</authentication></esp>"
+
+	if len(dhgroup) > 0 {
+		xmlBody += "<dh-group>"
+		for _, dh := range strings.Split(dhgroup[0], ", ") {
+			xmlBody += fmt.Sprintf("<member>group%s</member>", strings.TrimSpace(dh))
+		}
+		xmlBody += "</dh-group>"
+	} else {
+		xmlBody += "<dh-group>no-pfs</dh-group>"
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateIKEGateway creates a new IKE gateway on the device. For the IKE version parameter,
+// you must specify one of the following: v1, v2, or v2-preferred. The local parameter specifies
+// the local interface and IP address to use. If you do not need an IP address, just specify
+// the interface name (e.g. "ethernet1/1"). If you do have an IP address assigned, then you must
+// enclose the interface name and IP address within quotes, separated by a space in between
+// (e.g. "ethernet1/1 10.1.1.1/24"). The peer must be an IP address or the word "dynamic." Mode
+// must be one of 'auto', 'main', or 'aggressive.' Profile is the name of a pre-existing IKE
+// crypto profile on the device. The options parameter is optional, and contains additional IKE
+// parameters that you can set. Please see the documentation for the IKEOptions struct.
+func (p *PaloAlto) CreateIKEGateway(name, version, local, peer, psk, mode, profile string, options ...*IKEOptions) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create IKE gateways on a Panorama device")
+	}
+
+	localaddr := strings.Split(local, " ")
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/ike/gateway/entry[@name='%s']", name)
+	xmlBody += fmt.Sprintf("<authentication><pre-shared-key><key>%s</key></pre-shared-key></authentication>", psk)
+	xmlBody += fmt.Sprintf("<protocol><ikev1><ike-crypto-profile>%s</ike-crypto-profile><exchange-mode>%s</exchange-mode>", profile, mode)
+
+	if len(options) > 0 {
+		if options[0].DPDInterval > 0 && options[0].DPDRetry > 0 {
+			xmlBody += fmt.Sprintf("<dpd><enable>yes</enable><interval>%d</interval><retry>%d</retry></dpd>", options[0].DPDInterval, options[0].DPDRetry)
+		}
+	}
+
+	xmlBody += "</ikev1>"
+	xmlBody += fmt.Sprintf("<ikev2><ike-crypto-profile>%s</ike-crypto-profile><dpd><enable>no</enable></dpd>", profile)
+
+	if len(options) > 0 {
+		if options[0].RequireCookie == true {
+			xmlBody += "<require-cookie>yes</require-cookie>"
+		}
+	}
+
+	xmlBody += fmt.Sprintf("</ikev2><version>ike%s</version></protocol>", version)
+
+	switch len(localaddr) {
+	case 1:
+		xmlBody += fmt.Sprintf("<local-address><interface>%s</interface></local-address>", localaddr[0])
+	case 2:
+		xmlBody += fmt.Sprintf("<local-address><interface>%s</interface><ip>%s</ip></local-address>", localaddr[0], localaddr[1])
+	}
+
+	if peer == "dynamic" {
+		xmlBody += "<peer-address><dynamic/></peer-address>"
+	} else {
+		xmlBody += fmt.Sprintf("<peer-address><ip>%s</ip></peer-address>", peer)
+	}
+
+	if len(options) > 0 {
+		if len(options[0].LocalID) > 0 {
+			xmlBody += fmt.Sprintf("<local-id><type>%s</type><id>%s</id></local-id>", options[0].LocalIDType, options[0].LocalID)
+		}
+	}
+
+	if len(options) > 0 {
+		if len(options[0].PeerID) > 0 {
+			xmlBody += fmt.Sprintf("<peer-id><type>%s</type><id>%s</id></peer-id>", options[0].PeerIDType, options[0].PeerID)
+		}
+	}
+
+	if len(options) > 0 {
+		if options[0].NATTraversal == true {
+			xmlBody += "<protocol-common><nat-traversal><enable>yes</enable></nat-traversal><fragmentation><enable>no</enable></fragmentation></protocol-common>"
+		}
+	}
+
+	if len(options) > 0 {
+		if options[0].PassiveMode == true {
+			xmlBody += "<protocol-common><passive-mode>yes</passive-mode><fragmentation><enable>no</enable></fragmentation></protocol-common>"
+		}
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
+	if errs != nil {
+		return errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
+		return err
+	}
+
+	if reqError.Status != "success" {
+		return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
+	}
+
+	return nil
+}
+
+// CreateIPSecTunnel creates a new IPSec tunnel on the device. The iface parameter must
+// be the name of a tunnel interface (e.g. "tunnel.1"). The gateway and profile settings
+// must contain the name of a pre-existing IKE gateway and IPSec crypto profile, respectively.
+func (p *PaloAlto) CreateIPSecTunnel(name, iface, gateway, profile string) error {
+	var xmlBody string
+	var reqError requestError
+
+	if p.DeviceType == "panorama" {
+		return errors.New("you cannot create IPSec tunnels on a Panorama device")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/network/tunnel/ipsec/entry[@name='%s']", name)
+	xmlBody = fmt.Sprintf("<auto-key><ike-gateway><entry name=\"%s\"/></ike-gateway><ipsec-crypto-profile>%s</ipsec-crypto-profile></auto-key>", gateway, profile)
+	xmlBody += fmt.Sprintf("<tunnel-interface>%s</tunnel-interface>", iface)
+
+	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
 	if errs != nil {
 		return errs[0]
 	}
