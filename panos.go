@@ -758,11 +758,13 @@ func (p *PaloAlto) RetrieveLogs(id int) (*Logs, error) {
 
 // XpathConfig allows you to configure the device using an Xpath expression for the given xpath parameter.
 // The element parameter can either be an XML file or an XML string when configuring the device. The action parameter can be one of:
-// set, edit, rename, override or delete. Set actions add, update, or merge configuration nodes, while edit
-// actions replace configuration nodes - use the edit action with caution!
-// If you are renaming an object, specify the new name for the object in the element parameter.
-// If you are deleting a part of the configuration, you do not need the element parameter. For
-// all other actions you will need to provide it.
+//
+// set, edit, rename, override or delete
+//
+// Set actions add, update, or merge configuration nodes, while edit actions replace configuration nodes
+// - use the edit action with caution! If you are renaming an object, specify the new name for the
+// object in the element parameter. If you are deleting a part of the configuration, you do not need
+// the element parameter. For all other actions you will need to provide it.
 //
 // See https://goo.gl/G1vzJT for details regarding all of the actions available.
 func (p *PaloAlto) XpathConfig(action, xpath string, element ...string) error {
