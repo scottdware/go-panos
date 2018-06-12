@@ -31,6 +31,8 @@ This API allows you to do the following:
 
 The following features are currently available only on the local firewall:
 
+* List the NAT policy.
+* Create/delete NAT rules.
 * View the entire routing table and details about each route.
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
 * Add and remove interfaces to zones, vlans and virtual-routers.
