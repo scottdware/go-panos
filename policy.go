@@ -19,22 +19,6 @@ type Policy struct {
 	Local         []Rule
 }
 
-// prePolicy lists all of the pre-rulebase security rules for a given device-group.
-// type prePolicy struct {
-// 	XMLName xml.Name `xml:"response"`
-// 	Status  string   `xml:"status,attr"`
-// 	Code    string   `xml:"code,attr"`
-// 	Rules   []Rule   `xml:"result>rules>entry"`
-// }
-
-// postPolicy lists all of the post-rulebase security rules for a given device-group.
-// type postPolicy struct {
-// 	XMLName xml.Name `xml:"response"`
-// 	Status  string   `xml:"status,attr"`
-// 	Code    string   `xml:"code,attr"`
-// 	Rules   []Rule   `xml:"result>rules>entry"`
-// }
-
 type policyRules struct {
 	XMLName xml.Name `xml:"response"`
 	Status  string   `xml:"status,attr"`
@@ -45,8 +29,8 @@ type policyRules struct {
 // Rule contains information about each individual security rule.
 type Rule struct {
 	Name                 string   `xml:"name,attr"`
-	From                 string   `xml:"from>member"`
-	To                   string   `xml:"to>member"`
+	From                 []string `xml:"from>member"`
+	To                   []string `xml:"to>member"`
 	Source               []string `xml:"source>member"`
 	Destination          []string `xml:"destination>member"`
 	SourceUser           []string `xml:"source-user>member"`
@@ -66,6 +50,31 @@ type Rule struct {
 	VulnerabilityProfile string   `xml:"profile-setting>profiles>vulnerability>member"`
 	WildfireProfile      string   `xml:"profile-setting>profiles>wildfire-analysis>member"`
 	SecurityProfileGroup string   `xml:"profile-setting>group>member"`
+}
+
+// NATPolicy contains information about all of the NAT rules on the device.
+type NATPolicy struct {
+	XMLName xml.Name  `xml:"response"`
+	Status  string    `xml:"status,attr"`
+	Code    string    `xml:"code,attr"`
+	Rules   []NATRule `xml:"result>rules>entry"`
+}
+
+// NATRule contains information about each individual NAT rule.
+type NATRule struct {
+	Name                            string   `xml:"name,attr"`
+	From                            []string `xml:"from>member"`
+	To                              []string `xml:"to>member"`
+	Source                          []string `xml:"source>member"`
+	Destination                     []string `xml:"destination>member"`
+	Service                         []string `xml:"service>member"`
+	SrcDynamicInterfaceIP           string   `xml:"source-translation>dynamic-ip-and-port>interface-address>ip"`
+	SrcDynamicInterface             string   `xml:"source-translation>dynamic-ip-and-port>interface-address>interface"`
+	SrcDynamicIPAndPortTranslatedIP string   `xml:"source-translation>dynamic-ip-and-port>translated-address>member"`
+	SrcDynamicTranslatedIP          []string `xml:"source-translation>dynamic-ip>translated-address>member"`
+	DestinationTransltedIP          string   `xml:"destination-translation>translated-address"`
+	SrcStaticTranslatedIP           string   `xml:"source-translation>static-ip>translated-address"`
+	BiDirectional                   string   `xml:"source-translation>static-ip>bi-directional"`
 }
 
 // Policy returns information about the security policies for the given device-group. If no device-group is specified
@@ -157,6 +166,36 @@ func (p *PaloAlto) Policy(devicegroup ...string) (*Policy, error) {
 
 		policy.Pre = prePolicy.Rules
 		policy.Post = postPolicy.Rules
+	}
+
+	return &policy, nil
+}
+
+// NATPolicy returns information about the NAT policy on a device.
+func (p *PaloAlto) NATPolicy() (*NATPolicy, error) {
+	var policy NATPolicy
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("you can only view NAT policies on a firewall")
+	}
+
+	xpath := "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/rulebase/nat/rules"
+
+	_, natPolicyData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(natPolicyData), &policy); err != nil {
+		return nil, err
+	}
+
+	if policy.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", policy.Code, errorCodes[policy.Code])
+	}
+
+	if len(policy.Rules) == 0 {
+		return nil, errors.New("there are no rules created")
 	}
 
 	return &policy, nil
