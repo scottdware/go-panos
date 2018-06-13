@@ -108,38 +108,56 @@ type Logs struct {
 // Certain fields are omitted or populated based on the log type that is specified when querying the system. See https://goo.gl/PPLjVZ for the
 // fields assigned for the different log types.
 type Log struct {
+	DeviceName                 string `xml:"device_name,omitempty"`
+	Serial                     string `xml:"serial,omitempty"`
+	Rule                       string `xml:"rule,omitempty"`
+	TimeGenerated              string `xml:"time_generated,omitempty"`
+	TimeReceived               string `xml:"time_received,omitempty"`
+	Type                       string `xml:"type,omitempty"`
+	Subtype                    string `xml:"subtype,omitempty"`
+	From                       string `xml:"from,omitempty"`
+	To                         string `xml:"to,omitempty"`
+	Source                     string `xml:"src,omitempty"`
+	SourceUser                 string `xml:"srcuser,omitempty"`
+	SourcePort                 int    `xml:"sport,omitempty"`
+	SourceCountry              string `xml:"srcloc,omitempty"`
+	Destination                string `xml:"dst,omitempty"`
+	DestinationPort            int    `xml:"dport,omitempty"`
+	DestinationCountry         string `xml:"dstloc,omitempty"`
+	Application                string `xml:"app,omitempty"`
+	Action                     string `xml:"action,omitempty"`
+	NATSourceIP                string `xml:"natsrc,omitempty"`
+	NATSourcePort              int    `xml:"natsport,omitempty"`
+	NATDestinationIP           string `xml:"natdst,omitempty"`
+	NATDestinationPort         int    `xml:"natdport,omitempty"`
+	Packets                    int    `xml:"packets,omitempty"`
+	PacketsSent                int    `xml:"pkts_sent,omitempty"`
+	PacketsReceived            int    `xml:"pkts_received,omitempty"`
+	Bytes                      int    `xml:"bytes,omitempty"`
+	BytesSent                  int    `xml:"bytes_sent,omitempty"`
+	BytesReceived              int    `xml:"bytes_received,omitempty"`
+	SessionID                  int    `xml:"sessionid,omitempty"`
+	SessionEndReason           string `xml:"session_end_reason,omitempty"`
+	RepeatCount                int    `xml:"repeatcnt,omitempty"`
+	Start                      string `xml:"start,omitempty"`
+	Elapsed                    string `xml:"elapsed,omitempty"`
+	Category                   string `xml:"category,omitempty"`
+	ThreatCategory             string `xml:"thr_category,omitempty"`
+	ThreatName                 string `xml:"threatid,omitempty"`
+	ThreatID                   int    `xml:"tid,omitempty"`
+	Misc                       string `xml:"misc,omitempty"`
+	Severity                   string `xml:"severity,omitempty"`
+	Direction                  string `xml:"direction,omitempty"`
+	InboundInterface           string `xml:"inbound_if,omitempty"`
+	OutboundInterface          string `xml:"outbound_if,omitempty"`
 	ID                         int    `xml:"logid,attr"`
 	Domain                     int    `xml:"domain,omitempty"`
 	ReceiveTime                string `xml:"receive_time,omitempty"`
-	Serial                     string `xml:"serial,omitempty"`
 	SequenceNumber             string `xml:"seqno,omitempty"`
 	ActionFlags                string `xml:"actionflags,omitempty"`
-	Type                       string `xml:"type,omitempty"`
-	Subtype                    string `xml:"subtype,omitempty"`
 	ConfigVersion              int    `xml:"config_ver,omitempty"`
-	TimeGenerated              string `xml:"time_generated,omitempty"`
-	Source                     string `xml:"src,omitempty"`
-	Destination                string `xml:"dst,omitempty"`
-	NATSourceIP                string `xml:"natsrc,omitempty"`
-	NATDestinationIP           string `xml:"natdst,omitempty"`
-	Rule                       string `xml:"rule,omitempty"`
-	SourceUser                 string `xml:"srcuser,omitempty"`
-	SourceCountry              string `xml:"srcloc,omitempty"`
-	DestinationCountry         string `xml:"dstloc,omitempty"`
-	Application                string `xml:"app,omitempty"`
 	Vsys                       string `xml:"vsys,omitempty"`
-	From                       string `xml:"from,omitempty"`
-	To                         string `xml:"to,omitempty"`
-	InboundInterface           string `xml:"inbound_if,omitempty"`
-	OutboundInterface          string `xml:"outbound_if,omitempty"`
 	Logset                     string `xml:"logset,omitempty"`
-	TimeReceived               string `xml:"time_received,omitempty"`
-	SessionID                  int    `xml:"sessionid,omitempty"`
-	RepeatCount                int    `xml:"repeatcnt,omitempty"`
-	SourcePort                 int    `xml:"sport,omitempty"`
-	DestinationPort            int    `xml:"dport,omitempty"`
-	NATSourcePort              int    `xml:"natsport,omitempty"`
-	NATDestinationPort         int    `xml:"natdport,omitempty"`
 	Flags                      string `xml:"flags,omitempty"`
 	Pcap                       string `xml:"flag-pcap,omitempty"`
 	PcapID                     int    `xml:"pcap_id,omitempty"`
@@ -160,24 +178,13 @@ type Log struct {
 	TunnelInspected            string `xml:"flag-tunnel-inspected,omitempty"`
 	ReconExcluded              string `xml:"flag-recon-excluded,omitempty"`
 	Protocol                   string `xml:"proto,omitempty"`
-	Action                     string `xml:"action,omitempty"`
 	TunnelType                 string `xml:"tunnel,omitempty"`
 	TPadding                   int    `xml:"tpadding,omitempty"`
 	CPadding                   int    `xml:"cpadding,omitempty"`
 	TunnelIMSI                 int    `xml:"tunnelid_imsi,omitempty"`
-	DeviceName                 string `xml:"device_name,omitempty"`
 	VsysID                     int    `xml:"vsys_id,omitempty"`
 	ParentSessionID            int    `xml:"parent_session_id,omitempty"`
 	ReportID                   int    `xml:"reportid,omitempty"`
-	Bytes                      int    `xml:"bytes,omitempty"`
-	BytesSent                  int    `xml:"bytes_sent,omitempty"`
-	BytesReceived              int    `xml:"bytes_received,omitempty"`
-	Packets                    int    `xml:"packets,omitempty"`
-	Start                      string `xml:"start,omitempty"`
-	Elapsed                    string `xml:"elapsed,omitempty"`
-	Category                   string `xml:"category,omitempty"`
-	Severity                   string `xml:"severity,omitempty"`
-	Direction                  string `xml:"direction,omitempty"`
 	URLIndex                   int    `xml:"url_idx,omitempty"`
 	HTTPMethod                 string `xml:"http_method,omitempty"`
 	XForwardedFor              string `xml:"xff,omitempty"`
@@ -185,20 +192,13 @@ type Log struct {
 	UserAgent                  string `xml:"user_agent,omitempty"`
 	SignatureFlags             string `xml:"sig_flags,omitempty"`
 	ContentVersion             string `xml:"contentver,omitempty"`
-	ThreatCategory             string `xml:"thr_category,omitempty"`
-	ThreatName                 string `xml:"threatid,omitempty"`
-	ThreatID                   int    `xml:"tid,omitempty"`
 	FileDigest                 string `xml:"filedigest,omitempty"`
 	Filetype                   string `xml:"filetype,omitempty"`
 	Sender                     string `xml:"sender,omitempty"`
 	Recipient                  string `xml:"recipient,omitempty"`
 	Subject                    string `xml:"subject,omitempty"`
 	Cloud                      string `xml:"cloud,omitempty"`
-	Misc                       string `xml:"misc,omitempty"`
 	Padding                    int    `xml:"padding,omitempty"`
-	PacketsSent                int    `xml:"pkts_sent,omitempty"`
-	PacketsReceived            int    `xml:"pkts_received,omitempty"`
-	SessionEndReason           string `xml:"session_end_reason,omitempty"`
 	ActionSource               string `xml:"action_source,omitempty"`
 	TunnelID                   int    `xml:"tunnelid,omitempty"`
 	IMSI                       string `xml:"imsi,omitempty"`
