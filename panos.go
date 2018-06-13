@@ -186,7 +186,8 @@ type Log struct {
 	SignatureFlags             string `xml:"sig_flags,omitempty"`
 	ContentVersion             string `xml:"contentver,omitempty"`
 	ThreatCategory             string `xml:"thr_category,omitempty"`
-	ThreatID                   string `xml:"threatid,omitempty"`
+	ThreatName                 string `xml:"threatid,omitempty"`
+	ThreatID                   int    `xml:"tid,omitempty"`
 	FileDigest                 string `xml:"filedigest,omitempty"`
 	Filetype                   string `xml:"filetype,omitempty"`
 	Sender                     string `xml:"sender,omitempty"`
