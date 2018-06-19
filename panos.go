@@ -1028,10 +1028,40 @@ func (p *PaloAlto) Routes(vr ...string) (*RoutingTable, error) {
 	return &rt, nil
 }
 
-// Sessions will retrieve information about each session within the session table on a firewall.
-func (p *PaloAlto) Sessions() (*SessionTable, error) {
+// Sessions will retrieve information about each session within the session table on a firewall. You
+// can optionally define a filter, and use the same criteria as you would on the command line. The filter
+// query must be enclosed in quotes "", and the format is:
+//
+// option=value (e.g. "application=ssl")
+//
+// Your filter can include multiple items, and each group must be separated by a comma, e.g.:
+//
+// "application=ssl, ssl-decrypt=yes, protocol=tcp"
+func (p *PaloAlto) Sessions(filter ...string) (*SessionTable, error) {
 	var st SessionTable
 	query := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><session><all></all></session></show>", p.URI, p.Key)
+
+	if len(filter) > 0 {
+		var filterString string
+		tcpudp := map[string]int{
+			"tcp": 6,
+			"udp": 17,
+		}
+
+		params := strings.Split(filter[0], ", ")
+
+		for _, p := range params {
+			f := strings.Split(p, "=")
+			if f[0] == "protocol" {
+				filterString += fmt.Sprintf("<%s>%d</%s>", f[0], tcpudp[f[1]], f[0])
+				continue
+			}
+
+			filterString += fmt.Sprintf("<%s>%s</%s>", f[0], f[1], f[0])
+		}
+
+		query = fmt.Sprintf("%s&key=%s&type=op&cmd=<show><session><all><filter>%s</filter></all></session></show>", p.URI, p.Key, filterString)
+	}
 
 	if p.DeviceType != "panos" {
 		return nil, errors.New("you can only retrieve the session table on a local firewall")
