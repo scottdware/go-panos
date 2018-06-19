@@ -381,6 +381,7 @@ type Session struct {
 	SourcePort            int    `xml:"sport"`
 	SecurityRule          string `xml:"security-rule"`
 	From                  string `xml:"from"`
+	Protocol              int    `xml:"proto"`
 	DestinationAddress    string `xml:"dst"`
 	To                    string `xml:"to"`
 	State                 string `xml:"state"`
