@@ -362,6 +362,45 @@ type RouteLookup struct {
 	DataPlane string
 }
 
+// SessionTable holds information about every session on the device.
+type SessionTable struct {
+	XMLName  xml.Name  `xml:"response"`
+	Status   string    `xml:"status,attr"`
+	Code     string    `xml:"code,attr"`
+	Sessions []Session `xml:"result>entry"`
+}
+
+// Session holds information about each individual session on the device.
+type Session struct {
+	Application           string `xml:"application"`
+	IngressInterface      string `xml:"ingress"`
+	EgressInterface       string `xml:"egress"`
+	VsysID                int    `xml:"vsys-idx"`
+	NATSourceAddress      string `xml:"xsource"`
+	SourceNAT             string `xml:"srcnat"`
+	SourcePort            int    `xml:"sport"`
+	SecurityRule          string `xml:"security-rule"`
+	From                  string `xml:"from"`
+	DestinationAddress    string `xml:"dst"`
+	To                    string `xml:"to"`
+	State                 string `xml:"state"`
+	NATDestinationAddress string `xml:"xdst"`
+	NAT                   string `xml:"nat"`
+	Type                  string `xml:"type"`
+	StartTime             string `xml:"start-time"`
+	Proxy                 string `xml:"proxy"`
+	DecryptMirror         string `xml:"decrypt-mirror"`
+	ID                    int    `xml:"idx"`
+	TotalByteCount        int    `xml:"total-byte-count"`
+	DestinationNAT        string `xml:"dstnat"`
+	Vsys                  string `xml:"vsys"`
+	NATSourcePort         int    `xml:"xsport"`
+	NATDestinationPort    int    `xml:"xdport"`
+	Flags                 string `xml:"flags,omitempty"`
+	SourceAddress         string `xml:"source"`
+	DestinationPort       int    `xml:"dport"`
+}
+
 var (
 	r = gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 
@@ -986,4 +1025,29 @@ func (p *PaloAlto) Routes(vr ...string) (*RoutingTable, error) {
 	}
 
 	return &rt, nil
+}
+
+// Sessions will retrieve information about each session within the session table on a firewall.
+func (p *PaloAlto) Sessions() (*SessionTable, error) {
+	var st SessionTable
+	query := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><session><all></all></session></show>", p.URI, p.Key)
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("you can only retrieve the session table on a local firewall")
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &st); err != nil {
+		return nil, err
+	}
+
+	if st.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", st.Code, errorCodes[st.Code])
+	}
+
+	return &st, nil
 }
