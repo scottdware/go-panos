@@ -17,6 +17,7 @@ This API allows you to do the following:
 
 * List objects on devices: address, service, custom-url-category, device-groups (Panorama), policies, tags, templates, log forwarding profiles, security profile groups, managed devices (Panorama), etc..
 * Create, rename, and delete objects.
+* Create security rules.
 * View jobs on a device.
 * Query and retrieve the following log-types: `config`, `system`, `traffic`, `threat`, `wildfire`, `url`, `data`.
 * Create multiple objects at once from a CSV file. You can also specify different device-groups you want the object to be created under (object overrides), as well as tag them.
@@ -32,7 +33,6 @@ This API allows you to do the following:
 The following features are currently available only on the local firewall:
 
 * List the NAT policy.
-* Create/delete NAT rules.
 * View the entire routing table and details about each route.
 * Gather information about each session in the session table.
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
