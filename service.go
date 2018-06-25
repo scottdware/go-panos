@@ -47,7 +47,7 @@ func (p *PaloAlto) Services(devicegroup ...string) (*ServiceObjects, error) {
 	var svcs ServiceObjects
 	xpath := "/config//service"
 
-	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+	if p.DeviceType != "panorama" && len(devicegroup[0]) > 0 {
 		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
 	}
 
@@ -59,7 +59,7 @@ func (p *PaloAlto) Services(devicegroup ...string) (*ServiceObjects, error) {
 		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service"
 	}
 
-	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && len(devicegroup[0]) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service", devicegroup[0])
 	}
 
@@ -87,7 +87,7 @@ func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) 
 	// xpath := "/config/devices/entry//service-group"
 	xpath := "/config//service-group"
 
-	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+	if p.DeviceType != "panorama" && len(devicegroup[0]) > 0 {
 		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
 	}
 
@@ -99,7 +99,7 @@ func (p *PaloAlto) ServiceGroups(devicegroup ...string) (*ServiceGroups, error) 
 		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group"
 	}
 
-	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && len(devicegroup[0]) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group", devicegroup[0])
 	}
 

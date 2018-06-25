@@ -146,7 +146,7 @@ func (p *PaloAlto) Policy(devicegroup ...string) (*Policy, error) {
 	case "panos":
 		xpath := "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/rulebase/security/rules"
 
-		if len(devicegroup) > 0 {
+		if len(devicegroup[0]) > 0 {
 			return nil, errors.New("you do not need to specify a device-group when connected to a fireawll")
 		}
 
