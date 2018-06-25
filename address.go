@@ -17,11 +17,12 @@ type AddressObjects struct {
 
 // Address contains information about each individual address object.
 type Address struct {
-	Name        string `xml:"name,attr"`
-	IPAddress   string `xml:"ip-netmask,omitempty"`
-	IPRange     string `xml:"ip-range,omitempty"`
-	FQDN        string `xml:"fqdn,omitempty"`
-	Description string `xml:"description,omitempty"`
+	Name        string   `xml:"name,attr"`
+	IPAddress   string   `xml:"ip-netmask,omitempty"`
+	IPRange     string   `xml:"ip-range,omitempty"`
+	FQDN        string   `xml:"fqdn,omitempty"`
+	Description string   `xml:"description,omitempty"`
+	Tag         []string `xml:"tag>member,omitempty"`
 }
 
 // AddressGroups contains a slice of all address groups.
@@ -36,6 +37,7 @@ type AddressGroup struct {
 	Members       []string
 	DynamicFilter string
 	Description   string
+	Tag           []string
 }
 
 // xmlAddressGroups is used for parsing of all address groups.
@@ -52,6 +54,7 @@ type xmlAddressGroup struct {
 	Members       []string `xml:"static>member,omitempty"`
 	DynamicFilter string   `xml:"dynamic>filter,omitempty"`
 	Description   string   `xml:"description,omitempty"`
+	Tag           []string `xml:"tag>member,omitempty"`
 }
 
 // Addresses returns information about all of the address objects. You can (optionally) specify a device-group
@@ -136,12 +139,13 @@ func (p *PaloAlto) AddressGroups(devicegroup ...string) (*AddressGroups, error) 
 		gmembers := g.Members
 		gfilter := strings.TrimSpace(g.DynamicFilter)
 		gdesc := g.Description
+		gtag := g.Tag
 
 		if g.DynamicFilter != "" {
 			gtype = "Dynamic"
 		}
 
-		groups.Groups = append(groups.Groups, AddressGroup{Name: gname, Type: gtype, Members: gmembers, DynamicFilter: gfilter, Description: gdesc})
+		groups.Groups = append(groups.Groups, AddressGroup{Name: gname, Type: gtype, Members: gmembers, DynamicFilter: gfilter, Description: gdesc, Tag: gtag})
 	}
 
 	return &groups, nil
