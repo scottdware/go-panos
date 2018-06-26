@@ -1023,25 +1023,26 @@ func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 	return nil
 }
 
-// TagObject will apply the given tag to the specified address or service object(s). If you have
-// address/service objects with the same name, then the tag(s) will be applied to all that match.
-// If tagging objects on a Panorama device, specify the device-group as the last parameter.
+// TagObject will apply the given tag to the specified address or service object(s). To apply multiple tags,
+// separate them by a comma e.g.: "tag1, tag2". If you have address/service objects with the same name,
+// then the tag(s) will be applied to all that match. If tagging objects on a Panorama device,
+// specify the device-group as the last parameter.
 func (p *PaloAlto) TagObject(tag, object string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	// tags := strings.Split(tag, ",")
+	tags := stringToSlice(tag)
 	adObj, _ := p.Addresses()
 	agObj, _ := p.AddressGroups()
 	sObj, _ := p.Services()
 	sgObj, _ := p.ServiceGroups()
 
-	// xmlBody := "<tag>"
-	// for _, t := range tags {
-	// 	xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(t))
-	// }
-	// xmlBody += "</tag>"
+	xmlBody := "<tag>"
+	for _, t := range tags {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(t))
+	}
+	xmlBody += "</tag>"
 
-	xmlBody := fmt.Sprintf("<member>%s</member>", strings.TrimSpace(tag))
+	xmlBody = fmt.Sprintf("<member>%s</member>", strings.TrimSpace(tag))
 
 	for _, a := range adObj.Addresses {
 		if object == a.Name {
@@ -1579,20 +1580,21 @@ func (p *PaloAlto) RemoveTagFromObject(tag, object string, devicegroup ...string
 	return nil
 }
 
-// TagRule will apply the given tag to the specified rule. If tagging objects on a
+// TagRule will apply the given tag to the specified rule. To apply multiple tags,
+// separate them by a comma e.g.: "tag1, tag2". If tagging objects on a
 // Panorama device, specify the device-group as the last parameter.
 func (p *PaloAlto) TagRule(tag, rule string, devicegroup ...string) error {
 	var xpath string
 	var reqError requestError
-	// tags := strings.Split(tag, ",")
+	tags := stringToSlice(tag)
 
-	// xmlBody := "<tag>"
-	// for _, t := range tags {
-	// 	xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(t))
-	// }
-	// xmlBody += "</tag>"
+	xmlBody := "<tag>"
+	for _, t := range tags {
+		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(t))
+	}
+	xmlBody += "</tag>"
 
-	xmlBody := fmt.Sprintf("<member>%s</member>", strings.TrimSpace(tag))
+	xmlBody = fmt.Sprintf("<member>%s</member>", strings.TrimSpace(tag))
 
 	if p.DeviceType == "panos" {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/rulebase/security/rules/entry[@name='%s']/tag", rule)
