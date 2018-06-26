@@ -1065,7 +1065,7 @@ func (p *PaloAlto) Sessions(filter ...string) (*SessionTable, error) {
 	var st SessionTable
 	query := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><session><all></all></session></show>", p.URI, p.Key)
 
-	if len(filter) > 0 {
+	if len(filter[0]) > 0 {
 		var filterString string
 		tcpudp := map[string]int{
 			"tcp": 6,
