@@ -433,7 +433,7 @@ var (
 	}
 )
 
-// splitSWVersion
+// splitSWVersion breaks up the version numbering into a []int.
 func splitSWVersion(version string) []int {
 	re := regexp.MustCompile(`(\d+)\.(\d+)\.(\d+)`)
 	match := re.FindStringSubmatch(version)
@@ -442,6 +442,30 @@ func splitSWVersion(version string) []int {
 	rel, _ := strconv.Atoi(match[3])
 
 	return []int{maj, min, rel}
+}
+
+// sliceToString converts a slice to a string, separated by a comma.
+func sliceToString(slice []string) string {
+	var str string
+
+	for _, item := range slice {
+		str += fmt.Sprintf("%s, ", item)
+	}
+
+	// return strings.Replace(str, ",\"", "\"", -1)
+	return strings.TrimRight(str, ", ")
+}
+
+// stringToSlice converts a comma separated string to a []string.
+func stringToSlice(str string) []string {
+	var slice []string
+
+	list := strings.Split(str, ",")
+	for _, item := range list {
+		slice = append(slice, strings.TrimLeft(item, " "))
+	}
+
+	return slice
 }
 
 // NewSession sets up our connection to the Palo Alto firewall or Panorama device. The authmethod parameter
