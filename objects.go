@@ -887,7 +887,7 @@ func (p *PaloAlto) Tags(devicegroup ...string) (*Tags, error) {
 	var tcolor string
 	xpath := "/config//tag"
 
-	if p.DeviceType != "panorama" && len(devicegroup) > 0 {
+	if p.DeviceType != "panorama" && len(devicegroup[0]) > 0 {
 		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
 	}
 
@@ -899,7 +899,7 @@ func (p *PaloAlto) Tags(devicegroup ...string) (*Tags, error) {
 		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag"
 	}
 
-	if p.DeviceType == "panorama" && len(devicegroup) > 0 {
+	if p.DeviceType == "panorama" && len(devicegroup[0]) > 0 {
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag", devicegroup[0])
 	}
 
