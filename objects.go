@@ -2358,7 +2358,7 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 				}
 			}
 		case "service":
-			groupMembers := strings.Split(value, " ")
+			groupMembers := strings.Split(value, ", ")
 
 			if len(dg) > 0 {
 				err = p.CreateServiceGroup(name, groupMembers, dg)
@@ -2374,7 +2374,7 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 				}
 			}
 		case "static":
-			groupMembers := strings.Split(value, " ")
+			groupMembers := strings.Split(value, ", ")
 
 			if len(description) > 0 && len(dg) > 0 {
 				err = p.CreateAddressGroup(name, "static", groupMembers, description, dg)
