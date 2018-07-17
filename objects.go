@@ -465,8 +465,22 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && p.Shared == true {
-				xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", oldname)
+			if p.DeviceType == "panorama" {
+				if p.Shared == true {
+					xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", oldname)
+				}
+
+				if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']", oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) <= 0 {
+					return errors.New("you must specify a device-group when renaming objects on a Panorama device")
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
 				if errs != nil {
@@ -482,29 +496,6 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				}
 
 				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']", devicegroup[0], oldname)
-
-				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
-				if errs != nil {
-					return errs[0]
-				}
-
-				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-					return err
-				}
-
-				if reqError.Status != "success" {
-					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-				}
-
-				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-				return errors.New("you must specify a device-group when renaming an object on a Panorama device")
 			}
 		}
 	}
@@ -530,8 +521,22 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && p.Shared == true {
-				xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", oldname)
+			if p.DeviceType == "panorama" {
+				if p.Shared == true {
+					xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", oldname)
+				}
+
+				if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']", oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) <= 0 {
+					return errors.New("you must specify a device-group when renaming objects on a Panorama device")
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
 				if errs != nil {
@@ -547,29 +552,6 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				}
 
 				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']", devicegroup[0], oldname)
-
-				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
-				if errs != nil {
-					return errs[0]
-				}
-
-				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-					return err
-				}
-
-				if reqError.Status != "success" {
-					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-				}
-
-				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
 	}
@@ -595,8 +577,22 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && p.Shared == true {
-				xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", oldname)
+			if p.DeviceType == "panorama" {
+				if p.Shared == true {
+					xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", oldname)
+				}
+
+				if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) <= 0 {
+					return errors.New("you must specify a device-group when renaming objects on a Panorama device")
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
 				if errs != nil {
@@ -612,29 +608,6 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				}
 
 				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], oldname)
-
-				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
-				if errs != nil {
-					return errs[0]
-				}
-
-				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-					return err
-				}
-
-				if reqError.Status != "success" {
-					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-				}
-
-				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
 	}
@@ -660,8 +633,22 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && p.Shared == true {
-				xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", oldname)
+			if p.DeviceType == "panorama" {
+				if p.Shared == true {
+					xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", oldname)
+				}
+
+				if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) <= 0 {
+					return errors.New("you must specify a device-group when renaming objects on a Panorama device")
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
 				if errs != nil {
@@ -677,29 +664,6 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				}
 
 				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], oldname)
-
-				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
-				if errs != nil {
-					return errs[0]
-				}
-
-				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-					return err
-				}
-
-				if reqError.Status != "success" {
-					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-				}
-
-				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
 	}
@@ -725,8 +689,22 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && p.Shared == true {
-				xpath = fmt.Sprintf("/config/shared/tag/entry[@name='%s']", oldname)
+			if p.DeviceType == "panorama" {
+				if p.Shared == true {
+					xpath = fmt.Sprintf("/config/shared/tag/entry[@name='%s']", oldname)
+				}
+
+				if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/tag/entry[@name='%s']", oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], oldname)
+				}
+
+				if p.Shared == false && len(devicegroup) <= 0 {
+					return errors.New("you must specify a device-group when renaming objects on a Panorama device")
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
 				if errs != nil {
@@ -742,29 +720,6 @@ func (p *PaloAlto) RenameObject(oldname, newname string, devicegroup ...string) 
 				}
 
 				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag/entry[@name='%s']", devicegroup[0], oldname)
-
-				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=rename&xpath=%s&newname=%s&key=%s", xpath, newname, p.Key)).End()
-				if errs != nil {
-					return errs[0]
-				}
-
-				if err := xml.Unmarshal([]byte(resp), &reqError); err != nil {
-					return err
-				}
-
-				if reqError.Status != "success" {
-					return fmt.Errorf("error code %s: %s", reqError.Code, errorCodes[reqError.Code])
-				}
-
-				return nil
-			}
-
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-				return errors.New("you must specify a device-group when connected to a Panorama device")
 			}
 		}
 	}
@@ -887,20 +842,24 @@ func (p *PaloAlto) Tags(devicegroup ...string) (*Tags, error) {
 	var tcolor string
 	xpath := "/config//tag"
 
-	if p.DeviceType != "panorama" && len(devicegroup[0]) > 0 {
-		return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+	if p.DeviceType == "panos" {
+		if p.Panorama == true {
+			xpath = "/config//tag"
+		}
+
+		if p.Panorama == false {
+			xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag"
+		}
+
+		if len(devicegroup) > 0 && len(devicegroup[0]) > 0 {
+			return nil, errors.New("you must be connected to a Panorama device when specifying a device-group")
+		}
 	}
 
-	if p.DeviceType == "panos" && p.Panorama == true {
-		xpath = "/config//tag"
-	}
-
-	if p.DeviceType == "panos" && p.Panorama == false {
-		xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/tag"
-	}
-
-	if p.DeviceType == "panorama" && len(devicegroup[0]) > 0 {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag", devicegroup[0])
+	if p.DeviceType == "panorama" {
+		if len(devicegroup) > 0 && len(devicegroup[0]) > 0 {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/tag", devicegroup[0])
+		}
 	}
 
 	_, tData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
