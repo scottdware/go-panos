@@ -234,9 +234,10 @@ For a **_static_** address group, `value` must contain a comma-separated list of
 
 `"ip-host1, ip-net1, fqdn-example.com"`
 
-For a **_dynamic_** address group, `value` must contain the criteria (tags) to match on, i.e.:
+For a **_dynamic_** address group, `value` must contain the criteria (tags) to match on. This **_MUST_** be enclosed in quotes `""`, and
+each criteria (tag) must be surrounded by single-quotes `'`, e.g.:
 
-`web-servers or db-servers and linux`
+`"'web-servers' or 'db-servers' and 'linux'"`
 
 #### Creating Service Objects
 When creating service objects:
