@@ -987,7 +987,7 @@ func (p *PaloAlto) DeleteTag(name string, devicegroup ...string) error {
 // then the tag(s) will be applied to all that match. If tagging objects on a Panorama device,
 // specify the device-group as the last parameter.
 func (p *PaloAlto) TagObject(tag, object string, devicegroup ...string) error {
-	var xpath string
+	var xpath, xmlBody string
 	var reqError requestError
 	tags := stringToSlice(tag)
 	adObj, _ := p.Addresses()
@@ -995,13 +995,9 @@ func (p *PaloAlto) TagObject(tag, object string, devicegroup ...string) error {
 	sObj, _ := p.Services()
 	sgObj, _ := p.ServiceGroups()
 
-	xmlBody := "<tag>"
 	for _, t := range tags {
 		xmlBody += fmt.Sprintf("<member>%s</member>", strings.TrimSpace(t))
 	}
-	xmlBody += "</tag>"
-
-	xmlBody = fmt.Sprintf("<member>%s</member>", strings.TrimSpace(tag))
 
 	for _, a := range adObj.Addresses {
 		if object == a.Name {
