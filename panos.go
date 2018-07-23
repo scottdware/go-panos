@@ -452,7 +452,6 @@ func sliceToString(slice []string) string {
 		str += fmt.Sprintf("%s, ", item)
 	}
 
-	// return strings.Replace(str, ",\"", "\"", -1)
 	return strings.TrimRight(str, ", ")
 }
 
@@ -460,9 +459,9 @@ func sliceToString(slice []string) string {
 func stringToSlice(str string) []string {
 	var slice []string
 
-	list := strings.Split(str, ",")
+	list := strings.Split(str, ", ")
 	for _, item := range list {
-		slice = append(slice, strings.TrimLeft(item, " "))
+		slice = append(slice, strings.Trim(item, " "))
 	}
 
 	return slice
