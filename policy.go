@@ -61,23 +61,23 @@ type RuleContent struct {
 	Name string
 	// Tag or tags that you want the rule to be a part of.
 	Tag []string
-	// The source zone.
+	// The source zone. If you wish to use "any" for the value, please use []string{"any"}.
 	From []string
-	// The destination zone.
+	// The destination zone. If you wish to use "any" for the value, please use []string{"any"}.
 	To []string
-	// The source address.
+	// The source address. If you wish to use "any" for the value, please use []string{"any"}.
 	Source []string
-	// The destination address.
+	// The destination address. If you wish to use "any" for the value, please use []string{"any"}.
 	Destination []string
-	// The source user or users.
+	// The source user or users. If you wish to use "any" for the value, please use []string{"any"}.
 	SourceUser []string
-	// The applications you want to include.
+	// The applications you want to include. If you wish to use "any" for the value, please use []string{"any"}.
 	Application []string
-	// The services you want to include.
+	// The services you want to include. If you wish to use "any" for the value, please use []string{"any"}.
 	Service []string
-	// HIP profiles to check traffic against.
+	// HIP profiles to check traffic against. If you wish to use "any" for the value, please use []string{"any"}.
 	HIPProfiles []string
-	// The URL category.
+	// The URL category. If you wish to use "any" for the value, please use []string{"any"}.
 	Category []string
 	// The action you want to take on the rule.
 	Action string
@@ -412,8 +412,6 @@ func (p *PaloAlto) CreateRule(name, ruletype string, content *RuleContent, devic
 
 		xmlBody += "</profiles></profile-setting>"
 	}
-
-	fmt.Println(xmlBody)
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
 	if errs != nil {
