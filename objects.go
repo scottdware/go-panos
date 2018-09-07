@@ -1039,8 +1039,14 @@ func (p *PaloAlto) TagObject(tag, object string, devicegroup ...string) error {
 				return nil
 			}
 
-			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) >= 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag", devicegroup[0], object)
+			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
+				if devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/address/entry[@name='%s']/tag", object)
+				}
+
+				if devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address/entry[@name='%s']/tag", devicegroup[0], object)
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
 				if errs != nil {
@@ -1105,7 +1111,13 @@ func (p *PaloAlto) TagObject(tag, object string, devicegroup ...string) error {
 			}
 
 			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag", devicegroup[0], object)
+				if devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/address-group/entry[@name='%s']/tag", object)
+				}
+
+				if devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/address-group/entry[@name='%s']/tag", devicegroup[0], object)
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
 				if errs != nil {
@@ -1170,7 +1182,13 @@ func (p *PaloAlto) TagObject(tag, object string, devicegroup ...string) error {
 			}
 
 			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag", devicegroup[0], object)
+				if devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']/tag", object)
+				}
+
+				if devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']/tag", devicegroup[0], object)
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
 				if errs != nil {
@@ -1235,7 +1253,13 @@ func (p *PaloAlto) TagObject(tag, object string, devicegroup ...string) error {
 			}
 
 			if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-				xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag", devicegroup[0], object)
+				if devicegroup[0] == "shared" {
+					xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']/tag", object)
+				}
+
+				if devicegroup[0] != "shared" {
+					xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']/tag", devicegroup[0], object)
+				}
 
 				_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
 				if errs != nil {
@@ -2392,17 +2416,26 @@ func (p *PaloAlto) CreateObjectsFromCsv(file string) error {
 
 		time.Sleep(10 * time.Millisecond)
 
-		if tagged && dg != "" {
-			err = p.TagObject(tag, name, dg)
-			if err != nil {
-				return err
+		if tagged {
+			if dg != "" && dg != "shared" {
+				err = p.TagObject(tag, name, dg)
+				if err != nil {
+					return err
+				}
 			}
-		}
 
-		if tagged && dg == "" {
-			err = p.TagObject(tag, name)
-			if err != nil {
-				return err
+			if dg != "" && dg == "shared" {
+				err = p.TagObject(tag, name, "shared")
+				if err != nil {
+					return err
+				}
+			}
+
+			if dg == "" {
+				err = p.TagObject(tag, name)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

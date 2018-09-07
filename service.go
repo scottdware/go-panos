@@ -150,16 +150,22 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && p.Shared == true {
-		xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
-	}
+	if p.DeviceType == "panorama" {
+		if p.Shared == true {
+			xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], name)
-	}
+		if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+			xpath = fmt.Sprintf("/config/shared/service/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-		return errors.New("you must specify a device-group when creating service objects on a Panorama device")
+		if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service/entry[@name='%s']", devicegroup[0], name)
+		}
+
+		if p.Shared == false && len(devicegroup) <= 0 {
+			return errors.New("you must specify a device-group when creating service objects on a Panorama device")
+		}
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
@@ -200,16 +206,22 @@ func (p *PaloAlto) CreateServiceGroup(name string, members []string, devicegroup
 		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/service-group/entry[@name='%s']", name)
 	}
 
-	if p.DeviceType == "panorama" && p.Shared == true {
-		xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
-	}
+	if p.DeviceType == "panorama" {
+		if p.Shared == true {
+			xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) > 0 {
-		xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], name)
-	}
+		if len(devicegroup) > 0 && devicegroup[0] == "shared" {
+			xpath = fmt.Sprintf("/config/shared/service-group/entry[@name='%s']", name)
+		}
 
-	if p.DeviceType == "panorama" && p.Shared == false && len(devicegroup) <= 0 {
-		return errors.New("you must specify a device-group when creating service groups on a Panorama device")
+		if p.Shared == false && len(devicegroup) > 0 && devicegroup[0] != "shared" {
+			xpath = fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/service-group/entry[@name='%s']", devicegroup[0], name)
+		}
+
+		if p.Shared == false && len(devicegroup) <= 0 {
+			return errors.New("you must specify a device-group when creating service groups on a Panorama device")
+		}
 	}
 
 	_, resp, errs := r.Post(p.URI).Query(fmt.Sprintf("type=config&action=set&xpath=%s&element=%s&key=%s", xpath, xmlBody, p.Key)).End()
