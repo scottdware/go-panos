@@ -163,6 +163,42 @@ type IKEOptions struct {
 	RequireCookie bool
 }
 
+// InterfaceInformation contains all of the logical and physical interface information.
+type InterfaceInformation struct {
+	XMLName  xml.Name            `xml:"response"`
+	Status   string              `xml:"status,attr"`
+	Code     string              `xml:"code,attr"`
+	Logical  []InterfaceIfnet    `xml:"result>ifnet>entry"`
+	Hardware []InterfaceHardware `xml:"result>hw>entry"`
+}
+
+// InterfaceIfnet contains all of the logical interface information, such as IP address and zone.
+type InterfaceIfnet struct {
+	Name           string `xml:"name"`
+	Zone           string `xml:"zone"`
+	VirtualRouter  string `xml:"fwd"`
+	Vsys           int    `xml:"vsys"`
+	DynamicAddress string `xml:"dyn-addr"`
+	IPv6Addres     string `xml:"addr6"`
+	Tag            int    `xml:"tag"`
+	IPAddress      string `xml:"ip"`
+	ID             int    `xml:"id"`
+	Address        string `xml:"addr"`
+}
+
+// InterfaceHardware contains all of the physical interface information, such as MAC address, duplex.
+type InterfaceHardware struct {
+	Name       string `xml:"name"`
+	Duplex     string `xml:"duplex"`
+	Type       int    `xml:"type"`
+	State      string `xml:"state"`
+	Settings   string `xml:"st"`
+	MACAddress string `xml:"mac"`
+	Mode       string `xml:"mode"`
+	Speed      int    `xml:"speed"`
+	ID         int    `xml:"id"`
+}
+
 // CreateLayer3Interface adds a new layer-3 interface or sub-interface to the device. If adding a sub-interface,
 // be sure to append the VLAN tag to the interface name (e.g. ethernet1/1.700). You must also specify the subnet mask in
 // CIDR notation when specifying the IP address.
@@ -1383,4 +1419,33 @@ func (p *PaloAlto) CreateIPSecTunnel(name, iface, gateway, profile string) error
 	}
 
 	return nil
+}
+
+// InterfaceInfo will gather all of the logical and physical interface information from a firewall.
+func (p *PaloAlto) InterfaceInfo() (*InterfaceInformation, error) {
+	var ifs InterfaceInformation
+	cmd := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><interface>all</interface></show>", p.URI, p.Key)
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("you can only retrieve interface information on a local firewall")
+	}
+
+	// if len(name) > 0 {
+	// 	cmd = fmt.Sprintf("%s&key=%s&type=op&cmd=<show><interface>%s</interface></show>", p.URI, p.Key, name[0])
+	// }
+
+	_, resp, errs := r.Post(p.URI).Query(cmd).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &ifs); err != nil {
+		return nil, err
+	}
+
+	if ifs.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", ifs.Code, errorCodes[ifs.Code])
+	}
+
+	return &ifs, nil
 }
