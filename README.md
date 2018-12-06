@@ -35,6 +35,7 @@ The following features are currently available only on the local firewall:
 * List the NAT policy.
 * View the entire routing table and details about each route.
 * Gather information about each session in the session table.
+* Get all of the interface information configured on a firewall.
 * Create interfaces (including sub-interfaces), zones, vlans, virtual-wires, virtual-routers and static routes.
 * Add and remove interfaces to zones, vlans and virtual-routers.
 * List all configured IPSec VPN tunnels, gateways, and crypto profiles.
