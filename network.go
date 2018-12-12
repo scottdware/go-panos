@@ -188,15 +188,16 @@ type InterfaceIfnet struct {
 
 // InterfaceHardware contains all of the physical interface information, such as MAC address, duplex.
 type InterfaceHardware struct {
-	Name       string `xml:"name"`
-	Duplex     string `xml:"duplex"`
-	Type       int    `xml:"type"`
-	State      string `xml:"state"`
-	Settings   string `xml:"st"`
-	MACAddress string `xml:"mac"`
-	Mode       string `xml:"mode"`
-	Speed      int    `xml:"speed"`
-	ID         int    `xml:"id"`
+	Name       string   `xml:"name"`
+	Duplex     string   `xml:"duplex"`
+	Type       string   `xml:"type"`
+	State      string   `xml:"state"`
+	AEMember   []string `xml:"ae_member>member"`
+	Settings   string   `xml:"st"`
+	MACAddress string   `xml:"mac"`
+	Mode       string   `xml:"mode"`
+	Speed      string   `xml:"speed"`
+	ID         int      `xml:"id"`
 }
 
 // CreateLayer3Interface adds a new layer-3 interface or sub-interface to the device. If adding a sub-interface,
