@@ -402,6 +402,49 @@ type Session struct {
 	DestinationPort       int    `xml:"dport"`
 }
 
+// ApplicationInformation contains information about every application.
+type ApplicationInformation struct {
+	XMLName      xml.Name      `xml:"response"`
+	Status       string        `xml:"status,attr"`
+	Code         string        `xml:"code,attr"`
+	Applications []Application `xml:"result>application>entry"`
+}
+
+// Application contains information about each individual application.
+type Application struct {
+	ID                      string                  `xml:"id,attr"`
+	Name                    string                  `xml:"name,attr"`
+	OriginCountry           string                  `xml:"ori_country,attr"`
+	OriginLanguage          string                  `xml:"ori_language,attr"`
+	Category                string                  `xml:"category"`
+	Subcategory             string                  `xml:"subcategory"`
+	Technology              string                  `xml:"technology"`
+	VirusIdent              string                  `xml:"virus-ident"`
+	FileTypeIdent           string                  `xml:"file-type-ident"`
+	TunnelOtherApplications string                  `xml:"tunnel-other-applications"`
+	DataIdent               string                  `xml:"data-ident"`
+	FileForward             string                  `xml:"file-forward"`
+	IsSAAS                  string                  `xml:"is-saas"`
+	EvasiveBehavior         string                  `xml:"evasive-behavior"`
+	ConsumeBigBandwidth     string                  `xml:"consume-big-bandwidth"`
+	UsedByMalware           string                  `xml:"used-by-malware"`
+	AbleToTransferFile      string                  `xml:"able-to-transfer-file"`
+	HasKnownVulnerability   string                  `xml:"has-known-vulnerability"`
+	ProneToMisuse           string                  `xml:"prone-to-misuse"`
+	PervasiveUse            string                  `xml:"pervasive-use"`
+	References              []ApplicationReferences `xml:"references>entry"`
+	DefaultPort             []string                `xml:"default>port>member"`
+	UseApplications         []string                `xml:"use-applications>member"`
+	ImplicitUseApplications []string                `xml:"implicit-use-applications>member"`
+	Risk                    int                     `xml:"risk"`
+}
+
+// ApplicationReferences contains the name and link of the reference site.
+type ApplicationReferences struct {
+	Name string `xml:"name,attr"`
+	Link string `xml:"link"`
+}
+
 var (
 	r = gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 
@@ -1104,4 +1147,31 @@ func (p *PaloAlto) Sessions(filter ...string) (*SessionTable, error) {
 	}
 
 	return &st, nil
+}
+
+// ApplicationInfo gathers information about every pre-defined application on the device.
+func (p *PaloAlto) ApplicationInfo(name ...string) (*ApplicationInformation, error) {
+	var apps ApplicationInformation
+	xpath := "/config/predefined/application"
+
+	if len(name) > 0 {
+		xpath = fmt.Sprintf("/config/predefined/application/entry[@name='%s']", name[0])
+	}
+
+	query := fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &apps); err != nil {
+		return nil, err
+	}
+
+	if apps.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", apps.Code, errorCodes[apps.Code])
+	}
+
+	return &apps, nil
 }
