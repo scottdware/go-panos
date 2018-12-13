@@ -402,12 +402,27 @@ type Session struct {
 	DestinationPort       int    `xml:"dport"`
 }
 
-// ApplicationInformation contains information about every application.
-type ApplicationInformation struct {
+// allApplications contains information about every application temporarily,
+// before it get's added to the ApplicationInformation struct.
+type allApplications struct {
 	XMLName      xml.Name      `xml:"response"`
 	Status       string        `xml:"status,attr"`
 	Code         string        `xml:"code,attr"`
 	Applications []Application `xml:"result>application>entry"`
+}
+
+// singleApplication contains information about a specific application temporarily,
+// before it get's added to the ApplicationInformation struct.
+type singleApplication struct {
+	XMLName      xml.Name      `xml:"response"`
+	Status       string        `xml:"status,attr"`
+	Code         string        `xml:"code,attr"`
+	Applications []Application `xml:"result>entry"`
+}
+
+// ApplicationInformation contains information about every application.
+type ApplicationInformation struct {
+	Applications []Application
 }
 
 // Application contains information about each individual application.
@@ -1152,10 +1167,33 @@ func (p *PaloAlto) Sessions(filter ...string) (*SessionTable, error) {
 // ApplicationInfo gathers information about every pre-defined application on the device.
 func (p *PaloAlto) ApplicationInfo(name ...string) (*ApplicationInformation, error) {
 	var apps ApplicationInformation
+	var allApps allApplications
+	var singleApp singleApplication
 	xpath := "/config/predefined/application"
 
 	if len(name) > 0 {
 		xpath = fmt.Sprintf("/config/predefined/application/entry[@name='%s']", name[0])
+
+		query := fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)
+
+		_, resp, errs := r.Post(p.URI).Query(query).End()
+		if errs != nil {
+			return nil, errs[0]
+		}
+
+		if err := xml.Unmarshal([]byte(resp), &singleApp); err != nil {
+			return nil, err
+		}
+
+		if singleApp.Status != "success" {
+			return nil, fmt.Errorf("error code %s: %s", singleApp.Code, errorCodes[singleApp.Code])
+		}
+
+		for _, a := range singleApp.Applications {
+			apps.Applications = append(apps.Applications, a)
+		}
+
+		return &apps, nil
 	}
 
 	query := fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)
@@ -1165,12 +1203,16 @@ func (p *PaloAlto) ApplicationInfo(name ...string) (*ApplicationInformation, err
 		return nil, errs[0]
 	}
 
-	if err := xml.Unmarshal([]byte(resp), &apps); err != nil {
+	if err := xml.Unmarshal([]byte(resp), &allApps); err != nil {
 		return nil, err
 	}
 
-	if apps.Status != "success" {
-		return nil, fmt.Errorf("error code %s: %s", apps.Code, errorCodes[apps.Code])
+	if allApps.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", allApps.Code, errorCodes[allApps.Code])
+	}
+
+	for _, a := range allApps.Applications {
+		apps.Applications = append(apps.Applications, a)
 	}
 
 	return &apps, nil
