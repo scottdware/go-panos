@@ -16,6 +16,7 @@ A Go package that interacts with Palo Alto devices using their XML API. For offi
 This API allows you to do the following:
 
 * List objects on devices: address, service, custom-url-category, device-groups (Panorama), policies, tags, templates, log forwarding profiles, security profile groups, managed devices (Panorama), etc..
+* Retrieve information about all applications (predefined) or a single one.
 * Create, rename, and delete objects.
 * Create security rules.
 * View jobs on a device.
