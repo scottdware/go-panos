@@ -460,6 +460,77 @@ type ApplicationReferences struct {
 	Link string `xml:"link"`
 }
 
+// SessionID contains all the information regarding a specific session.
+type SessionID struct {
+	XMLName xml.Name      `xml:"response"`
+	Status  string        `xml:"status,attr"`
+	Code    string        `xml:"code,attr"`
+	Session SingleSession `xml:"result"`
+}
+
+// SingleSession contains information about the session.
+type SingleSession struct {
+	ProxySession        string `xml:"prxy-session"`
+	C2SPackets          int    `xml:"c2s-packets"`
+	FirewallEndReason   string `xml:"firewall"`
+	ProxyStatus         string `xml:"prxy-status"`
+	URLFilteringEnabled string `xml:"url-en"`
+	SYNCookies          string `xml:"syncookie"`
+	NATRule             string `xml:"nat-rule"`
+	QoSClass            int    `xml:"qos-clas"`
+	NATDestination      string `xml:"nat-dst"`
+	S2CPackets          int    `xml:"s2c-packets"`
+	Slot                int    `xml:"slot"`
+	AppInsufficient     string `xml:"app-insufficient"`
+	ProxyStarted        string `xml:"prxy-started"`
+	CaptivePortal       string `xml:"captive-portal"`
+	Application         string `xml:"application"`
+	NATSource           string `xml:"nat-src"`
+	FlowType            int    `xml:"flow-type"`
+	EndReason           string `xml:"end-reason"`
+	Timestamp           int    `xml:"timestamp"`
+	URLCategory         string `xml:"url-cat"`
+	SessionHASync       string `xml:"sess-ha-sync"`
+	TunnelSession       string `xml:"tunnel-session"`
+	HostSession         string `xml:"host-session"`
+	C2SOctets           int    `xml:"c2s-octets"`
+	SessionEndLog       string `xml:"sess-log"`
+	StartTime           string `xml:"start-time"`
+	S2COctets           int    `xml:"s2c-octets"`
+	EgressInterface     string `xml:"egr-if"`
+	NATRuleVsys         string `xml:"nat-rule-vsys"`
+	Vsys                string `xml:"vsys"`
+	Rule                string `xml:"rule"`
+	SessionAger         string `xml:"sess-ager"`
+	TimeStart           int    `xml:"time-start"`
+	Timeout             int    `xml:"timeout"`
+	QoSRule             string `xml:"qos-rule"`
+	IngressInterface    string `xml:"igr-if"`
+	DataplaneCPU        int    `xml:"cpu"`
+	C2SSrcUser          string `xml:"c2s>src-user"`
+	C2SProtocol         int    `xml:"c2s>proto"`
+	C2SDestAddress      string `xml:"c2s>dst"`
+	C2SDestUser         string `xml:"c2s>dst-user"`
+	C2SSourceAddress    string `xml:"c2s>source"`
+	C2SState            string `xml:"c2s>state"`
+	C2SFrom             string `xml:"c2s>source-zone"`
+	C2SIPVersion        int    `xml:"c2s>ipver"`
+	C2SDestPort         int    `xml:"c2s>dport"`
+	C2SSourcePort       int    `xml:"c2s>sport"`
+	C2SType             string `xml:"c2s>type"`
+	S2CSrcUser          string `xml:"s2c>src-user"`
+	S2CProtocol         int    `xml:"s2c>proto"`
+	S2CDestAddress      string `xml:"s2c>dst"`
+	S2CDestUser         string `xml:"s2c>dst-user"`
+	S2CSourceAddress    string `xml:"s2c>source"`
+	S2CState            string `xml:"s2c>state"`
+	S2CFrom             string `xml:"s2c>source-zone"`
+	S2CIPVersion        int    `xml:"s2c>ipver"`
+	S2CDestPort         int    `xml:"s2c>dport"`
+	S2CSourcePort       int    `xml:"s2c>sport"`
+	S2CType             string `xml:"s2c>type"`
+}
+
 var (
 	r = gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 
@@ -1122,7 +1193,7 @@ func (p *PaloAlto) Sessions(filter ...string) (*SessionTable, error) {
 	var st SessionTable
 	query := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><session><all></all></session></show>", p.URI, p.Key)
 
-	if len(filter[0]) > 0 {
+	if len(filter) > 0 {
 		var filterString string
 		tcpudp := map[string]int{
 			"tcp": 6,
@@ -1143,6 +1214,31 @@ func (p *PaloAlto) Sessions(filter ...string) (*SessionTable, error) {
 
 		query = fmt.Sprintf("%s&key=%s&type=op&cmd=<show><session><all><filter>%s</filter></all></session></show>", p.URI, p.Key, filterString)
 	}
+
+	if p.DeviceType != "panos" {
+		return nil, errors.New("you can only retrieve the session table on a local firewall")
+	}
+
+	_, resp, errs := r.Post(p.URI).Query(query).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(resp), &st); err != nil {
+		return nil, err
+	}
+
+	if st.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", st.Code, errorCodes[st.Code])
+	}
+
+	return &st, nil
+}
+
+// SessionID will retrieve information about the given session on a firewall.
+func (p *PaloAlto) SessionID(id string) (*SessionID, error) {
+	var st SessionID
+	query := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><session><id>%s</id></session></show>", p.URI, p.Key, id)
 
 	if p.DeviceType != "panos" {
 		return nil, errors.New("you can only retrieve the session table on a local firewall")
