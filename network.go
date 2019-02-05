@@ -22,7 +22,7 @@ type ARPEntry struct {
 	Status     string `xml:"status"`
 	IPAddress  string `xml:"ip"`
 	MACAddress string `xml:"mac"`
-	TTL        int    `xml:"ttl"`
+	TTL        string `xml:"ttl"`
 	Interface  string `xml:"interface"`
 	Port       string `xml:"port"`
 }
