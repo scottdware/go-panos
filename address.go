@@ -168,11 +168,11 @@ func (p *PaloAlto) CreateAddress(name, addrtype, address, description string, de
 
 	switch addrtype {
 	case "ip":
-		xmlBody = fmt.Sprintf("<ip-netmask>%s</ip-netmask>", address)
+		xmlBody = fmt.Sprintf("<ip-netmask>%s</ip-netmask>", strings.TrimSpace(address))
 	case "range":
-		xmlBody = fmt.Sprintf("<ip-range>%s</ip-range>", address)
+		xmlBody = fmt.Sprintf("<ip-range>%s</ip-range>", strings.TrimSpace(address))
 	case "fqdn":
-		xmlBody = fmt.Sprintf("<fqdn>%s</fqdn>", address)
+		xmlBody = fmt.Sprintf("<fqdn>%s</fqdn>", strings.TrimSpace(address))
 	}
 
 	if description != "" {
