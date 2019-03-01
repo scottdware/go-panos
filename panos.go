@@ -588,9 +588,9 @@ func sliceToString(slice []string) string {
 func stringToSlice(str string) []string {
 	var slice []string
 
-	list := strings.Split(str, ", ")
+	list := strings.Split(str, ",")
 	for _, item := range list {
-		slice = append(slice, strings.Trim(item, " "))
+		slice = append(slice, strings.TrimSpace(item))
 	}
 
 	return slice
