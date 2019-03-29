@@ -137,9 +137,9 @@ func (p *PaloAlto) CreateService(name, protocol, port, description string, devic
 
 	switch protocol {
 	case "tcp":
-		xmlBody = fmt.Sprintf("<protocol><tcp><port>%s</port></tcp></protocol>", strings.Replace(port, " ", "", -1))
+		xmlBody = fmt.Sprintf("<protocol><tcp><port>%s</port></tcp></protocol>", strings.TrimSpace(port))
 	case "udp":
-		xmlBody = fmt.Sprintf("<protocol><udp><port>%s</port></udp></protocol>", strings.Replace(port, " ", "", -1))
+		xmlBody = fmt.Sprintf("<protocol><udp><port>%s</port></udp></protocol>", strings.TrimSpace(port))
 	}
 
 	if description != "" {
