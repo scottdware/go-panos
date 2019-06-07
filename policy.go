@@ -256,6 +256,35 @@ func (p *PaloAlto) NATPolicy() (*NATPolicy, error) {
 	return &policy, nil
 }
 
+// DeviceGroupNATPolicy returns information about the NAT policy on a given device group.
+func (p *PaloAlto) DeviceGroupNATPolicy(group string) (*NATPolicy, error) {
+	var policy NATPolicy
+
+	if p.DeviceType != "panorama" {
+		return nil, errors.New("you can only view device group NAT policies on a panorama")
+	}
+
+	xpath := fmt.Sprintf("/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='%s']/*/nat/rules", group)
+	_, natPolicyData, errs := r.Get(p.URI).Query(fmt.Sprintf("type=config&action=get&xpath=%s&key=%s", xpath, p.Key)).End()
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	if err := xml.Unmarshal([]byte(natPolicyData), &policy); err != nil {
+		return nil, err
+	}
+
+	if policy.Status != "success" {
+		return nil, fmt.Errorf("error code %s: %s", policy.Code, errorCodes[policy.Code])
+	}
+
+	if len(policy.Rules) == 0 {
+		return nil, errors.New("there are no rules created")
+	}
+
+	return &policy, nil
+}
+
 // CreateRule will create a new rule on the device. If you are connected to a Panorama device, then
 // you must specify the device-group as the last parameter. You do not need this when connected to
 // a firewall.
