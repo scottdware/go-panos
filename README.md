@@ -182,7 +182,7 @@ if err != nil {
 // run this same function again until it does.
 time.Sleep(5 * time.Second)
 
-logs, err := pan.RetrieveLogs(jobID)
+log, err := pan.RetrieveLogs(jobID)
 if err != nil {
     fmt.Println(err)
 }
