@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/parnurzeal/gorequest"
+	"gopkg.in/resty.v1"
 )
 
 // PaloAlto is a container for our session state. It also holds information about the device
@@ -1136,13 +1137,14 @@ func (p *PaloAlto) XpathGetConfig(configtype, xpath string) (string, error) {
 // (e.g. "<show><running><ippool></ippool></running></show>")
 func (p *PaloAlto) Command(command string) (string, error) {
 	var output commandOutput
+	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 
-	_, res, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, command)).End()
-	if errs != nil {
-		return "", errs[0]
+	resp, err := resty.R().Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, command))
+	if err != nil {
+		return "", err
 	}
 
-	err := xml.Unmarshal([]byte(res), &output)
+	err = xml.Unmarshal([]byte(resp.String()), &output)
 	if err != nil {
 		return "", err
 	}
@@ -1154,6 +1156,8 @@ func (p *PaloAlto) Command(command string) (string, error) {
 // a specific virtual router to retrieve routes from.
 func (p *PaloAlto) Routes(vr ...string) (*RoutingTable, error) {
 	var rt RoutingTable
+	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+
 	query := fmt.Sprintf("%s&key=%s&type=op&cmd=<show><routing><route></route></routing></show>", p.URI, p.Key)
 
 	if p.DeviceType != "panos" {
@@ -1164,12 +1168,13 @@ func (p *PaloAlto) Routes(vr ...string) (*RoutingTable, error) {
 		query = fmt.Sprintf("%s&key=%s&type=op&cmd=<show><routing><route><virtual-router>%s</virtual-router></route></routing></show>", p.URI, p.Key, vr[0])
 	}
 
-	_, resp, errs := r.Post(p.URI).Query(query).End()
-	if errs != nil {
-		return nil, errs[0]
+	resp, err := resty.R().Get(query)
+	// _, resp, errs := r.Post(p.URI).Query(query).End()
+	if err != nil {
+		return nil, err
 	}
 
-	if err := xml.Unmarshal([]byte(resp), &rt); err != nil {
+	if err := xml.Unmarshal([]byte(resp.String()), &rt); err != nil {
 		return nil, err
 	}
 
