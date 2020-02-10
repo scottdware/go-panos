@@ -612,7 +612,7 @@ func NewSession(host string, authmethod *AuthMethod) (*PaloAlto, error) {
 	if len(authmethod.Credentials) > 0 {
 		_, body, errs := r.Get(fmt.Sprintf("https://%s/api/?type=keygen&user=%s&password=%s", host, authmethod.Credentials[0], authmethod.Credentials[1])).End()
 		if errs != nil {
-			return nil, errs[0]
+			return nil, fmt.Errorf("unable to connect to %s - %s", host, errs[0])
 		}
 
 		err := xml.Unmarshal([]byte(body), &keygen)
@@ -634,7 +634,7 @@ func NewSession(host string, authmethod *AuthMethod) (*PaloAlto, error) {
 	uri := fmt.Sprintf("https://%s/api/?", host)
 	_, getInfo, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><system><info></info></system></show>", uri, key)).End()
 	if errs != nil {
-		return nil, errs[0]
+		return nil, fmt.Errorf("unable to get system info for %s - %s", host, errs[0])
 	}
 
 	err := xml.Unmarshal([]byte(getInfo), &info)
@@ -648,7 +648,7 @@ func NewSession(host string, authmethod *AuthMethod) (*PaloAlto, error) {
 
 	_, panStatus, errs := r.Get(fmt.Sprintf("%s&key=%s&type=op&cmd=<show><panorama-status></panorama-status></show>", uri, key)).End()
 	if errs != nil {
-		return nil, errs[0]
+		return nil, fmt.Errorf("unable to get Panorama status for %s - %s", host, errs[0])
 	}
 
 	err = xml.Unmarshal([]byte(panStatus), &pan)
@@ -1141,7 +1141,7 @@ func (p *PaloAlto) Command(command string) (string, error) {
 
 	resp, err := resty.R().Get(fmt.Sprintf("%s&key=%s&type=op&cmd=%s", p.URI, p.Key, command))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to run command '%s' - %s", command, err)
 	}
 
 	err = xml.Unmarshal([]byte(resp.String()), &output)
@@ -1171,11 +1171,11 @@ func (p *PaloAlto) Routes(vr ...string) (*RoutingTable, error) {
 	resp, err := resty.R().Get(query)
 	// _, resp, errs := r.Post(p.URI).Query(query).End()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to retrieve routing table - %s", err)
 	}
 
 	if err := xml.Unmarshal([]byte(resp.String()), &rt); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot unmarshal XML from routing table - %s", err)
 	}
 
 	if rt.Status != "success" {
